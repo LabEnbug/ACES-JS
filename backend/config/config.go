@@ -1,5 +1,14 @@
 package config
 
+import (
+	"github.com/qiniu/go-sdk/v7/auth"
+	"github.com/qiniu/go-sdk/v7/auth/qbox"
+	"github.com/qiniu/go-sdk/v7/storage"
+)
+
+var Test bool
+var ShowLog bool
+
 type DatabaseConfig struct {
 	Host string
 	Port int
@@ -19,6 +28,15 @@ type RedisConfig struct {
 
 var DefaultRedis RedisConfig
 
+var QiniuStorageCfg storage.Config
+var QiniuPutPolicy storage.PutPolicy
+var QiniuMac *auth.Credentials
+
+var BaseLocalFileDir string
+var BaseRemoteFileDir string
+
+var VideoProcessType int
+
 func InitConfig() {
 	DefaultDatabase = DatabaseConfig{
 		Host: "127.0.0.1",
@@ -33,5 +51,16 @@ func InitConfig() {
 		Pass:    "acesaces",
 		Channel: 0,
 	}
+	QiniuStorageCfg = storage.Config{
+		Region:        &storage.ZoneHuadongZheJiang2,
+		UseHTTPS:      true,
+		UseCdnDomains: false,
+	}
 
+	QiniuPutPolicy = storage.PutPolicy{
+		Scope: "aces-js",
+	}
+	QiniuMac = qbox.NewMac("mWIWThPUX4LBqsEz8UvduI9DUhmfSEfuVPQ2VzPG", "s5JKrAkJWl4XQpNnP42qHAeEmtfZ75gRPYkSyAkd")
+	BaseLocalFileDir = "/root/project/user_upload_files"
+	BaseRemoteFileDir = ""
 }

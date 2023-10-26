@@ -4,12 +4,19 @@ import (
 	"backend/auth"
 	"backend/config"
 	"backend/database"
+	"backend/model"
 	"backend/tool"
 	"encoding/json"
 	"fmt"
 	"github.com/golang-jwt/jwt/v5/request"
+	"github.com/google/uuid"
+	"io"
 	"log"
+	"math"
 	"net/http"
+	"os"
+	"path"
+	"runtime"
 	"strconv"
 	"strings"
 )
@@ -41,17 +48,18 @@ func SendJSONResponse(w http.ResponseWriter, status int, data interface{}, error
 }
 
 func defaultPage(w http.ResponseWriter, r *http.Request) {
+	// parse form
 	err := r.ParseForm()
 	if err != nil {
 		return
 	}
-	fmt.Println(r.Form)
-	fmt.Println("path", r.URL.Path)
-	fmt.Println("scheme", r.URL.Scheme)
-	fmt.Println(r.Form["url_long"])
+	//log.Println(r.Form)
+	//log.Println("path", r.URL.Path)
+	//log.Println("scheme", r.URL.Scheme)
+	//log.Println(r.Form["url_long"])
 	for k, v := range r.Form {
-		fmt.Println("key:", k)
-		fmt.Println("val:", strings.Join(v, ""))
+		funcName, _, _, _ := runtime.Caller(0)
+		log.Println(runtime.FuncForPC(funcName).Name(), "key:", k, ", val:", strings.Join(v, ""))
 	}
 	_, err = fmt.Fprintf(w, "Hello")
 	if err != nil {
@@ -63,6 +71,7 @@ func login(w http.ResponseWriter, r *http.Request) {
 	status := 200
 	data := map[string]interface{}{}
 	errorMsg := ""
+	// parse form
 	err := r.ParseForm()
 	if err != nil {
 		status = 0
@@ -70,18 +79,10 @@ func login(w http.ResponseWriter, r *http.Request) {
 		SendJSONResponse(w, status, data, errorMsg)
 		return
 	}
-	var queryUsername string
-	var queryPassword string
-	for k, v := range r.Form {
-		if k == "username" {
-			queryUsername = strings.Join(v, "")
-		}
-		if k == "password" {
-			queryPassword = strings.Join(v, "")
-		}
-	}
-	user, errNo := database.CheckUserPassword(queryUsername, queryPassword)
-	if errNo != 0 {
+	queryUsername := r.FormValue("username")
+	queryPassword := r.FormValue("password")
+	user, ok, errNo := database.CheckUserPassword(queryUsername, queryPassword)
+	if !ok {
 		if errNo == 1 { // user not found
 			errorMsg = "User not found."
 			status = 0
@@ -113,7 +114,7 @@ func login(w http.ResponseWriter, r *http.Request) {
 				"token": token,
 				"exp":   tool.UnixTimeToRFC3339(exp),
 				"user": map[string]interface{}{
-					"userid":   user.Id,
+					"user_id":  user.Id,
 					"username": user.Username,
 					"nickname": user.Nickname,
 					"reg_time": user.RegTime,
@@ -165,6 +166,7 @@ func signup(w http.ResponseWriter, r *http.Request) {
 	status := 200
 	data := map[string]interface{}{}
 	errorMsg := ""
+	// parse form
 	err := r.ParseForm()
 	if err != nil {
 		status = 0
@@ -173,18 +175,11 @@ func signup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	//implement sign up function
-	var queryUsername string
-	var queryPassword string
-	for k, v := range r.Form {
-		if k == "username" {
-			queryUsername = strings.Join(v, "")
-		}
-		if k == "password" {
-			queryPassword = strings.Join(v, "")
-		}
-	}
-	user, errNo := database.CreateUser(queryUsername, queryPassword)
-	if errNo != 0 {
+	queryUsername := r.FormValue("username")
+	queryPassword := r.FormValue("password")
+	queryNickname := r.FormValue("nickname")
+	user, ok, errNo := database.CreateUser(queryUsername, queryPassword, queryNickname)
+	if !ok {
 		if errNo == 1 { // user already exists
 			errorMsg = "User already exists."
 			status = 0
@@ -193,11 +188,11 @@ func signup(w http.ResponseWriter, r *http.Request) {
 			status = 0
 		}
 	} else {
-		user, _ = database.GetUserInfoById(user.Id)
+		user, _, _ = database.GetUserInfoById(user.Id)
 		status = 200
 		data = map[string]interface{}{
 			"user": map[string]interface{}{
-				"userid":   user.Id,
+				"user_id":  user.Id,
 				"username": user.Username,
 				"nickname": user.Nickname,
 				"reg_time": user.RegTime,
@@ -208,7 +203,7 @@ func signup(w http.ResponseWriter, r *http.Request) {
 	SendJSONResponse(w, status, data, errorMsg)
 }
 
-func findAndCheckToken(r *http.Request) (bool, int, int64, string) {
+func findAndCheckToken(r *http.Request) (bool, uint, int64, string) {
 	// find token
 	// Authorization: Bearer xxx
 	token, err := request.BearerExtractor{}.ExtractToken(r)
@@ -248,8 +243,8 @@ func getUserInfo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// get user info
-	user, errNo := database.GetUserInfoById(userId)
-	if errNo != 0 {
+	user, ok, errNo := database.GetUserInfoById(userId)
+	if !ok {
 		if errNo == 1 { // user not found
 			errorMsg = "User not found."
 			status = 0
@@ -263,7 +258,7 @@ func getUserInfo(w http.ResponseWriter, r *http.Request) {
 			"token": token,
 			"exp":   tool.UnixTimeToRFC3339(exp),
 			"user": map[string]interface{}{
-				"userid":   user.Id,
+				"user_id":  user.Id,
 				"username": user.Username,
 				"nickname": user.Nickname,
 				"reg_time": tool.DatabaseTimeToRFC3339(user.RegTime),
@@ -285,7 +280,7 @@ func setUserInfo(w http.ResponseWriter, r *http.Request) {
 		SendJSONResponse(w, status, data, errorMsg)
 		return
 	}
-	// set Nickname by userId
+	// parse form
 	err := r.ParseForm()
 	if err != nil {
 		status = 0
@@ -293,25 +288,22 @@ func setUserInfo(w http.ResponseWriter, r *http.Request) {
 		SendJSONResponse(w, status, data, errorMsg)
 		return
 	}
-	var queryNickname string
-	for k, v := range r.Form {
-		if k == "nickname" {
-			queryNickname = strings.Join(v, "")
-		}
-	}
-	errNo := database.SetUserInfo(userId, queryNickname)
-	if errNo != 0 {
-		if errNo == 1 { // user not found
-			errorMsg = "User not found."
-			status = 0
-		} else {
-			errorMsg = "Unknown error."
-			status = 0
-		}
+	queryNickname := r.FormValue("nickname")
+	// set Nickname by userId
+	ok := database.SetUserInfo(userId, queryNickname)
+	if !ok {
+		errorMsg = "Unknown error."
+		status = 0
 	} else {
+		user, _, _ := database.GetUserInfoById(userId)
 		status = 200
 		data = map[string]interface{}{
-			"nickname": queryNickname,
+			"user": map[string]interface{}{
+				"user_id":  user.Id,
+				"username": user.Username,
+				"nickname": user.Nickname,
+				"reg_time": tool.DatabaseTimeToRFC3339(user.RegTime),
+			},
 		}
 	}
 
@@ -322,11 +314,7 @@ func getVideoList(w http.ResponseWriter, r *http.Request) {
 	status := 200
 	data := map[string]interface{}{}
 	errorMsg := ""
-	var queryType int
-	var queryUser int
-	var queryActionHistory string
-	var queryLimit int
-	var queryPage int
+	// parse form
 	err := r.ParseForm()
 	if err != nil {
 		status = 0
@@ -334,23 +322,13 @@ func getVideoList(w http.ResponseWriter, r *http.Request) {
 		SendJSONResponse(w, status, data, errorMsg)
 		return
 	}
-	for k, v := range r.Form {
-		if k == "type" { // video type
-			queryType, _ = strconv.Atoi(strings.Join(v, ""))
-		}
-		if k == "user" { // if list single user or all
-			queryUser, _ = strconv.Atoi(strings.Join(v, ""))
-		}
-		if k == "action_history" { // if list liked/favorite/history of single user
-			queryActionHistory = strings.Join(v, "")
-		}
-		if k == "limit" {
-			queryLimit, _ = strconv.Atoi(strings.Join(v, ""))
-		}
-		if k == "page" {
-			queryPage, _ = strconv.Atoi(strings.Join(v, ""))
-		}
-	}
+	queryType, _ := strconv.Atoi(r.FormValue("type"))
+	parseUint, _ := strconv.ParseUint(r.FormValue("user_id"), 10, 32)
+	queryUserId := uint(parseUint)
+	queryActionHistory := r.FormValue("action_history")
+	queryLimit, _ := strconv.Atoi(r.FormValue("limit"))
+	queryPage, _ := strconv.Atoi(r.FormValue("page"))
+
 	// for some bad parameter
 	if queryLimit > 20 {
 		queryLimit = 20
@@ -361,7 +339,7 @@ func getVideoList(w http.ResponseWriter, r *http.Request) {
 		queryPage = 1
 	}
 
-	videoList := database.GetVideoList(queryType, queryUser, queryActionHistory, queryLimit, queryPage)
+	videoList := database.GetVideoList(queryType, queryUserId, queryActionHistory, queryLimit, queryPage)
 	if len(videoList) == 0 {
 		status = 0
 		errorMsg = "No more video found."
@@ -381,7 +359,7 @@ func getVideoDetail(w http.ResponseWriter, r *http.Request) {
 	status := 200
 	data := map[string]interface{}{}
 	errorMsg := ""
-	var queryVideoUid string
+	// parse form
 	err := r.ParseForm()
 	if err != nil {
 		status = 0
@@ -389,11 +367,7 @@ func getVideoDetail(w http.ResponseWriter, r *http.Request) {
 		SendJSONResponse(w, status, data, errorMsg)
 		return
 	}
-	for k, v := range r.Form {
-		if k == "video_uid" {
-			queryVideoUid = strings.Join(v, "")
-		}
-	}
+	queryVideoUid := r.FormValue("video_uid")
 	video := database.GetVideoDetail(queryVideoUid)
 	if video.Id == 0 {
 		status = 0
@@ -421,6 +395,7 @@ func doVideoAction(w http.ResponseWriter, r *http.Request) {
 		SendJSONResponse(w, status, data, errorMsg)
 		return
 	}
+	// parse form
 	err := r.ParseForm()
 	if err != nil {
 		status = 0
@@ -429,16 +404,8 @@ func doVideoAction(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// check video
-	var queryVideoUid string
-	var queryAction string
-	for k, v := range r.Form {
-		if k == "video_uid" {
-			queryVideoUid = strings.Join(v, "")
-		}
-		if k == "action" {
-			queryAction = strings.Join(v, "")
-		}
-	}
+	queryVideoUid := r.FormValue("video_uid")
+	queryAction := r.FormValue("action")
 	video := database.GetVideoDetail(queryVideoUid)
 	if video.Id == 0 {
 		status = 0
@@ -448,9 +415,9 @@ func doVideoAction(w http.ResponseWriter, r *http.Request) {
 	}
 	// do action
 	// todo: like, unlike, favorite, unfavorite, comment
-	errNo := database.GuestDoVideoAction(video, userId, queryAction)
-	if errNo != 0 {
-		if errNo == 1 { //already do before
+	ok, errNo := database.GuestDoVideoAction(video, userId, queryAction)
+	if !ok {
+		if errNo == 1 { // already done
 			errorMsg = "Already done."
 			status = 0
 		} else {
@@ -479,6 +446,7 @@ func recordVideoHistory(w http.ResponseWriter, r *http.Request) {
 		SendJSONResponse(w, status, data, errorMsg)
 		return
 	}
+	// parse form
 	err := r.ParseForm()
 	if err != nil {
 		status = 0
@@ -487,12 +455,7 @@ func recordVideoHistory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// check video
-	var queryVideoUid string
-	for k, v := range r.Form {
-		if k == "video_uid" {
-			queryVideoUid = strings.Join(v, "")
-		}
-	}
+	queryVideoUid := r.FormValue("video_uid")
 	video := database.GetVideoDetail(queryVideoUid)
 	if video.Id == 0 {
 		status = 0
@@ -501,8 +464,8 @@ func recordVideoHistory(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// record this history
-	errNo := database.GuestRecordVideoHistory(video, userId)
-	if errNo != 0 {
+	ok := database.GuestRecordVideoHistory(video, userId)
+	if !ok {
 		errorMsg = "Unknown error."
 		status = 0
 	} else {
@@ -513,7 +476,114 @@ func recordVideoHistory(w http.ResponseWriter, r *http.Request) {
 }
 
 func uploadVideo(w http.ResponseWriter, r *http.Request) {
+	status := 200
+	data := map[string]interface{}{}
+	errorMsg := ""
+	// only accept POST
+	if r.Method != "POST" {
+		status = 0
+		errorMsg = "Invalid request method."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+	// receive file and save to {{BaseLocalFileDir}}/tmp/
+	// check token
+	tokenValid, userId, _, _ := findAndCheckToken(r)
+	if !tokenValid {
+		status := 0
+		data := map[string]interface{}{}
+		errorMsg := "Not logged in."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+	// check file size by MaxBytesReader, max 50MB
+	MaxUploadSize := int64(50 * 1024 * 1024)
+	r.Body = http.MaxBytesReader(w, r.Body, MaxUploadSize)
+	err := r.ParseMultipartForm(MaxUploadSize)
+	if err != nil {
+		status = 0
+		errorMsg = fmt.Sprintf("File size limit to %dMB.", int(math.Floor(float64(MaxUploadSize)/1024/1024)))
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+	// check file
+	file, fileHeader, err := r.FormFile("file")
+	if err != nil {
+		status = 0
+		errorMsg = "Failed to get file."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+	defer file.Close()
+	// check file type (accept all video types)
+	fileType := fileHeader.Header.Get("Content-Type")
+	if !strings.Contains(fileType, "video") {
+		status = 0
+		errorMsg = "File type not supported."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+	// get file title, type, and description
+	queryVideoType, _ := strconv.Atoi(r.FormValue("video_type"))
+	queryVideoTitle := r.FormValue("video_title")
+	queryVideoContent := r.FormValue("video_content")
+	if queryVideoTitle == "" || queryVideoContent == "" {
+		status = 0
+		errorMsg = "Video title or content cannot be empty."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+	// generate video uid
+	videoUid := uuid.New().String()
+	// save file to {{BaseLocalFileDir}}/tmp/{{video_uid}}
+	fileSavePath := path.Join(config.BaseLocalFileDir, "tmp", videoUid)
+	fileBytes, err := io.ReadAll(file)
+	if err != nil {
+		status = 0
+		errorMsg = "Failed to receive file."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+	err = os.WriteFile(fileSavePath, fileBytes, 0644)
+	if err != nil {
+		status = 0
+		errorMsg = "Failed to save file."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+	// save video info to database
+	video, ok := database.UserCreateVideo(userId, videoUid, queryVideoType, queryVideoTitle, queryVideoContent)
+	if !ok {
+		status = 0
+		errorMsg = "Failed to save video info."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+	// 2 choices: 1. upload file to qiniu and wait for auto hls callback, 2. upload file to qiniu and transcode to hls by ffmpeg
+	// upload file to qiniu, different dir by config.VideoProcessType
+	subDir := "origin/local_process"  // if transcode by local
+	if config.VideoProcessType == 1 { // if transcode by qiniu
+		subDir = "origin/remote_process"
+	}
+	ok = tool.UploadFileToQiniu(fileSavePath, path.Join(config.BaseRemoteFileDir, subDir, videoUid))
+	if !ok {
+		status = 0
+		errorMsg = "Failed to upload file to cloud."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+	// make choice
+	if config.VideoProcessType == 1 { // wait for auto hls callback, return now
+		data = map[string]interface{}{
+			"video": video,
+		}
+	} else if config.VideoProcessType == 2 { // transcode to hls by ffmpeg
+		// not implement now
+	}
+	// delete file
+	_ = os.Remove(fileSavePath)
 
+	SendJSONResponse(w, status, data, errorMsg)
 }
 
 func setVideoInfo(w http.ResponseWriter, r *http.Request) {
@@ -528,7 +598,7 @@ func setVideoInfo(w http.ResponseWriter, r *http.Request) {
 		SendJSONResponse(w, status, data, errorMsg)
 		return
 	}
-
+	// parse form
 	err := r.ParseForm()
 	if err != nil {
 		status = 0
@@ -537,24 +607,10 @@ func setVideoInfo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// check video
-	var queryVideoUid string
-	var queryVideoTitle string
-	var queryVideoContent string
-	var queryVideoType int
-	for k, v := range r.Form {
-		if k == "video_uid" {
-			queryVideoUid = strings.Join(v, "")
-		}
-		if k == "video_title" {
-			queryVideoTitle = strings.Join(v, "")
-		}
-		if k == "video_content" {
-			queryVideoContent = strings.Join(v, "")
-		}
-		if k == "video_type" {
-			queryVideoType, _ = strconv.Atoi(strings.Join(v, ""))
-		}
-	}
+	queryVideoUid := r.FormValue("video_uid")
+	queryVideoTitle := r.FormValue("video_title")
+	queryVideoContent := r.FormValue("video_content")
+	queryVideoType, _ := strconv.Atoi(r.FormValue("video_uid"))
 	video := database.GetVideoDetail(queryVideoUid)
 	if video.Id == 0 {
 		status = 0
@@ -572,8 +628,63 @@ func setVideoInfo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// edit video info
-	errNo := database.SetVideoInfo(queryVideoUid, queryVideoTitle, queryVideoContent, queryVideoType)
-	if errNo != 0 {
+	ok := database.SetVideoInfo(queryVideoUid, queryVideoTitle, queryVideoContent, queryVideoType)
+	if !ok {
+		errorMsg = "Unknown error."
+		status = 0
+	}
+
+	// get video info
+	video = database.GetVideoDetail(queryVideoUid)
+	status = 200
+	data = map[string]interface{}{
+		"video": video,
+	}
+
+	SendJSONResponse(w, status, data, errorMsg)
+}
+
+func deleteVideo(w http.ResponseWriter, r *http.Request) {
+	status := 200
+	data := map[string]interface{}{}
+	errorMsg := ""
+	// check token
+	tokenValid, userId, _, _ := findAndCheckToken(r)
+	if !tokenValid {
+		status = 0
+		errorMsg = "Not logged in."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+	// parse form
+	err := r.ParseForm()
+	if err != nil {
+		status = 0
+		errorMsg = "Failed to parse form."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+	// check video
+	queryVideoUid := r.FormValue("video_uid")
+	video := database.GetVideoDetail(queryVideoUid)
+	if video.Id == 0 {
+		status = 0
+		errorMsg = "Video not found."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+
+	// check if video is not uploaded by this user
+	if video.UserId != userId {
+		status = 0
+		errorMsg = "This video was not uploaded by this user."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+
+	// delete video
+	ok := database.DeleteVideo(queryVideoUid)
+	if !ok {
 		errorMsg = "Unknown error."
 		status = 0
 	} else {
@@ -583,14 +694,11 @@ func setVideoInfo(w http.ResponseWriter, r *http.Request) {
 	SendJSONResponse(w, status, data, errorMsg)
 }
 
-func deleteVideo(w http.ResponseWriter, r *http.Request) {
-
-}
-
-func setToken(w http.ResponseWriter, r *http.Request) {
+func qiniuHlsCallback(w http.ResponseWriter, r *http.Request) {
 	status := 200
 	data := map[string]interface{}{}
 	errorMsg := ""
+	// parse form
 	err := r.ParseForm()
 	if err != nil {
 		status = 0
@@ -598,12 +706,152 @@ func setToken(w http.ResponseWriter, r *http.Request) {
 		SendJSONResponse(w, status, data, errorMsg)
 		return
 	}
-	var userId int
-	for k, v := range r.Form {
-		if k == "userid" {
-			userId, _ = strconv.Atoi(strings.Join(v, ""))
+	// check method
+	if r.Method == "POST" {
+		postData, err := io.ReadAll(r.Body)
+		if err != nil {
+			status = 0
+			errorMsg = "Failed to read post data."
+			SendJSONResponse(w, status, data, errorMsg)
+			return
 		}
+		// {"version":"v3","id":"cn-east-2.01c201cwib1vvu4ido00mvdadi000avw","reqid":"CAAAAJQnVO8copEX","pipeline":"1382943942.default.sys","input":{"kodo_file":{"bucket":"aces-js","key":"origin/remote_process/95e255ae-72f7-11ee-9ed6-0242ac1a0003-123.mp4"}},"code":0,"desc":"successfully completed","ops":[{"id":"node2_avthumb","fop":{"cmd":"avthumb/m3u8/vcodec/libx264/acodec/libfdk_aac/ar/48000/ab/138k/crf/20/pattern/{{_base64_join \"video/\" .meta.fname \"/\" .meta.count \".ts\"}}","input_from":"__origin__","result":{"code":0,"desc":"successfully completed","has_output":false}}},{"id":"node4_saveas","fop":{"cmd":"saveas/YWNlcy1qczp2aWRlby85NWUyNTVhZS03MmY3LTExZWUtOWVkNi0wMjQyYWMxYTAwMDMtMTIzL2luZGV4Lm0zdTg=","result":{"code":0,"desc":"successfully completed","has_output":true,"kodo_file":{"bucket":"aces-js","key":"video/95e255ae-72f7-11ee-9ed6-0242ac1a0003-123/index.m3u8","hash":"FmAwuxAOQaKTE8Xv3f0YYoZZvXFk"}}},"depends":["node2_avthumb"]}],"created_at":1698316775387}
+
+		// parse json
+		var qiniuCallbackData model.QiniuCallbackData
+		err = json.Unmarshal(postData, &qiniuCallbackData)
+		if err != nil {
+			status = 0
+			errorMsg = "Failed to parse json."
+			SendJSONResponse(w, status, data, errorMsg)
+			funcName, _, _, _ := runtime.Caller(0)
+			log.Println(runtime.FuncForPC(funcName).Name(), "failed to parse json:", string(postData))
+			return
+		}
+		file := qiniuCallbackData.Input.KodoFile.Key
+		// get video uid
+		videoUid := strings.Split(file, "/")[2][:36]
+		// get video info
+		video := database.GetVideoDetail(videoUid)
+		if video.Id == 0 {
+			status = 0
+			errorMsg = "Video not found."
+			SendJSONResponse(w, status, data, errorMsg)
+			return
+		}
+		// update video info
+		ok := database.CallbackUpdateVideoHLS(videoUid)
+		if !ok {
+			status = 0
+			errorMsg = "Failed to update video info."
+			SendJSONResponse(w, status, data, errorMsg)
+			return
+		}
+	} else {
+		status = 0
+		errorMsg = "Invalid request method."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
 	}
+
+	SendJSONResponse(w, status, data, errorMsg)
+}
+
+func qiniuScreenshotCallback(w http.ResponseWriter, r *http.Request) {
+	status := 200
+	data := map[string]interface{}{}
+	errorMsg := ""
+	// parse form
+	err := r.ParseForm()
+	if err != nil {
+		status = 0
+		errorMsg = "Failed to parse form."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+	// check method
+	if r.Method == "POST" {
+		postData, err := io.ReadAll(r.Body)
+		if err != nil {
+			status = 0
+			errorMsg = "Failed to read post data."
+			SendJSONResponse(w, status, data, errorMsg)
+			return
+		}
+
+		// parse json
+		var qiniuCallbackData model.QiniuCallbackData
+		err = json.Unmarshal(postData, &qiniuCallbackData)
+		if err != nil {
+			status = 0
+			errorMsg = "Failed to parse json."
+			SendJSONResponse(w, status, data, errorMsg)
+			funcName, _, _, _ := runtime.Caller(0)
+			log.Println(runtime.FuncForPC(funcName).Name(), "failed to parse json:", string(postData))
+			return
+		}
+		file := qiniuCallbackData.Input.KodoFile.Key
+		// get video uid
+		videoUid := strings.Split(file, "/")[2]
+		// get video info
+		video := database.GetVideoDetail(videoUid)
+		if video.Id == 0 {
+			status = 0
+			errorMsg = "Video not found."
+			SendJSONResponse(w, status, data, errorMsg)
+			return
+		}
+		// update video info
+		ok := database.CallbackUpdateVideoScreenshot(videoUid)
+		if !ok {
+			status = 0
+			errorMsg = "Failed to update video info."
+			SendJSONResponse(w, status, data, errorMsg)
+			return
+		}
+	} else {
+		status = 0
+		errorMsg = "Invalid request method."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+
+	SendJSONResponse(w, status, data, errorMsg)
+}
+
+func getVideoTypes(w http.ResponseWriter, r *http.Request) {
+	status := 200
+	data := map[string]interface{}{}
+	errorMsg := ""
+	videoTypes := database.GetVideoTypes()
+	if len(videoTypes) == 0 {
+		status = 0
+		errorMsg = "No video type found."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+	status = 200
+	data = map[string]interface{}{
+		"video_types": videoTypes,
+	}
+
+	SendJSONResponse(w, status, data, errorMsg)
+}
+
+func setToken(w http.ResponseWriter, r *http.Request) {
+	status := 200
+	data := map[string]interface{}{}
+	errorMsg := ""
+	// parse form
+	err := r.ParseForm()
+	if err != nil {
+		status = 0
+		errorMsg = "Failed to parse form."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+	userIdTmp, _ := strconv.ParseUint(r.FormValue("user_id"), 10, 32)
+	userId := uint(userIdTmp)
 	token, exp, err := auth.CreateToken(userId)
 	if err != nil {
 		status = 0
@@ -619,9 +867,9 @@ func setToken(w http.ResponseWriter, r *http.Request) {
 	} else {
 		status = 200
 		data = map[string]interface{}{
-			"token":  token,
-			"userid": userId,
-			"exp":    tool.UnixTimeToRFC3339(exp),
+			"token":   token,
+			"user_id": userId,
+			"exp":     tool.UnixTimeToRFC3339(exp),
 		}
 	}
 	SendJSONResponse(w, status, data, errorMsg)
@@ -631,6 +879,7 @@ func getToken(w http.ResponseWriter, r *http.Request) {
 	status := 200
 	data := map[string]interface{}{}
 	errorMsg := ""
+	// parse form
 	err := r.ParseForm()
 	if err != nil {
 		status = 0
@@ -638,12 +887,7 @@ func getToken(w http.ResponseWriter, r *http.Request) {
 		SendJSONResponse(w, status, data, errorMsg)
 		return
 	}
-	var token string
-	for k, v := range r.Form {
-		if k == "token" {
-			token = strings.Join(v, "")
-		}
-	}
+	token := r.FormValue("token")
 	isExist, err := database.CheckTokenIsExist(token)
 	if err != nil {
 		status = 0
@@ -657,8 +901,8 @@ func getToken(w http.ResponseWriter, r *http.Request) {
 			} else {
 				status = 200
 				data = map[string]interface{}{
-					"userid": userId,
-					"exp":    tool.UnixTimeToRFC3339(exp),
+					"user_id": userId,
+					"exp":     tool.UnixTimeToRFC3339(exp),
 				}
 			}
 		} else {
@@ -671,7 +915,9 @@ func getToken(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	test := true // set to false to disable test api
+	config.Test = true // set to false to disable test api
+	config.ShowLog = true
+	config.VideoProcessType = 1 // 1: wait for qiniu transcode callback; 2: transcode by ffmpeg locally
 
 	config.InitConfig()
 
@@ -695,7 +941,12 @@ func main() {
 	http.HandleFunc("/v1/video/edit", setVideoInfo)
 	http.HandleFunc("/v1/video/delete", deleteVideo)
 
-	if test {
+	http.HandleFunc("/v1/video/types", getVideoTypes)
+
+	http.HandleFunc("/callback/qiniu/hls", qiniuHlsCallback)
+	http.HandleFunc("/callback/qiniu/screenshot", qiniuScreenshotCallback)
+
+	if config.Test {
 		http.HandleFunc("/v1/test/setToken", setToken)
 		http.HandleFunc("/v1/test/getToken", getToken)
 	}
