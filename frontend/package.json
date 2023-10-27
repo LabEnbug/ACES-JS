@@ -10,16 +10,23 @@
   },
   "dependencies": {
     "@headlessui/react": "^1.7.14",
+    "@emotion/react": "11.10.5",
+    "@mantine/core": "5.10.3",
+    "@mantine/hooks": "5.10.3",
     "@types/node": "^20.2.5",
     "@types/react": "^18.2.7",
     "@types/react-dom": "^18.2.4",
+    "@vidstack/react": "^1.4.7",
+    "antd": "5.10.2",
     "aos": "^3.0.0-beta.6",
+    "axios": "1.5.1",
+    "hls.js": "^1.4.12",
     "next": "^13.4.4",
     "react": "18.2.0",
     "react-dom": "18.2.0",
+    "react-player": "^2.13.0",
     "typescript": "^5.0.4",
-    "axios": "1.5.1",
-    "antd": "5.10.2"
+    "video.js": "^8.6.1"
   },
   "devDependencies": {
     "@tailwindcss/forms": "^0.5.3",

@@ -1,0 +1,34 @@
+.video-container {
+    width: 80%; /* 设置宽度 */
+    height: 80%; /* 设置高度 */
+    left: 15%;
+    top: 15%;
+    background-color: black; /* 设置背景图 */
+    /* padding-bottom: 177.77%;  */
+    overflow: hidden; 
+    position: absolute;
+    /* max-height: 80%; */
+}
+
+.video-container1 {
+    position: absolute; /* 设置相对定位 */
+    width: 100%; /* 宽度占满父容器 */
+    padding-bottom: 177.77%; /* 视频的宽高比为 9:16，可以根据实际情况计算（16/9 = 1.7777） */
+    overflow: hidden; /* 隐藏溢出部分 */
+  }
+
+.video-pos-js-16-9 {
+    position: absolute; /* 使用绝对定位来覆盖容器 */
+    width: 100%;
+    height: 100%;
+}
+
+.video-pos-js-9-16 {
+    position: absolute; /* 设置绝对定位 */
+    top: 0;
+    left: 0;
+    width: 100%; /* 宽度占满父容器 */
+    height: 100%; /* 高度占满父容器 */
+    transform-origin: center; /* 设置变换的原点为中心 */
+    transform: scale(1); /* 缩放因子为 16:9 的宽高比的倒数（9/16 = 0.5625） */
+}
