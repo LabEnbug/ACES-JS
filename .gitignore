@@ -1,42 +1,46 @@
 out
 .idea
-frontend/node_modules
+*/node_modules
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
-# dependencies
-frontend/node_modules
-frontend/.pnp
-frontend/.pnp.js
+acro_frontend/node_modules
+acro_frontend/.pnp
+acro_frontend/.pnp.js
 
 # testing
-frontend/coverage
+acro_frontend/coverage
 
 # next.js
-frontend/.next/
-frontend/out/
+acro_frontend/.next/
+acro_frontend/out/
 
 # production
-frontend/build
+acro_frontend/build
 
 # misc
-frontend/.DS_Store
-frontend/*.pem
+acro_frontend/.DS_Store
+acro_frontend/*.pem
 
 # debug
-frontend/npm-debug.log*
-frontend/yarn-debug.log*
-frontend/yarn-error.log*
-frontend/.pnpm-debug.log*
+acro_frontend/npm-debug.log*
+acro_frontend/yarn-debug.log*
+acro_frontend/yarn-error.log*
 
 # local env files
-frontend/.env*.local
+acro_frontend/.env.local
+acro_frontend/.env.development.local
+acro_frontend/.env.test.local
+acro_frontend/.env.production.local
 
 # vercel
-frontend/.vercel
+acro_frontend/.vercel
 
 # typescript
-frontend/*.tsbuildinfo
-frontend/next-env.d.ts
+acro_frontend/*.tsbuildinfo
 
-# contentlayer
-frontend/.contentlayer
+
+# eslint
+acro_frontend/.eslintcache
+
+# stylelint
+acro_frontend/.stylelintcache
