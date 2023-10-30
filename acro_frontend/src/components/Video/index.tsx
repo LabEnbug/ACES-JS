@@ -18,6 +18,32 @@ function VideoPlayer({
   const canvas = createCanvas(400, 400);
   const ctx = canvas.getContext('2d');
   const [footbarVis, setFootBarVis] = useState(false);
+  const [playstate, setPlayState] = useState(false);
+  const [timestate, setTimeState] = useState({
+    'now': 0,
+    'whole': 0
+  });
+  const [autonext, setAutoNext] = useState(false);
+  const [volume, setVolume] = useState(0)
+
+  const clickplay = () => {
+    if (playstate) {
+      playerRef.current.pause();
+    } else {
+      playerRef.current.play();
+    }
+  }
+
+  const setAuto = (e) => {
+    console.log(e)
+    setAutoNext(e)
+  }
+
+  const changeVolume = (e) => {
+    playerRef.current.volume(e/100);
+  }
+
+
   useEffect(() => {
     const upDateBackGround = (playerRef, url)=> {
       // 创建一个 Image 对象
@@ -47,12 +73,13 @@ function VideoPlayer({
       img.src = url;
     }
     console.log(hlsPlayList)
-    if (!playerRef.current && videoRef.current && hlsPlayList.length > playindex) {
+    const realindex = currentVideoIndex >= 0 ? currentVideoIndex % hlsPlayList.length : currentVideoIndex % hlsPlayList.length + hlsPlayList.length;
+    if (!playerRef.current && videoRef.current && hlsPlayList.length > 0) {
       playerRef.current = videojs(videoRef.current, {
         crossOrigin: "Anonymous",
         controls: true,
-        sources: [{ src: hlsPlayList[currentVideoIndex]['play_url'], type: "application/x-mpegURL" }],
-        poster: hlsPlayList[currentVideoIndex]['cover_url'],
+        sources: [{ src: hlsPlayList[realindex]['play_url'], type: "application/x-mpegURL" }],
+        poster: hlsPlayList[realindex]['cover_url'],
         preload: "auto",
         autoplay: false,
         ...options
@@ -64,23 +91,60 @@ function VideoPlayer({
         // } else {
         //   setCurrentVideoIndex(0);
         // }
-        playerRef.current.currentTime = 0; 
-        playerRef.current.play();
+        if (autonext) {
+          setCurrentVideoIndex((prevIndex) => prevIndex + 1);
+          console.log(21371983791)
+          playerRef.current.play();
+        } else {
+          playerRef.current.currentTime = 0; 
+          playerRef.current.play();
+        }
       });
+      playerRef.current.on('ready', () => {
+        // if (currentVideoIndex < hlsPlayList.length - 1) {
+        //   setCurrentVideoIndex((prevIndex) => prevIndex + 1);
+        // } else {
+        //   setCurrentVideoIndex(0);
+        // }
+        setVolume(Math.floor(playerRef.current.volume()*100));
+      });
+      // playerRef.current.on('ready', () => {
+      //   setFootBarVis(true);
+      // })
+      playerRef.current.on('play', ()=> {
+        setFootBarVis(true);
+        setPlayState(true)
+      })
+      playerRef.current.on('pause', ()=> {
+        setPlayState(false)
+      })
+      playerRef.current.on('timeupdate', function() {
+        const currentPlayTime = playerRef.current.currentTime();
+        const totalDuration = playerRef.current.duration();  
+        setTimeState({
+          'now': currentPlayTime,
+          'whole': totalDuration
+        })
+      });
+      playerRef.current.on('volumechange', function() {
+        setVolume(Math.floor(playerRef.current.volume() * 100))
+      });
+
       playerRef.current.el().classList.add(styles['video-background']); 
       playerRef.current.controlBar.getChild('playToggle').hide();
       playerRef.current.controlBar.getChild('VolumePanel').hide();
       playerRef.current.controlBar.getChild('FullscreenToggle').hide();
       playerRef.current.controlBar.getChild('RemainingTimeDisplay').hide();
       playerRef.current.controlBar.removeChild('pictureInPictureToggle');
-      upDateBackGround(playerRef, hlsPlayList[currentVideoIndex]['cover_url'])
-    } else if (playerRef.current && videoRef.current && hlsPlayList.length > playindex) {
-      console.log(currentVideoIndex)
+      upDateBackGround(playerRef, hlsPlayList[realindex]['cover_url'])
+    } else if (playerRef.current && videoRef.current && hlsPlayList.length != 0) {
+      console.log(realindex)
       playerRef.current.src({
-        src: hlsPlayList[currentVideoIndex]['play_url'], type: "application/x-mpegURL" 
+        src: hlsPlayList[realindex]['play_url'], type: "application/x-mpegURL" 
       })
-      playerRef.current.poster(hlsPlayList[currentVideoIndex]['cover_url'])
-      upDateBackGround(playerRef, hlsPlayList[currentVideoIndex]['cover_url'])
+      
+      playerRef.current.poster(hlsPlayList[realindex]['cover_url'])
+      upDateBackGround(playerRef, hlsPlayList[realindex]['cover_url'])
     }
   }, [hlsPlayList, options, currentVideoIndex]);
 
@@ -101,10 +165,10 @@ function VideoPlayer({
       if (specifiedArea && specifiedArea.contains(event.target)) { 
         if (event.deltaY > 5) {
           setCurrentVideoIndex((prevIndex) =>
-            prevIndex < hlsPlayList.length - 1 ? prevIndex + 1 : prevIndex
+            prevIndex + 1
           );
         } else if (event.deltaY < -5) {
-          setCurrentVideoIndex((prevIndex) => (prevIndex > 0 ? prevIndex - 1 : prevIndex));
+          setCurrentVideoIndex((prevIndex) => (prevIndex - 1));
         }
       }
     };
@@ -117,9 +181,9 @@ function VideoPlayer({
 
   useEffect(() => {
     const handleKeyDown = (event) => {
-      if (event.key === 'ArrowUp' && currentVideoIndex > 0) {
+      if (event.key === 'ArrowUp') {
         setCurrentVideoIndex((prevIndex) => prevIndex - 1);
-      } else if (event.key === 'ArrowDown' && currentVideoIndex < hlsPlayList.length - 1) {
+      } else if (event.key === 'ArrowDown') {
         setCurrentVideoIndex((prevIndex) => prevIndex + 1);
       }
     };
@@ -131,11 +195,22 @@ function VideoPlayer({
   }, [hlsPlayList, currentVideoIndex]);
 
   return (
-    <div data-vjs-player className={styles['video-container']} >
-       <video ref={videoRef} id="specified-area" className={`vjs-default-skin ${styles['video-pos-js-9-16']} video-js`} controls></video>
-       <SideBar/>
-       <FootBar playRef={playerRef} visible={footbarVis}/>
-    </div>
+    <>
+      <div data-vjs-player className={styles['video-container']} >
+        <video ref={videoRef} id="specified-area" className={`vjs-default-skin ${styles['video-pos-js-9-16']} video-js`} controls></video>
+        <SideBar/>
+      </div>
+      <FootBar ref={playerRef} 
+               visible={footbarVis} 
+               playstate={playstate} 
+               timestate={timestate} 
+               playclick={clickplay} 
+               volume={volume} 
+               volumechange={changeVolume} 
+               setauto={setAuto}
+               autostate={autonext}
+               />
+    </>
   );
 };
 

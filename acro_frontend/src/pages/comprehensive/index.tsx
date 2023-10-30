@@ -27,20 +27,13 @@ function Comprehensive() {
   }
 
   useEffect(() => {
-      const userInfo = window.localStorage.getItem('userInfo')
-      
       if (playlist.length == 0) {
           const params = {
               limit,
               page
           }
-          const instance = axios.create({
-            headers: {
-              'Referrer Policy': 'origin',
-            }
-          });
           if (baxios) {
-            baxios.get('/v1-api/v1/video/list', {params})
+            baxios.post('/v1-api/v1/video/list', {params})
             .then(response => {
                 const data = response.data
                 console.log(data)

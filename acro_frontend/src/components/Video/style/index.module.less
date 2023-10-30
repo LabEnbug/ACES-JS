@@ -69,6 +69,16 @@
     // border: 10px solid var(--color-border-2);
 }
 
+.icon-foot-button {
+    font-size: 16px;
+    box-shadow: none;
+    outline: none;
+    background-color: transparent !important;
+    border: 0px transparent  !important;
+    margin-bottom: 5px;
+    // border: 10px solid var(--color-border-2);
+}
+
 .icon-group {
     top: 30%;
     left: 95%;
@@ -83,14 +93,32 @@
 }
 
 
-.foot-group {
+.foot-group-left {
     top: calc(100% - 55px);
+    height: 60px;
     position: absolute;
     z-index: 999;
-    justify-content: center;
-    display: inline-block;
+    display: flex;
     text-align: center; /* 使得文本水平居中 */
-    vertical-align: top !important; /* 确保整个容器垂直居中 */
-    font-size:  15px; 
+    align-items: center;
+    flex-direction: row; 
+    font-size:  18px; 
     font-weight: bold;
+}
+
+.foot-group-right {
+    top: calc(100% - 55px);
+    margin-left: 60%;
+    height: 60px;
+    position: absolute;
+    z-index: 999;
+    display: flex;
+    text-align: center; /* 使得文本水平居中 */
+    align-items: center;
+    flex-direction: row; 
+}
+
+.foot-time {
+    margin-left: 5px;
+    color: rgba(255,255,255,0.8);
 }
