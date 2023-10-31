@@ -35,6 +35,7 @@ export default function MyApp({
   const { arcoLang, arcoTheme } = renderConfig;
   const [lang, setLang] = useStorage('arco-lang', arcoLang || 'en-US');
   const [theme, setTheme] = useStorage('arco-theme', 'dark');
+  setTheme('dark')
   const router = useRouter();
   const locale = useMemo(() => {
     switch (lang) {

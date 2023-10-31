@@ -17,6 +17,10 @@ export const routes: IRoute[] = [
     key: 'comprehensive',
   },
   {
+    name: 'menu.search',
+    key: 'search',
+  },
+  {
     name: 'menu.dashboard',
     key: 'dashboard',
     children: [

@@ -56,7 +56,7 @@ const i18n = {
     'message.empty': 'Empty',
     'message.empty.tips': 'No Content',
     'message.lang.tips': 'Language switch to ',
-    'navbar.search.placeholder': 'Search Key',
+    'navbar.search.placeholder': 'Search the content you are interested',
     'navbar.button.signin': "Sign In",
     'navbar.button.signup': "Sign Up",
     'navbar.model.signup.title': "Join Us!",
@@ -66,7 +66,8 @@ const i18n = {
     'navbar.menu.logout.message': "logout success!",
     'navbar.model.signup.nickname': 'Nickname',
     'navbar.model.signup.message.error': 'Info Error!',
-    'menu.video.comprehensive': 'comprehensive'
+    'menu.video.comprehensive': 'comprehensive',
+    'menu.search': 'Search Result'
   },
   'zh-CN': {
     'menu.dashboard': '仪表盘',
@@ -124,7 +125,7 @@ const i18n = {
     'message.empty': '清空',
     'message.empty.tips': '暂无内容',
     'message.lang.tips': '语言切换至 ',
-    'navbar.search.placeholder': '搜索',
+    'navbar.search.placeholder': '搜索你感兴趣的内容',
     'navbar.button.signin': '登入',
     'navbar.button.signup': '注册',
     'navbar.model.signin.title': "欢迎回来，发现生活中的美好！",
@@ -134,7 +135,8 @@ const i18n = {
     'navbar.model.signin.passward': "密码",
     'navbar.menu.logout.message': "登出成功！",
     'navbar.model.signup.message.error': '信息有误',
-    'menu.video.comprehensive': '综合'
+    'menu.video.comprehensive': '综合',
+    'menu.search': '搜索结果'
   },
 };
 

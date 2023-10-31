@@ -44,3 +44,6 @@ acro_frontend/.eslintcache
 
 # stylelint
 acro_frontend/.stylelintcache
+
+
+acro_frontend/.husky/

@@ -10,7 +10,7 @@ import {
   Message,
   Button,
   Modal,
-  Form,
+  Form, Trigger, Skeleton,
 } from '@arco-design/web-react';
 import {
   IconLanguage,
@@ -33,6 +33,7 @@ import { GlobalContext } from '@/context';
 import useLocale from '@/utils/useLocale';
 import Logo from '@/assets/logo.svg';
 import MessageBox from '@/components/MessageBox';
+import SearchPopupBox from "@/components/SearchPopupBox";
 import IconButton from './IconButton';
 import Settings from '../Settings';
 import styles from './style/index.module.less';
@@ -41,7 +42,17 @@ import useStorage from '@/utils/useStorage';
 import { generatePermission } from '@/routes';
 import axios from 'axios';
 import CompoundedSpace from 'antd/es/space';
+import {useRouter} from "next/router";
 const FormItem = Form.Item;
+
+function Popup() {
+  return (
+    <div className={styles['search-trigger-popup']} style={{ width: 300 }}>
+
+      <Skeleton />
+    </div>
+  );
+}
 
 function Navbar({ show }: { show: boolean }) {
   const t = useLocale();
@@ -51,6 +62,11 @@ function Navbar({ show }: { show: boolean }) {
   const [role, setRole] = useStorage('userRole', 'admin');
   const [signinmodel, SetSignInModel] = useState(false);
   const [signupmodel, SetSignUpModel] = useState(false);
+
+  const router = useRouter();
+  const [searchKeyword, setSearchKeyword] = useState('');
+
+
 
   const showSignInModal = () => {
     SetSignInModel(true);
@@ -87,6 +103,28 @@ function Navbar({ show }: { show: boolean }) {
     });
   }, [role]);
 
+  useEffect(() => {
+    if (router.query.q) {
+      setSearchKeyword(router.query.q as string);
+    }
+  }, []);
+
+  useEffect(() => {
+    const handleRouteChange = (url) => {
+      const path = url.split('?')[0];
+      const query = new URLSearchParams(url.split('?')[1]).get('q');
+      if (path === '/search' && query && query !== searchKeyword) {
+        setSearchKeyword(query);
+      }
+    };
+
+    router.events.on('routeChangeComplete', handleRouteChange);
+    return () => {
+      router.events.off('routeChangeComplete', handleRouteChange);
+    };
+  }, [searchKeyword]);
+
+
   if (!show) {
     return (
       <div className={styles['fixed-settings']}>
@@ -115,7 +153,7 @@ function Navbar({ show }: { show: boolean }) {
     .catch(error => {
       console.error(error);
     });
-    
+
   }
 
   const droplist = (
@@ -172,7 +210,7 @@ function Navbar({ show }: { show: boolean }) {
 
   const [form] = Form.useForm();
   const [confirmLoading, setConfirmLoading] = useState(false);
-        
+
   function onSignInOk() {
       form.validate().then((res) => {
         console.log(res)
@@ -217,6 +255,16 @@ function Navbar({ show }: { show: boolean }) {
       })
   }
 
+  const handleSearchSubmit = () => {
+    // console.log(searchKeyword)
+    router.push({
+      pathname: '/search',
+      query: {
+        q: searchKeyword,
+      },
+    });
+  }
+
   const formItemLayout = {
     labelCol: {
       span: 4,
@@ -225,7 +273,7 @@ function Navbar({ show }: { show: boolean }) {
       span: 20,
     },
   };
-  
+
   return (
     <div className={styles.navbar}>
       <div className={styles.left}>
@@ -236,10 +284,30 @@ function Navbar({ show }: { show: boolean }) {
       </div>
       <ul className={styles.right}>
         <li>
-          <Input.Search
-            className={styles.round}
-            placeholder={t['navbar.search.placeholder']}
-          />
+          <SearchPopupBox>
+            <Input.Search
+              value={searchKeyword}
+              onChange={(e) => setSearchKeyword(e)}
+              className={styles.round + ' ' + styles['search-input']}
+              placeholder={t['navbar.search.placeholder']}
+              onSearch={handleSearchSubmit}
+            />
+          </SearchPopupBox>
+          {/*<Trigger*/}
+          {/*  popup={() => <Popup />}*/}
+          {/*  trigger='focus'*/}
+          {/*  mouseEnterDelay={400}*/}
+          {/*  mouseLeaveDelay={400}*/}
+          {/*  position='top'*/}
+          {/*>*/}
+          {/*  <Input.Search*/}
+          {/*    value={searchKeyword}*/}
+          {/*    onChange={(e) => setSearchKeyword(e)}*/}
+          {/*    className={styles.round + ' ' + styles['search-input']}*/}
+          {/*    placeholder={t['navbar.search.placeholder']}*/}
+          {/*    onSearch={handleSearchSubmit}*/}
+          {/*  />*/}
+          {/*</Trigger>*/}
         </li>
         <li>
           <Select
@@ -294,7 +362,7 @@ function Navbar({ show }: { show: boolean }) {
               </Avatar>
             </Dropdown>
           </li>
-        ) : 
+        ) :
           <li>
             <Button type='text' onClick={showSignInModal}>{t['navbar.button.signin']}</Button>
             <Button type='text' onClick={showSignUpModal}>{t['navbar.button.signup']}</Button>
@@ -367,7 +435,7 @@ function Navbar({ show }: { show: boolean }) {
           <FormItem field='password' rules={[{ required: true }]}>
             <Input.Password prefix={<IconLock />} placeholder={t['navbar.model.signin.passward']} />
           </FormItem>
-          
+
 
           <FormItem
             field='confirm_password'
