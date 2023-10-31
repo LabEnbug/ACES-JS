@@ -5,6 +5,7 @@ import 'video.js/dist/video-js.css';
 import { createCanvas, loadImage } from 'canvas'; 
 import SideBar from './sidebar';
 import FootBar from './footbar';
+import { set } from "video.js/dist/types/tech/middleware";
 
 function VideoPlayer({
   hlsPlayList,
@@ -24,7 +25,18 @@ function VideoPlayer({
     'whole': 0
   });
   const [autonext, setAutoNext] = useState(false);
-  const [volume, setVolume] = useState(0)
+  const [volume, setVolume] = useState(0);
+  const [playrate, setPlayRate] = useState(1);
+  const [fullscreen, setFullScreen] = useState(false);
+
+  const changeFullScreen = () => {
+    setFullScreen(!playerRef.current.isFullscreen())
+    if (playerRef.current.isFullscreen()) {
+        playerRef.current.exitFullscreen();
+    } else {
+        playerRef.current.requestFullscreen();
+    }
+  }
 
   const clickplay = () => {
     if (playstate) {
@@ -35,14 +47,17 @@ function VideoPlayer({
   }
 
   const setAuto = (e) => {
-    console.log(e)
-    setAutoNext(e)
+    setAutoNext(e);
+    window.localStorage.setItem('autonext', e);
   }
 
   const changeVolume = (e) => {
     playerRef.current.volume(e/100);
   }
 
+  const setPlayBackRate = (e) => {
+    playerRef.current.playbackRate(e)
+  }
 
   useEffect(() => {
     const upDateBackGround = (playerRef, url)=> {
@@ -91,12 +106,15 @@ function VideoPlayer({
         // } else {
         //   setCurrentVideoIndex(0);
         // }
+        const autonext = window.localStorage.getItem('autonext') ? JSON.parse(window.localStorage.getItem('autonext')) : false;
+        console.log(autonext)
         if (autonext) {
+          
           setCurrentVideoIndex((prevIndex) => prevIndex + 1);
-          console.log(21371983791)
-          playerRef.current.play();
+          // console.log(21371983791)
+          // playerRef.current.play();
         } else {
-          playerRef.current.currentTime = 0; 
+          playerRef.current.currentTime(0); 
           playerRef.current.play();
         }
       });
@@ -106,6 +124,7 @@ function VideoPlayer({
         // } else {
         //   setCurrentVideoIndex(0);
         // }
+        setFullScreen(playerRef.current.isFullscreen());
         setVolume(Math.floor(playerRef.current.volume()*100));
       });
       // playerRef.current.on('ready', () => {
@@ -128,6 +147,14 @@ function VideoPlayer({
       });
       playerRef.current.on('volumechange', function() {
         setVolume(Math.floor(playerRef.current.volume() * 100))
+      });
+
+      playerRef.current.on('ratechange', function() {
+        setPlayRate(playerRef.current.playbackRate());
+      });
+
+      playerRef.current.on('fullscreenchange', function() {
+        setFullScreen(playerRef.current.isFullscreen());
       });
 
       playerRef.current.el().classList.add(styles['video-background']); 
@@ -197,10 +224,10 @@ function VideoPlayer({
   return (
     <>
       <div data-vjs-player className={styles['video-container']} >
-        <video ref={videoRef} id="specified-area" className={`vjs-default-skin ${styles['video-pos-js-9-16']} video-js`} controls></video>
+        <video ref={videoRef} id="specified-area" className={`vjs-default-skin video-js ${styles['video-pos-js-9-16']}`} controls></video>
         <SideBar/>
-      </div>
-      <FootBar ref={playerRef} 
+        <FootBar id='footbar'
+               ref={playerRef} 
                visible={footbarVis} 
                playstate={playstate} 
                timestate={timestate} 
@@ -209,7 +236,13 @@ function VideoPlayer({
                volumechange={changeVolume} 
                setauto={setAuto}
                autostate={autonext}
+               playbackrate={playrate}
+               setplaybackrate={setPlayBackRate}
+               fullscreen={fullscreen}
+               fullscreenchange={changeFullScreen}
+               
                />
+      </div>
     </>
   );
 };

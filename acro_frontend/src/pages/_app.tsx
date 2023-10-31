@@ -17,8 +17,6 @@ import GetUserInfo from '@/utils/getuserinfo';
 import changeTheme from '@/utils/changeTheme';
 import useStorage from '@/utils/useStorage';
 import Layout from './layout';
-import GetAxios from '@/utils/getaxios';
-import { userInfo } from 'os';
 
 const store = createStore(rootReducer);
 
@@ -58,11 +56,6 @@ export default function MyApp({
     store.dispatch({
       type: 'update-userInfo',
       payload: { userInfo: userinfo, userLoading: false},
-    });
-    var instance  = GetAxios()
-    store.dispatch({
-      type: 'update-baxios',
-      payload: { baxios: instance},
     });
   }
 

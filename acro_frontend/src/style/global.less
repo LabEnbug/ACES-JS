@@ -49,18 +49,21 @@ body[arco-theme='dark'] {
   height:calc(100% - 60px) !important;
 }
 
-.video-js .vjs-control-bar {
+.vjs-control-bar {
   width: 100%;
   height: 60px !important;; /* 调整为适合的高度 */
   position: absolute;
   background-color: transparent;
   flex-direction: column;
-  display: flex;
+  display: flex !important;
+}
+
+.vjs-poster img{
+  height: calc(100% - 60px) !important;
 }
 
 // /* 使进度条始终可见 */
 .vjs-control-bar {
-  opacity: 1 !important;
   visibility: visible !important;
 }
 

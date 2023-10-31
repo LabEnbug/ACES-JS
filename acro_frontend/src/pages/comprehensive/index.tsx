@@ -9,9 +9,9 @@ import axios from 'axios';
 import { useSelector, useDispatch } from 'react-redux';
 import store, { GlobalState } from '@/store';
 import { GlobalContext } from '@/context';
+import GetAxios from '@/utils/getaxios';
 
 function Comprehensive() {
-  const { baxios} = useSelector((state: GlobalState) => state);
   const t = useLocale(locale);
   const [playlist, SetPlayList] = useState<any>([])
   const [playindex, SetPlayIndex] = useState(0)
@@ -28,12 +28,16 @@ function Comprehensive() {
 
   useEffect(() => {
       if (playlist.length == 0) {
-          const params = {
-              limit,
-              page
-          }
+          // const params = {
+          //     limit,
+          //     page
+          // }   
+          const param = new FormData()
+          param.append('limit', limit)
+          param.append('page', page)
+          const baxios  = GetAxios()
           if (baxios) {
-            baxios.post('/v1-api/v1/video/list', {params})
+            baxios.post('/v1-api/v1/video/list', param)
             .then(response => {
                 const data = response.data
                 console.log(data)
@@ -46,7 +50,7 @@ function Comprehensive() {
             });
           }
       }
-  });
+  }, [limit, page]);
   return (
     <div className={styles.container}>
       <div className={styles.wrapper}>

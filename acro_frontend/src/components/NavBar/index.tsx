@@ -40,9 +40,9 @@ import styles from './style/index.module.less';
 import defaultLocale from '@/locale';
 import useStorage from '@/utils/useStorage';
 import { generatePermission } from '@/routes';
-import axios from 'axios';
-import CompoundedSpace from 'antd/es/space';
 import {useRouter} from "next/router";
+import GetAxios from '@/utils/getaxios';
+
 const FormItem = Form.Item;
 
 function Popup() {
@@ -56,7 +56,7 @@ function Popup() {
 
 function Navbar({ show }: { show: boolean }) {
   const t = useLocale();
-  const { userInfo, userLoading, baxios} = useSelector((state: GlobalState) => state);
+  const { userInfo, userLoading} = useSelector((state: GlobalState) => state);
   const dispatch = useDispatch();
   const [_, setUserStatus] = useStorage('userStatus');
   const [role, setRole] = useStorage('userRole', 'admin');
@@ -143,7 +143,8 @@ function Navbar({ show }: { show: boolean }) {
   };
 
   const handlelogout = () => {
-    console.log(baxios)
+    const baxios  = GetAxios()
+
     baxios.get('/v1-api/v1/user/logout')
     .then(response => {
       Message.info(t['navbar.menu.logout.message']);
@@ -212,6 +213,7 @@ function Navbar({ show }: { show: boolean }) {
   const [confirmLoading, setConfirmLoading] = useState(false);
 
   function onSignInOk() {
+      const baxios  = GetAxios()
       form.validate().then((res) => {
         console.log(res)
         const params = {
@@ -232,6 +234,7 @@ function Navbar({ show }: { show: boolean }) {
       })
   }
   function onSignUpOk() {
+      const baxios  = GetAxios()
       form.validate().then((res) => {
         console.log(res)
         const params = {

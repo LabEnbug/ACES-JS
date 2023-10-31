@@ -1,8 +1,9 @@
 import React, { forwardRef, useState } from 'react';
-import { Button, Tooltip, Space, Slider, Switch } from '@arco-design/web-react';
+import { Button, Tooltip, Space, Slider, Switch, Select, } from '@arco-design/web-react';
 import styles from './style/index.module.less';
 import cs from 'classnames';
 import { IconSound, IconMute } from '@arco-design/web-react/icon';
+import { FullScreen, OffScreen } from '@icon-park/react'
 import { PlayOne, Pause } from '@icon-park/react'
 import locale from './locale';
 import useLocale from '@/utils/useLocale';
@@ -36,7 +37,7 @@ function VolumeSlider(props) {
   
 
 function IconButton(props) {
-  const { icon, tooltip, onClick } = props;
+  const { icon, tooltip, onClick, className } = props;
   return (
     <Tooltip position='lt' trigger='hover' content={tooltip}>
         <Button
@@ -44,14 +45,14 @@ function IconButton(props) {
             shape="square"
             type="secondary"
             onClick={onClick}
-            className={cs(styles['icon-foot-button'])}
+            className={cs(className)}
         />
     </Tooltip>
   );
 }
 
 function FootBar(props, ref) {
-  const { visible, playstate, timestate, playclick, volume, volumechange, autostate, setauto } = props;
+  const { visible, playstate, timestate, playclick, volume, volumechange, autostate, setauto, playbackrate, setplaybackrate, fullscreen, fullscreenchange } = props;
   const t = useLocale(locale);
   return (
     <div>
@@ -69,12 +70,42 @@ function FootBar(props, ref) {
                             }
                             onClick = {playclick}
                             tooltip={t['tooltip.like']}
+                            className = {styles['icon-foot-button']}
                         />
                         <p className={styles['foot-time']}>{secondsToTimeFormat(timestate['now'])} {'/'} {secondsToTimeFormat(timestate['whole'])} </p>
                         <VolumeSlider value={volume} onChange={volumechange} />
                     </div>
                     <div className={styles['foot-group-right']}>
-                        <Switch checkedText='Auto' uncheckedText='Auto' onChange={setauto} defaultChecked={autostate}/>
+                        <Switch checkedText='Auto' uncheckedText='Auto' onChange={setauto} defaultChecked={autostate} className={autostate ? styles['foot-autoplay-on'] : styles['foot-autoplay-off']}/>
+                        <Select
+                            triggerElement={<p className={styles['foot-playback']}>{'倍速'}</p>}
+                            options={[
+                                { label: '2.0X', value: 2 },
+                                { label: '1.5X', value: 1.5 },
+                                { label: '1.25X', value: 1.25 },
+                                { label: '1.0X', value: 1 },
+                                { label: '0.5X', value: 0.5 },
+                            ]}
+                            value={playbackrate}
+                            triggerProps={{
+                                autoAlignPopupWidth: false,
+                                autoAlignPopupMinWidth: true,
+                                position: 'top',
+                            }}
+                            trigger="hover"
+                            onChange={setplaybackrate} />
+                        <IconButton 
+                            icon={
+                            <>
+                            {
+                                fullscreen ? <OffScreen theme="filled" size="28" fill="#ffffff"/> : <FullScreen theme="filled" size="28" fill="#ffffff"/> 
+                            }
+                            </>
+                            }
+                            onClick = {fullscreenchange}
+                            tooltip={t['tooltip.like']}
+                            className = {styles['icon-foot-fullscreen-button']}
+                        />
                     </div>
             </div>
             ) : <></>

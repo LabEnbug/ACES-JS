@@ -76,6 +76,18 @@
     background-color: transparent !important;
     border: 0px transparent  !important;
     margin-bottom: 5px;
+    margin-left: 5px;
+    // border: 10px solid var(--color-border-2);
+}
+
+.icon-foot-fullscreen-button {
+    font-size: 16px;
+    box-shadow: none;
+    outline: none;
+    background-color: transparent !important;
+    border: 0px transparent  !important;
+    margin-bottom: 5px;
+    margin-left: 10px;
     // border: 10px solid var(--color-border-2);
 }
 
@@ -108,7 +120,7 @@
 
 .foot-group-right {
     top: calc(100% - 55px);
-    margin-left: 60%;
+    right: 10px;
     height: 60px;
     position: absolute;
     z-index: 999;
@@ -116,9 +128,58 @@
     text-align: center; /* 使得文本水平居中 */
     align-items: center;
     flex-direction: row; 
+    cursor:pointer; 
 }
 
 .foot-time {
     margin-left: 5px;
     color: rgba(255,255,255,0.8);
+}
+
+.foot-playback {
+    margin-left: 10px;
+    color: rgba(255,255,255,0.8);
+    font-size:  15px; 
+}
+
+.foot-autoplay-off {
+    position: relative;
+    outline: none;
+    height: 24px;
+    line-height: 24px !important;
+    min-width: 40px;
+    background-color: var(--color-fill-4) !important;
+    border-radius: 12px;
+    border: none;
+    cursor: pointer;
+    -webkit-transition: background-color 0.2s cubic-bezier(0.34, 0.69, 0.1, 1);
+    -moz-transition: background-color 0.2s cubic-bezier(0.34, 0.69, 0.1, 1);
+    transition: background-color 0.2s cubic-bezier(0.34, 0.69, 0.1, 1);
+    padding: 0;
+    -webkit-box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    box-sizing: border-box;
+    vertical-align: middle;
+    overflow: hidden;
+}
+
+.foot-autoplay-on {
+    position: relative;
+    outline: none;
+    height: 24px;
+    line-height: 24px !important;
+    min-width: 40px;
+    background-color: rgb(var(--primary-6)) !important;
+    border-radius: 12px;
+    border: none;
+    cursor: pointer;
+    -webkit-transition: background-color 0.2s cubic-bezier(0.34, 0.69, 0.1, 1);
+    -moz-transition: background-color 0.2s cubic-bezier(0.34, 0.69, 0.1, 1);
+    transition: background-color 0.2s cubic-bezier(0.34, 0.69, 0.1, 1);
+    padding: 0;
+    -webkit-box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    box-sizing: border-box;
+    vertical-align: middle;
+    overflow: hidden;
 }
