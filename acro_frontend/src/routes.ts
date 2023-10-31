@@ -14,7 +14,11 @@ export type IRoute = AuthParams & {
 export const routes: IRoute[] = [
   {
     name: 'menu.video.comprehensive',
-    key: 'comprehensive',
+    key: 'video',
+  },
+  {
+    name: 'menu.video.beauty',
+    key: 'video?type=beauty',
   },
   {
     name: 'menu.search',

@@ -25,6 +25,7 @@ import { GlobalState } from '@/store';
 import getUrlParams from '@/utils/getUrlParams';
 import styles from '@/style/layout.module.less';
 import NoAccess from '@/pages/exception/403';
+import path from 'path';
 
 const MenuItem = Menu.Item;
 const SubMenu = Menu.SubMenu;
@@ -61,12 +62,12 @@ function PageLayout({ children }: { children: ReactNode }) {
   const urlParams = getUrlParams();
   const router = useRouter();
   const pathname = router.pathname;
+  const query = router.query;
   const currentComponent = qs.parseUrl(pathname).url.slice(1);
   const locale = useLocale();
   const { userInfo, settings, userLoading } = useSelector(
     (state: GlobalState) => state
   );
-
   const [collapsed, setCollapsed] = useState<boolean>(false);
 
   const [routes, defaultRoute] = useRoute(userInfo?.permissions);
@@ -172,7 +173,9 @@ function PageLayout({ children }: { children: ReactNode }) {
       }
       pathKeys.pop();
     }
-    setSelectedKeys(newSelectedKeys);
+    if (pathname.includes('video') && query['type']) {
+      setSelectedKeys([`video?type=${query['type']}`]);
+    } else setSelectedKeys(newSelectedKeys);
     setOpenKeys(newOpenKeys);
   }
 

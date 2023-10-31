@@ -21,8 +21,8 @@ function IconButton(props) {
   );
 }
 
-function LikeButton(props, ref) {
-  const { icon, className, ...rest } = props;
+function SideBar(props, ref) {
+  const { videoinfo, className, ...rest } = props;
   const t = useLocale(locale);
   return (
     <Space className={styles['icon-group']}
@@ -33,7 +33,7 @@ function LikeButton(props, ref) {
         icon={
           <>
           <Like theme="filled" size="36" fill="#ffffff" onClick={()=> {console.log('asdad')}}/>
-          <p >4728</p>
+          <p> {videoinfo['like_count']} </p>
           </>
         }
         tooltip={t['tooltip.like']}
@@ -42,7 +42,7 @@ function LikeButton(props, ref) {
         icon={
           <>
             <MessageUnread theme="filled" size="36" fill="#ffffff"/>
-            <p >4728</p>
+            <p >{videoinfo['comment_count']}</p>
           </>
         }
         tooltip={t['tooltip.comment']}
@@ -51,7 +51,7 @@ function LikeButton(props, ref) {
         icon={
           <>
             <Star theme="outline" size="36" fill="#ffffff"/>
-            <p >4728</p>
+            <p >{videoinfo['favorite_count']}</p>
           </>
         }
         tooltip={t['tooltip.collection']}
@@ -60,7 +60,7 @@ function LikeButton(props, ref) {
         icon={
           <>
             <ShareTwo theme="filled" size="36" fill="#ffffff"/>
-            <p >4728</p>
+            <p >{videoinfo['favorite_count']}</p>
           </>
         }
         tooltip={t['tooltip.forward']}
@@ -74,4 +74,4 @@ function LikeButton(props, ref) {
   );
 }
 
-export default forwardRef(LikeButton);
+export default forwardRef(SideBar);

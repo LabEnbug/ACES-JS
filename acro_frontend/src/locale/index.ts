@@ -66,8 +66,11 @@ const i18n = {
     'navbar.menu.logout.message': "logout success!",
     'navbar.model.signup.nickname': 'Nickname',
     'navbar.model.signup.message.error': 'Info Error!',
-    'menu.video.comprehensive': 'comprehensive',
-    'menu.search': 'Search Result'
+    'menu.video.comprehensive': 'Comprehensive',
+    'menu.search': 'Search Result',
+    'menu.video.beauty': 'Beauty',
+    'menu.video.kid': 'Kid',
+    'menu.video.exploration': 'Exploration',
   },
   'zh-CN': {
     'menu.dashboard': '仪表盘',
@@ -136,7 +139,10 @@ const i18n = {
     'navbar.menu.logout.message': "登出成功！",
     'navbar.model.signup.message.error': '信息有误',
     'menu.video.comprehensive': '综合',
-    'menu.search': '搜索结果'
+    'menu.search': '搜索结果',
+    'menu.video.beauty': '美女',
+    'menu.video.kid': '萌娃',
+    'menu.video.exploration': '探索',
   },
 };
 

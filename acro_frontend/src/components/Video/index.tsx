@@ -5,11 +5,13 @@ import 'video.js/dist/video-js.css';
 import { createCanvas, loadImage } from 'canvas'; 
 import SideBar from './sidebar';
 import FootBar from './footbar';
-import { set } from "video.js/dist/types/tech/middleware";
+import BriefIntri from './brief_intro'
 
 function VideoPlayer({
   hlsPlayList,
   playindex,
+  reflectplayindex,
+  recordhistory,
   options,
   ...props
 }) {
@@ -28,6 +30,17 @@ function VideoPlayer({
   const [volume, setVolume] = useState(0);
   const [playrate, setPlayRate] = useState(1);
   const [fullscreen, setFullScreen] = useState(false);
+  const [ videoinfo, setVideoInfo ] = useState({
+    nickname: 'default',
+    content: 'default',
+    comment_count: 0,
+    favorite_count: 0,
+    like_count: 0,
+    time: "2023-10-31T18:43:57+08:00",
+    video_uid:  null,
+    keyword: '#default',
+    share_count: 0,
+  });
 
   const changeFullScreen = () => {
     setFullScreen(!playerRef.current.isFullscreen())
@@ -89,6 +102,7 @@ function VideoPlayer({
     }
     console.log(hlsPlayList)
     const realindex = currentVideoIndex >= 0 ? currentVideoIndex % hlsPlayList.length : currentVideoIndex % hlsPlayList.length + hlsPlayList.length;
+    reflectplayindex(realindex)
     if (!playerRef.current && videoRef.current && hlsPlayList.length > 0) {
       playerRef.current = videojs(videoRef.current, {
         crossOrigin: "Anonymous",
@@ -96,7 +110,7 @@ function VideoPlayer({
         sources: [{ src: hlsPlayList[realindex]['play_url'], type: "application/x-mpegURL" }],
         poster: hlsPlayList[realindex]['cover_url'],
         preload: "auto",
-        autoplay: false,
+        autoplay: true,
         ...options
       });
   
@@ -107,9 +121,7 @@ function VideoPlayer({
         //   setCurrentVideoIndex(0);
         // }
         const autonext = window.localStorage.getItem('autonext') ? JSON.parse(window.localStorage.getItem('autonext')) : false;
-        console.log(autonext)
         if (autonext) {
-          
           setCurrentVideoIndex((prevIndex) => prevIndex + 1);
           // console.log(21371983791)
           // playerRef.current.play();
@@ -119,20 +131,13 @@ function VideoPlayer({
         }
       });
       playerRef.current.on('ready', () => {
-        // if (currentVideoIndex < hlsPlayList.length - 1) {
-        //   setCurrentVideoIndex((prevIndex) => prevIndex + 1);
-        // } else {
-        //   setCurrentVideoIndex(0);
-        // }
         setFullScreen(playerRef.current.isFullscreen());
         setVolume(Math.floor(playerRef.current.volume()*100));
       });
-      // playerRef.current.on('ready', () => {
-      //   setFootBarVis(true);
-      // })
       playerRef.current.on('play', ()=> {
         setFootBarVis(true);
-        setPlayState(true)
+        setPlayState(true);
+        recordhistory()
       })
       playerRef.current.on('pause', ()=> {
         setPlayState(false)
@@ -165,13 +170,27 @@ function VideoPlayer({
       playerRef.current.controlBar.removeChild('pictureInPictureToggle');
       upDateBackGround(playerRef, hlsPlayList[realindex]['cover_url'])
     } else if (playerRef.current && videoRef.current && hlsPlayList.length != 0) {
-      console.log(realindex)
       playerRef.current.src({
         src: hlsPlayList[realindex]['play_url'], type: "application/x-mpegURL" 
       })
       
       playerRef.current.poster(hlsPlayList[realindex]['cover_url'])
       upDateBackGround(playerRef, hlsPlayList[realindex]['cover_url'])
+    }
+    if (hlsPlayList.length > 0) {
+      console.log(hlsPlayList[realindex])
+      setVideoInfo({
+        nickname: hlsPlayList[realindex]['user']['nickname'],
+        content: hlsPlayList[realindex]['content'],
+        comment_count: hlsPlayList[realindex]['comment_count'],
+        favorite_count: hlsPlayList[realindex]['favorite_count'],
+        like_count: hlsPlayList[realindex]['like_count'],
+        video_uid:  hlsPlayList[realindex]['video_uid'],
+        time:  hlsPlayList[realindex]['upload_time'],
+        keyword: hlsPlayList[realindex]['keyword'],
+        share_count: 0
+      })
+      console.log(hlsPlayList[realindex]);
     }
   }, [hlsPlayList, options, currentVideoIndex]);
 
@@ -225,7 +244,7 @@ function VideoPlayer({
     <>
       <div data-vjs-player className={styles['video-container']} >
         <video ref={videoRef} id="specified-area" className={`vjs-default-skin video-js ${styles['video-pos-js-9-16']}`} controls></video>
-        <SideBar/>
+        <SideBar videoinfo={videoinfo} />
         <FootBar id='footbar'
                ref={playerRef} 
                visible={footbarVis} 
@@ -240,8 +259,8 @@ function VideoPlayer({
                setplaybackrate={setPlayBackRate}
                fullscreen={fullscreen}
                fullscreenchange={changeFullScreen}
-               
                />
+        <BriefIntri videoinfo={videoinfo} />
       </div>
     </>
   );

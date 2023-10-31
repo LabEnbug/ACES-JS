@@ -102,7 +102,6 @@ export default function MyApp({
     theme,
     setTheme,
   };
-
   return (
     <>
       <Head>
