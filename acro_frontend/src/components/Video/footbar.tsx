@@ -34,7 +34,7 @@ function VolumeSlider(props) {
       </Space>
     )
 }
-  
+
 
 function IconButton(props) {
   const { icon, tooltip, onClick, className } = props;
@@ -60,7 +60,7 @@ function FootBar(props, ref) {
             visible ? (
                 <div>
                     <div className={styles['foot-group-left']}>
-                        <IconButton 
+                        <IconButton
                             icon={
                             <>
                             {
@@ -69,7 +69,6 @@ function FootBar(props, ref) {
                             </>
                             }
                             onClick = {playclick}
-                            tooltip={t['tooltip.like']}
                             className = {styles['icon-foot-button']}
                         />
                         <p className={styles['foot-time']}>{secondsToTimeFormat(timestate['now'])} {'/'} {secondsToTimeFormat(timestate['whole'])} </p>
@@ -94,16 +93,16 @@ function FootBar(props, ref) {
                             }}
                             trigger="hover"
                             onChange={setplaybackrate} />
-                        <IconButton 
+                        <IconButton
                             icon={
                             <>
                             {
-                                fullscreen ? <OffScreen theme="filled" size="28" fill="#ffffff"/> : <FullScreen theme="filled" size="28" fill="#ffffff"/> 
+                                fullscreen ? <OffScreen theme="filled" size="28" fill="#ffffff"/> : <FullScreen theme="filled" size="28" fill="#ffffff"/>
                             }
                             </>
                             }
                             onClick = {fullscreenchange}
-                            tooltip={t['tooltip.like']}
+                            tooltip={t['tooltip.fullscreen']}
                             className = {styles['icon-foot-fullscreen-button']}
                         />
                     </div>

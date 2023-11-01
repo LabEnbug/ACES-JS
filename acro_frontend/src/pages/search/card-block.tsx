@@ -104,7 +104,10 @@ function CardBlock(props: CardBlockType) {
       keywords.map((keyword, index) => (
         <Tag
           key={index.toString()}
-          onClick={() => makeNewSearch(keyword)}
+          onClick={(event) => {
+            makeNewSearch(keyword);
+            event.stopPropagation();
+          }}
           style={{
             cursor: 'pointer',
             marginRight: '4px',
@@ -144,7 +147,7 @@ function CardBlock(props: CardBlockType) {
         <div className={styles['card-extra-like-count']} style={{ color: card.is_user_liked?'red':'#ffffff' }}>{card.like_count}</div>
       </div>
       {/* if saw before, show tag */}
-      {card.is_user_history ? (
+      {card.is_user_watched ? (
         <div className={styles['card-extra-seen']}>
           <Tag
             icon={<IconClockCircle />}
@@ -163,10 +166,11 @@ function CardBlock(props: CardBlockType) {
             [styles['title-more']]: visible,
           })}
         >
-          <div style={{ display: 'flex' }} onClick={() => {
+          <div style={{ display: 'flex' }} onClick={(event) => {
             router.push({
               pathname: `/user/${card.user.username}`,
             });
+            event.stopPropagation();
           }}>
             { /* add avatar to the left */}
             <Avatar size={40} style={{ marginTop: '4px' }}>
@@ -200,10 +204,11 @@ function CardBlock(props: CardBlockType) {
         <div
           className={styles.usercard}
           style={{ display: 'flex' }}
-          onClick={() => {
+          onClick={(event) => {
             router.push({
               pathname: `/user/${card.username}`,
             });
+            event.stopPropagation();
           }}
         >
           { /* add avatar to the left */}

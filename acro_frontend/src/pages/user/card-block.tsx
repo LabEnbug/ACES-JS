@@ -22,7 +22,7 @@ import IconButton from "@/components/NavBar/IconButton";
 import {IconClockCircle, IconShake} from "@arco-design/web-react/icon";
 
 interface CardBlockType {
-  type: 'uploaded' | 'like' | 'favorite' | 'history' ;
+  type: 'uploaded' | 'like' | 'favorite' | 'watched' ;
   card: VideoCard;
   watching_username: string;
   loading?: boolean;
@@ -52,6 +52,14 @@ function CardBlock(props: CardBlockType) {
     });
   }
 
+  function goToVideoPage(video_uid: string) {
+    router.push({
+      pathname: `/video`,
+      query: {
+        video_uid: video_uid,
+      },
+    });
+  }
 
   useEffect(() => {
     setLoading(props.loading);
@@ -93,7 +101,10 @@ function CardBlock(props: CardBlockType) {
       keywords.map((keyword, index) => (
         <Tag
           key={index.toString()}
-          onClick={() => makeNewSearch(keyword)}
+          onClick={(event) => {
+            makeNewSearch(keyword);
+            event.stopPropagation();
+          }}
           style={{
             cursor: 'pointer',
             marginRight: '4px',
@@ -115,6 +126,7 @@ function CardBlock(props: CardBlockType) {
       bordered={true}
       className={className}
       size="small"
+      onClick={() => {goToVideoPage(card.video_uid)}}
       // cover_url as background image, width 100% and height 100%
       style={{
         backgroundImage: `url(${card.cover_url})`,
@@ -126,13 +138,16 @@ function CardBlock(props: CardBlockType) {
     >
       <div className={styles['card-extra-like']}>
         <IconButton
-          icon={<Like theme="filled" size="24" fill={card.is_user_liked?"red":"#ffffff"} onClick={()=> {console.log(card)}}/>}
+          icon={<Like theme="filled" size="24" fill={card.is_user_liked?"red":"#ffffff"} onClick={(event)=> {
+            console.log(card);
+            event.stopPropagation();
+          }}/>}
         />
         { /* if liked, show red count text */ }
-        <div className={styles['card-extra-like-count']} style={{ color: card.is_user_liked?'red':'#ffffff' }}>{card.like_count}</div>
+        <div className={styles['card-extra-like-count']} style={{ color: card.is_user_liked?'red':'#ffffff' }}>{card.be_liked_count}</div>
       </div>
       {/* if saw before, show tag */}
-      {card.is_user_history && type !== 'history' ? (
+      {card.is_user_watched && type !== 'watched' ? (
         <div className={styles['card-extra-seen']}>
           <Tag
             icon={<IconClockCircle />}
@@ -151,10 +166,11 @@ function CardBlock(props: CardBlockType) {
             [styles['title-more']]: visible,
           })}
         >
-          <div style={{ display: 'flex' }} onClick={() => {
+          <div style={{ display: 'flex' }} onClick={(event) => {
             card.user.username !== watching_username ? router.push({
               pathname: '/user/' + card.user.username,
             }) : null;
+            event.stopPropagation();
           }}>
             { /* add avatar to the left */}
             <Avatar size={40} style={{ marginTop: '4px' }}>

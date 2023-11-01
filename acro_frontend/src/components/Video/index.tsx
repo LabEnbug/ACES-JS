@@ -9,38 +9,41 @@ import BriefIntri from './brief_intro'
 
 function VideoPlayer({
   hlsPlayList,
-  playindex,
-  reflectplayindex,
-  recordhistory,
+  playIndex,
+  reflectPlayIndex,
+  recordWatched,
   options,
   ...props
 }) {
   const videoRef = useRef(null);
   const playerRef = useRef(null);
-  const [currentVideoIndex, setCurrentVideoIndex] = useState(playindex);
+  const [currentVideoIndex, setCurrentVideoIndex] = useState(playIndex);
   const canvas = createCanvas(400, 400);
   const ctx = canvas.getContext('2d');
-  const [footbarVis, setFootBarVis] = useState(false);
+  const [footBarVis, setFootBarVis] = useState(false);
   const [playstate, setPlayState] = useState(false);
   const [timestate, setTimeState] = useState({
     'now': 0,
     'whole': 0
   });
-  const [autonext, setAutoNext] = useState(false);
+  const [autoNext, setAutoNext] = useState(true);
   const [volume, setVolume] = useState(0);
   const [playrate, setPlayRate] = useState(1);
   const [fullscreen, setFullScreen] = useState(false);
-  const [ videoinfo, setVideoInfo ] = useState({
+  const [videoinfo, setVideoInfo ] = useState({
     nickname: 'default',
+    username: 'default',
     content: 'default',
-    comment_count: 0,
-    favorite_count: 0,
-    like_count: 0,
-    time: "2023-10-31T18:43:57+08:00",
+    be_commented_count: 0,
+    be_favorite_count: 0,
+    be_liked_count: 0,
+    be_forwarded_count: 0,
+    be_watched_count: 0,
+    time: "2023-10-31T18:43:57.000Z",
     video_uid:  null,
     keyword: '#default',
-    share_count: 0,
   });
+
 
   const changeFullScreen = () => {
     setFullScreen(!playerRef.current.isFullscreen())
@@ -51,8 +54,8 @@ function VideoPlayer({
     }
   }
 
-  const clickplay = () => {
-    if (playstate) {
+  const clickPlay = () => {
+    if (!playstate) {
       playerRef.current.pause();
     } else {
       playerRef.current.play();
@@ -85,24 +88,24 @@ function VideoPlayer({
       // 在图像上应用滤镜效果
       // 将处理后的图像数据作为背景图片
         const filteredImageData = ctx.canvas.toDataURL('image/jpeg');
-        // playerRef.current.el().classList.add(containerStyle); 
+        // playerRef.current.el().classList.add(containerStyle);
         // 图像加载完成后，将其设置为背景图像
         playerRef.current.el().style.backgroundColor = 'blue';
         playerRef.current.el().style.backgroundImage = `url(${filteredImageData})`;
         // playerRef.current.el().style.filter = 'blur(10px)';
       };
-  
+
       // 设置图像的加载失败回调（可选）
       img.onerror = () => {
         console.error('Failed to load image');
       };
-  
+
       // 开始加载图像
       img.src = url;
     }
     console.log(hlsPlayList)
     const realindex = currentVideoIndex >= 0 ? currentVideoIndex % hlsPlayList.length : currentVideoIndex % hlsPlayList.length + hlsPlayList.length;
-    reflectplayindex(realindex)
+    reflectPlayIndex(realindex);
     if (!playerRef.current && videoRef.current && hlsPlayList.length > 0) {
       playerRef.current = videojs(videoRef.current, {
         crossOrigin: "Anonymous",
@@ -113,20 +116,20 @@ function VideoPlayer({
         autoplay: true,
         ...options
       });
-  
+
       playerRef.current.on('ended', () => {
         // if (currentVideoIndex < hlsPlayList.length - 1) {
         //   setCurrentVideoIndex((prevIndex) => prevIndex + 1);
         // } else {
         //   setCurrentVideoIndex(0);
         // }
-        const autonext = window.localStorage.getItem('autonext') ? JSON.parse(window.localStorage.getItem('autonext')) : false;
-        if (autonext) {
+        const autoNext = window.localStorage.getItem('autonext') ? JSON.parse(window.localStorage.getItem('autonext')) : false;
+        if (autoNext) {
           setCurrentVideoIndex((prevIndex) => prevIndex + 1);
           // console.log(21371983791)
           // playerRef.current.play();
         } else {
-          playerRef.current.currentTime(0); 
+          playerRef.current.currentTime(0);
           playerRef.current.play();
         }
       });
@@ -136,15 +139,15 @@ function VideoPlayer({
       });
       playerRef.current.on('play', ()=> {
         setFootBarVis(true);
-        setPlayState(true);
-        recordhistory()
+        setPlayState(false);
+        recordWatched();
       })
       playerRef.current.on('pause', ()=> {
-        setPlayState(false)
+        setPlayState(true)
       })
       playerRef.current.on('timeupdate', function() {
         const currentPlayTime = playerRef.current.currentTime();
-        const totalDuration = playerRef.current.duration();  
+        const totalDuration = playerRef.current.duration();
         setTimeState({
           'now': currentPlayTime,
           'whole': totalDuration
@@ -162,7 +165,7 @@ function VideoPlayer({
         setFullScreen(playerRef.current.isFullscreen());
       });
 
-      playerRef.current.el().classList.add(styles['video-background']); 
+      playerRef.current.el().classList.add(styles['video-background']);
       playerRef.current.controlBar.getChild('playToggle').hide();
       playerRef.current.controlBar.getChild('VolumePanel').hide();
       playerRef.current.controlBar.getChild('FullscreenToggle').hide();
@@ -171,9 +174,9 @@ function VideoPlayer({
       upDateBackGround(playerRef, hlsPlayList[realindex]['cover_url'])
     } else if (playerRef.current && videoRef.current && hlsPlayList.length != 0) {
       playerRef.current.src({
-        src: hlsPlayList[realindex]['play_url'], type: "application/x-mpegURL" 
+        src: hlsPlayList[realindex]['play_url'], type: "application/x-mpegURL"
       })
-      
+
       playerRef.current.poster(hlsPlayList[realindex]['cover_url'])
       upDateBackGround(playerRef, hlsPlayList[realindex]['cover_url'])
     }
@@ -181,14 +184,16 @@ function VideoPlayer({
       console.log(hlsPlayList[realindex])
       setVideoInfo({
         nickname: hlsPlayList[realindex]['user']['nickname'],
+        username: hlsPlayList[realindex]['user']['username'],
         content: hlsPlayList[realindex]['content'],
-        comment_count: hlsPlayList[realindex]['comment_count'],
-        favorite_count: hlsPlayList[realindex]['favorite_count'],
-        like_count: hlsPlayList[realindex]['like_count'],
+        be_commented_count: hlsPlayList[realindex]['be_commented_count'],
+        be_favorite_count: hlsPlayList[realindex]['be_favorite_count'],
+        be_liked_count: hlsPlayList[realindex]['be_liked_count'],
+        be_forwarded_count: hlsPlayList[realindex]['be_forwarded_count'],
+        be_watched_count: hlsPlayList[realindex]['be_watched_count'],
         video_uid:  hlsPlayList[realindex]['video_uid'],
         time:  hlsPlayList[realindex]['upload_time'],
         keyword: hlsPlayList[realindex]['keyword'],
-        share_count: 0
       })
       console.log(hlsPlayList[realindex]);
     }
@@ -208,7 +213,7 @@ function VideoPlayer({
   useEffect(() => {
     const handleMouseWheel = (event) => {
       const specifiedArea = document.getElementById('specified-area');
-      if (specifiedArea && specifiedArea.contains(event.target)) { 
+      if (specifiedArea && specifiedArea.contains(event.target)) {
         if (event.deltaY > 5) {
           setCurrentVideoIndex((prevIndex) =>
             prevIndex + 1
@@ -246,19 +251,19 @@ function VideoPlayer({
         <video ref={videoRef} id="specified-area" className={`vjs-default-skin video-js ${styles['video-pos-js-9-16']}`} controls></video>
         <SideBar videoinfo={videoinfo} />
         <FootBar id='footbar'
-               ref={playerRef} 
-               visible={footbarVis} 
-               playstate={playstate} 
-               timestate={timestate} 
-               playclick={clickplay} 
-               volume={volume} 
-               volumechange={changeVolume} 
-               setauto={setAuto}
-               autostate={autonext}
-               playbackrate={playrate}
-               setplaybackrate={setPlayBackRate}
-               fullscreen={fullscreen}
-               fullscreenchange={changeFullScreen}
+                 ref={playerRef}
+                 visible={footBarVis}
+                 playstate={playstate}
+                 timestate={timestate}
+                 playclick={clickPlay}
+                 volume={volume}
+                 volumechange={changeVolume}
+                 setauto={setAuto}
+                 autoNext={autoNext}
+                 playbackrate={playrate}
+                 setplaybackrate={setPlayBackRate}
+                 fullscreen={fullscreen}
+                 fullscreenchange={changeFullScreen}
                />
         <BriefIntri videoinfo={videoinfo} />
       </div>

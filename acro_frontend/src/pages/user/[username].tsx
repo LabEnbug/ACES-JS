@@ -10,7 +10,7 @@ import {useRouter} from "next/router";
 import {GlobalState} from "@/store";
 import {Empty} from "@arco-design/web-react";
 import {Popconfirm} from "@arco-design/web-react";
-import {IconLoading} from "@arco-design/web-react/icon";
+import {IconCheck, IconLoading, IconMinus, IconMinusCircle, IconPlus} from "@arco-design/web-react/icon";
 import active from "@antv/g2/src/interaction/action/element/active";
 import GetAxios from "@/utils/getaxios";
 
@@ -21,6 +21,8 @@ const defaultVideoList = new Array(0).fill({});
 export default function ListSearchResult() {
   const t = useLocale(locale);
   const [loading, setLoading] = useState(true);
+  const [followLoading, setFollowLoading] = useState(false);
+  const [followHovering, setFollowHovering] = useState(false);
   const [videoData, setVideoData] = useState(defaultVideoList);
   const [videoNum, setVideoNum] = useState({});
 
@@ -88,7 +90,7 @@ export default function ListSearchResult() {
     setLoading(true);
     let param = new FormData();
     param.append('user_id', userid);
-    param.append('action_history', t);
+    param.append('relation', t);
     // sleep
     // await new Promise(resolve => setTimeout(resolve, 3000));
     const baxios = GetAxios();
@@ -117,7 +119,7 @@ export default function ListSearchResult() {
     setLoading(true);
     let param = new FormData();
     param.append('user_id', userid);
-    param.append('action_history', t);
+    param.append('relation', t);
     let s = videoData.length;
     param.append('start', s.toString());
     const baxios = GetAxios();
@@ -144,10 +146,12 @@ export default function ListSearchResult() {
       .finally(() => setLoading(false));
   }
 
+  // todo: need to fix first enter page will not update the videoNum bug
+
   useEffect(() => {
     if (router.isReady && username) {
-      setVideoData(defaultVideoList);
       setUserData(null);
+      setVideoData(defaultVideoList);
       (isSelf ? getSelfInfoData() : getUserInfoData(username));
     }
   }, [router.isReady, username]);
@@ -159,8 +163,6 @@ export default function ListSearchResult() {
       getVideoData(userData.user_id, activeKey);
     }
   }, [activeKey]);
-
-
 
   useEffect(() => {
     if (!loading && listRef.current) {
@@ -215,6 +217,28 @@ export default function ListSearchResult() {
     });
   }
 
+  const followUser = (follow) => {
+    setFollowLoading(true);
+    const baxios = GetAxios();
+    let params = new FormData();
+    params.append('user_id', userData.user_id);
+    params.append('action', follow?'unfollow':'follow');
+    baxios.post('/v1-api/v1/user/follow', params)
+      .then(response => {
+        const data = response.data
+        if (data.status !== 200) {
+          console.error(data.err_msg);
+          return;
+        }
+        (isSelf ? getSelfInfoData() : getUserInfoData(username))
+
+      })
+      .catch(error => {
+        console.error(error);
+      })
+      .finally(() => {setFollowLoading(false);});
+  }
+
   return (
     <>
       <Card className={styles['info-wrapper']}>
@@ -242,17 +266,29 @@ export default function ListSearchResult() {
               <div className={styles.nickname}>
                 {userData?userData.nickname:''}
                 {isSelf?(
-                    <Popconfirm
-                      position='bottom'
-                      icon={null}
-                      title={<Input placeholder='请输入新的昵称' value={nicknameForChange} onChange={(e) => setNicknameForChange(e)}/>}
-                      okText='修改'
-                      cancelText='取消'
-                      onOk={handleChangeNickname}
-                      onCancel={() => {console.log('cancel')}}
-                    >
-                      <Button type="text" className={styles['change-nickname']}>修改昵称</Button>
-                    </Popconfirm>
+                  <Popconfirm
+                    position='bottom'
+                    icon={null}
+                    title={<Input placeholder='请输入新的昵称' value={nicknameForChange} onChange={(e) => setNicknameForChange(e)}/>}
+                    okText='修改'
+                    cancelText='取消'
+                    onOk={handleChangeNickname}
+                    onCancel={() => {console.log('cancel')}}
+                  >
+                    <Button type="outline" className={styles['change-nickname']}>修改昵称</Button>
+                  </Popconfirm>
+                ):userData?(
+                  <Button
+                    type={userData.be_followed ? "secondary" : "primary"}
+                          className={styles['interest']}
+                    icon={userData.be_followed ? (followHovering ? <IconMinusCircle /> : <IconCheck />) : <IconPlus />}
+                    onClick={() => {followUser(userData.be_followed)}}
+                    loading={followLoading}
+                    onMouseEnter={() => setFollowHovering(true)}
+                    onMouseLeave={() => setFollowHovering(false)}
+                  >
+                    {userData.be_followed ? (followHovering ? "取消" : "已") : null}关注
+                  </Button>
                 ):null}
               </div>
               <div className={styles.username}>@{userData?userData.username:''}</div>
@@ -273,10 +309,10 @@ export default function ListSearchResult() {
               onChange={setActiveKey}
             >
               <Tabs.TabPane key="uploaded" title={t['cardList.tab.title.uploaded'] + (videoNum['uploaded']&&videoNum['uploaded']!==0?" ("+videoNum['uploaded']+")":"")} />
-              <Tabs.TabPane key="like" title={t['cardList.tab.title.like'] + (videoNum['like']&&videoNum['like']!==0?" ("+videoNum['like']+")":"")} />
+              <Tabs.TabPane key="liked" title={t['cardList.tab.title.liked'] + (videoNum['liked']&&videoNum['liked']!==0?" ("+videoNum['liked']+")":"")} />
               <Tabs.TabPane key="favorite" title={t['cardList.tab.title.favorite'] + (videoNum['favorite']&&videoNum['favorite']!==0?" ("+videoNum['favorite']+")":"")} />
-              {/* history is only for self */ }
-              {isSelf ? <Tabs.TabPane key="history" title={t['cardList.tab.title.history'] + (videoNum['history']&&videoNum['history']!==0?" ("+videoNum['history']+")":"")} /> : null}
+              {/* watched is only for self */ }
+              {isSelf ? <Tabs.TabPane key="watched" title={t['cardList.tab.title.watched'] + (videoNum['watched']&&videoNum['watched']!==0?" ("+videoNum['watched']+")":"")} /> : null}
             </Tabs>
             <Divider />
             <List
@@ -311,14 +347,14 @@ export default function ListSearchResult() {
                 videoData.length === 0 ? (
                   <ContentContainer>
             <span style={{color: 'var(--color-text-3)', marginBottom: '4px',}}>
-              { /* uploaded, like, favorite, history info */ }
-              {`${isSelf ? '您' : '该用户'}还没有${activeKey === 'uploaded' ? '上传' : activeKey === 'like' ? '点赞' : activeKey === 'favorite' ? '收藏' : '观看'}过任何视频`}
+              { /* uploaded, liked, favorite, watched info */ }
+              {`${isSelf ? '您' : '该用户'}还没有${activeKey === 'uploaded' ? '上传' : activeKey === 'liked' ? '点赞' : activeKey === 'favorite' ? '收藏' : '观看'}过任何视频`}
             </span>
                   </ContentContainer>
                 ) : (
                   <ContentContainer>
                     <Button type='text' onClick={() => { getMoreData(userData.user_id, activeKey) }}>
-                      {`加载更多${activeKey === 'uploaded' ? '上传' : activeKey === 'like' ? '点赞' : activeKey === 'favorite' ? '收藏' : '观看'}的视频`}
+                      {`加载更多${activeKey === 'uploaded' ? '上传' : activeKey === 'liked' ? '点赞' : activeKey === 'favorite' ? '收藏' : '观看过'}的视频`}
                     </Button>
                   </ContentContainer>
                 )

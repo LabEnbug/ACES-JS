@@ -33,7 +33,7 @@ function SideBar(props, ref) {
         icon={
           <>
           <Like theme="filled" size="36" fill="#ffffff" onClick={()=> {console.log('asdad')}}/>
-          <p> {videoinfo['like_count']} </p>
+          <p> {videoinfo['be_liked_count']} </p>
           </>
         }
         tooltip={t['tooltip.like']}
@@ -42,7 +42,7 @@ function SideBar(props, ref) {
         icon={
           <>
             <MessageUnread theme="filled" size="36" fill="#ffffff"/>
-            <p >{videoinfo['comment_count']}</p>
+            <p >{videoinfo['be_commented_count']}</p>
           </>
         }
         tooltip={t['tooltip.comment']}
@@ -51,7 +51,7 @@ function SideBar(props, ref) {
         icon={
           <>
             <Star theme="outline" size="36" fill="#ffffff"/>
-            <p >{videoinfo['favorite_count']}</p>
+            <p >{videoinfo['be_favorite_count']}</p>
           </>
         }
         tooltip={t['tooltip.collection']}
@@ -60,7 +60,7 @@ function SideBar(props, ref) {
         icon={
           <>
             <ShareTwo theme="filled" size="36" fill="#ffffff"/>
-            <p >{videoinfo['favorite_count']}</p>
+            <p >{videoinfo['be_forwarded_count']}</p>
           </>
         }
         tooltip={t['tooltip.forward']}
