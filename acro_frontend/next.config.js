@@ -39,7 +39,11 @@ module.exports = withLess(
           destination: '/video',
           permanent: true,
         },
-        
+        {
+          source: '/user',
+          destination: '/user/self',
+          permanent: true,
+        },
       ];
     },
     pageExtensions: ['tsx'],

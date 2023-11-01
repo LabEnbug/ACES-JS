@@ -13,7 +13,7 @@ import styles from './style/index.module.less';
 import {useRouter} from "next/router";
 import {IconRefresh} from "@arco-design/web-react/icon";
 
-function DropContent() {
+function DropContent({setSearchPopupBoxVisible}) {
   const t = useLocale();
   const [loading, setLoading] = useState(false);
   const [hotkeysData, setHotkeysData] = useState([]);
@@ -73,6 +73,8 @@ function DropContent() {
                          q: item,
                        },
                      });
+                     // close popup box
+                     setSearchPopupBoxVisible(false);
                    }}
                    onClose={() => {
                       const searchHistory = getSearchHistory();
@@ -103,6 +105,8 @@ function DropContent() {
                          q: item,
                        },
                      });
+                     // close popup box
+                     setSearchPopupBoxVisible(false);
                    }}>{item}</div>
               ))}
           </div>
@@ -112,18 +116,21 @@ function DropContent() {
   );
 }
 
-function SearchPopupBox({children}) {
+function SearchPopupBox({children, searchPopupBoxVisible, setSearchPopupBoxVisible}) {
   return (
     <Trigger
-      trigger="click"
-      popup={() => <DropContent/>}
+      // trigger={'click'}
+      onClick={() => setSearchPopupBoxVisible(!searchPopupBoxVisible)}
+      onClickOutside={() => setSearchPopupBoxVisible(false)}
+      popup={() => <DropContent setSearchPopupBoxVisible={setSearchPopupBoxVisible}/>}
       position="bottom"
       unmountOnExit={false}
       popupAlign={{bottom: 4}}
+      popupVisible={searchPopupBoxVisible}
     >
-      <Badge count={9} dot>
+      {/*<Badge count={9} dot>*/}
         {children}
-      </Badge>
+      {/*</Badge>*/}
     </Trigger>
   );
 }

@@ -22,17 +22,15 @@ import IconButton from "@/components/NavBar/IconButton";
 import {IconClockCircle, IconShake} from "@arco-design/web-react/icon";
 
 interface CardBlockType {
-  type: 'video' | 'user' ;
-  card: VideoCard | UserCard;
+  type: 'uploaded' | 'like' | 'favorite' | 'history' ;
+  card: VideoCard;
+  watching_username: string;
   loading?: boolean;
 }
 
-
-
 function CardBlock(props: CardBlockType) {
-  const { type, card = {} } = props;
+  const { type, card = {}, watching_username } = props;
   const [visible, setVisible] = useState(false);
-  const [status, setStatus] = useState(card.status);
   const [loading, setLoading] = useState(props.loading);
 
   const t = useLocale(locale);
@@ -50,15 +48,6 @@ function CardBlock(props: CardBlockType) {
       pathname: '/search',
       query: {
         q: keyword,
-      },
-    });
-  }
-
-  function goToVideoPage(video_uid: string) {
-    router.push({
-      pathname: `/video`,
-      query: {
-        video_uid: video_uid,
       },
     });
   }
@@ -118,15 +107,14 @@ function CardBlock(props: CardBlockType) {
     );
   };
 
-  const className = cs(styles['card-block'], styles[`${type}-card`], styles[`zoom`]);
+  const className = cs(styles['card-block'], styles[`video-card`], styles[`zoom`]);
 
 
-  return type === 'video' ? (
+  return (
     <Card
       bordered={true}
       className={className}
       size="small"
-      onClick={() => {goToVideoPage(card.video_uid)}}
       // cover_url as background image, width 100% and height 100%
       style={{
         backgroundImage: `url(${card.cover_url})`,
@@ -144,7 +132,7 @@ function CardBlock(props: CardBlockType) {
         <div className={styles['card-extra-like-count']} style={{ color: card.is_user_liked?'red':'#ffffff' }}>{card.like_count}</div>
       </div>
       {/* if saw before, show tag */}
-      {card.is_user_history ? (
+      {card.is_user_history && type !== 'history' ? (
         <div className={styles['card-extra-seen']}>
           <Tag
             icon={<IconClockCircle />}
@@ -154,7 +142,7 @@ function CardBlock(props: CardBlockType) {
           >观看过</Tag>
         </div>
       ) : null}
-      {/* todo: if uploaded by this user, show video control */}
+      {/* if uploaded by this user, video control */}
 
       <div className={styles['card-block-mask']}>
         {/*<div style={{ marginTop: '280px' }}></div>*/}
@@ -164,16 +152,16 @@ function CardBlock(props: CardBlockType) {
           })}
         >
           <div style={{ display: 'flex' }} onClick={() => {
-            router.push({
-              pathname: `/user/${card.user.username}`,
-            });
+            card.user.username !== watching_username ? router.push({
+              pathname: '/user/' + card.user.username,
+            }) : null;
           }}>
             { /* add avatar to the left */}
             <Avatar size={40} style={{ marginTop: '4px' }}>
               {card.user?(card.user.avatar_url?<img src={card.user.avatar_url} />:card.user.nickname):'A'}
             </Avatar>
             <div style={{
-              marginLeft: '8px',
+              marginLeft: '8px'
             }}>
               <div className={styles.nickname}>{card.user?card.user.nickname:''}</div>
               <div className={styles.username}>@{card.user?card.user.username:''}</div>
@@ -183,37 +171,6 @@ function CardBlock(props: CardBlockType) {
           <div className={styles.content} >{card.content}</div>
           <div className={styles.keyword}>{parseKeyword(card.keyword)}</div>
           <div className={styles.time}>{parseTime(card.upload_time)}</div>
-        </div>
-      </div>
-    </Card>
-  ) : (
-    <Card
-      bordered={true}
-      className={className}
-      size="small"
-    >
-      <div
-        className={cs(styles.title, {
-          [styles['title-more']]: visible,
-        })}
-      >
-        <div
-          className={styles.usercard}
-          style={{ display: 'flex' }}
-          onClick={() => {
-            router.push({
-              pathname: `/user/${card.username}`,
-            });
-          }}
-        >
-          { /* add avatar to the left */}
-          <Avatar size={50} style={{ marginTop: '0' }}>
-            {card?(card.avatar_url?<img src={card.avatar_url} />:card.nickname):'A'}
-          </Avatar>
-          <div style={{ marginLeft: '8px' }}>
-            <div className={styles.nickname}>{card?card.nickname:''}</div>
-            <div className={styles.username}>@{card?card.username:''}</div>
-          </div>
         </div>
       </div>
     </Card>

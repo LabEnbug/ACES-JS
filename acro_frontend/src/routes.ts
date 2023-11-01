@@ -23,6 +23,12 @@ export const routes: IRoute[] = [
   {
     name: 'menu.search',
     key: 'search',
+    ignore: true,
+  },
+  {
+    name: 'menu.user',
+    key: 'user/[username]',
+    ignore: true,
   },
   {
     name: 'menu.dashboard',
@@ -145,20 +151,6 @@ export const routes: IRoute[] = [
       {
         name: 'menu.exception.500',
         key: 'exception/500',
-      },
-    ],
-  },
-  {
-    name: 'menu.user',
-    key: 'user',
-    children: [
-      {
-        name: 'menu.user.info',
-        key: 'user/info',
-      },
-      {
-        name: 'menu.user.setting',
-        key: 'user/setting',
       },
     ],
   },

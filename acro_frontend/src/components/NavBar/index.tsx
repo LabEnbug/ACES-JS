@@ -66,7 +66,7 @@ function Navbar({ show }: { show: boolean }) {
   const router = useRouter();
   const [searchKeyword, setSearchKeyword] = useState('');
 
-
+  const [searchPopupBoxVisible, setSearchPopupBoxVisible] = useState(false);
 
   const showSignInModal = () => {
     SetSignInModel(true);
@@ -216,11 +216,14 @@ function Navbar({ show }: { show: boolean }) {
       const baxios  = GetAxios()
       form.validate().then((res) => {
         console.log(res)
-        const params = {
-          username: res.username,
-          password: res.password
-        }
-        baxios.get('/v1-api/v1/user/login', { params })
+        // const params = {
+        //   username: res.username,
+        //   password: res.password
+        // }
+        const params = new FormData();
+        params.append('username', res.username);
+        params.append('password', res.password);
+        baxios.post('/v1-api/v1/user/login', params)
         .then(response => {
           const data = response.data
           localStorage.setItem('userInfo', JSON.stringify(data))
@@ -266,6 +269,8 @@ function Navbar({ show }: { show: boolean }) {
         q: searchKeyword,
       },
     });
+    // close popup box
+    setSearchPopupBoxVisible(false);
   }
 
   const formItemLayout = {
@@ -282,18 +287,19 @@ function Navbar({ show }: { show: boolean }) {
       <div className={styles.left}>
         <div className={styles.logo}>
           <Logo />
-          <div className={styles['logo-name']}>Arco Pro</div>
+          {/*<div className={styles['logo-name']}>ACES 短视频</div>*/}
         </div>
       </div>
       <ul className={styles.right}>
         <li>
-          <SearchPopupBox>
+          <SearchPopupBox searchPopupBoxVisible={searchPopupBoxVisible} setSearchPopupBoxVisible={setSearchPopupBoxVisible}>
             <Input.Search
+              // after enter, popupBox should be closed
               value={searchKeyword}
               onChange={(e) => setSearchKeyword(e)}
               className={styles.round + ' ' + styles['search-input']}
               placeholder={t['navbar.search.placeholder']}
-              onSearch={handleSearchSubmit}
+              onSearch={searchKeyword !== '' && handleSearchSubmit}
             />
           </SearchPopupBox>
           {/*<Trigger*/}
