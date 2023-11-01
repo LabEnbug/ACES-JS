@@ -2,7 +2,6 @@ package main
 
 import (
 	"backend/auth"
-	"backend/common"
 	"backend/config"
 	"backend/database"
 	"backend/model"
@@ -43,22 +42,40 @@ func SendJSONResponse(w http.ResponseWriter, status int, data interface{}, error
 	w.Header().Set("Content-Type", "application/json")
 	_, err = w.Write(jsonResponse)
 	if err != nil {
+		if config.ShowLog {
+			funcName, _, _, _ := runtime.Caller(0)
+			log.Println(runtime.FuncForPC(funcName).Name(), "err: ", err)
+		}
 		return
 	}
 }
 
 func defaultPage(w http.ResponseWriter, r *http.Request) {
 	// parse form
-	err := r.ParseForm()
+	err := r.ParseMultipartForm(config.MaxNormalPostSize64)
 	if err != nil {
+		if config.ShowLog {
+			funcName, _, _, _ := runtime.Caller(0)
+			log.Println(runtime.FuncForPC(funcName).Name(), "err: ", err)
+		}
 		return
 	}
-	for k, v := range r.Form {
-		funcName, _, _, _ := runtime.Caller(0)
-		log.Println(runtime.FuncForPC(funcName).Name(), "key:", k, ", val:", strings.Join(v, ""))
+	if config.ShowLog {
+		for k, v := range r.Form {
+			funcName, _, _, _ := runtime.Caller(0)
+			log.Println(runtime.FuncForPC(funcName).Name(), "key:", k, ", val:", strings.Join(v, ""))
+		}
+		for k, v := range r.PostForm {
+			funcName, _, _, _ := runtime.Caller(0)
+			log.Println(runtime.FuncForPC(funcName).Name(), "key:", k, ", val:", strings.Join(v, ""))
+		}
 	}
 	_, err = fmt.Fprintf(w, "Hello")
 	if err != nil {
+		if config.ShowLog {
+			funcName, _, _, _ := runtime.Caller(0)
+			log.Println(runtime.FuncForPC(funcName).Name(), "err: ", err)
+		}
 		return
 	}
 }
@@ -84,7 +101,7 @@ func findAndCheckToken(r *http.Request) (bool, uint, int64, string) {
 
 func login(w http.ResponseWriter, r *http.Request) {
 	/*
-	 * @api {get|post} /v1/user/login User login
+	 * @api {post} /v1/user/login User login
 	 * @apiName UserLogin
 	 *
 	 * @apiParam {String} username Username.
@@ -94,8 +111,8 @@ func login(w http.ResponseWriter, r *http.Request) {
 	data := map[string]interface{}{}
 	errorMsg := ""
 
-	// check method
-	if r.Method != "GET" && r.Method != "POST" {
+	// check method, only accept POST
+	if r.Method != "POST" {
 		status = 0
 		errorMsg = "Invalid request method."
 		SendJSONResponse(w, status, data, errorMsg)
@@ -103,15 +120,15 @@ func login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// parse form
-	err := r.ParseForm()
+	err := r.ParseMultipartForm(config.MaxNormalPostSize64)
 	if err != nil {
 		status = 0
 		errorMsg = "Failed to parse form."
 		SendJSONResponse(w, status, data, errorMsg)
 		return
 	}
-	queryUsername := r.FormValue("username")
-	queryPassword := r.FormValue("password")
+	queryUsername := r.PostFormValue("username")
+	queryPassword := r.PostFormValue("password")
 
 	// check user
 	user, ok, errNo := database.CheckUserPassword(queryUsername, queryPassword)
@@ -152,7 +169,7 @@ func login(w http.ResponseWriter, r *http.Request) {
 	data = map[string]interface{}{
 		"token": token,
 		"exp":   tool.UnixTimeToRFC3339(exp),
-		"user":  common.GetVisibleUserInfo(user),
+		"user":  user,
 	}
 
 	SendJSONResponse(w, status, data, errorMsg)
@@ -200,7 +217,7 @@ func logout(w http.ResponseWriter, r *http.Request) {
 
 func signup(w http.ResponseWriter, r *http.Request) {
 	/*
-	 * @api {get|post} /v1/user/signup User sign up
+	 * @api {post} /v1/user/signup User sign up
 	 * @apiName UserSignUp
 	 *
 	 * @apiParam {String} username Username.
@@ -211,8 +228,8 @@ func signup(w http.ResponseWriter, r *http.Request) {
 	data := map[string]interface{}{}
 	errorMsg := ""
 
-	// check method
-	if r.Method != "GET" && r.Method != "POST" {
+	// check method, only accept POST
+	if r.Method != "POST" {
 		status = 0
 		errorMsg = "Invalid request method."
 		SendJSONResponse(w, status, data, errorMsg)
@@ -220,16 +237,16 @@ func signup(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// parse form
-	err := r.ParseForm()
+	err := r.ParseMultipartForm(config.MaxNormalPostSize64)
 	if err != nil {
 		status = 0
 		errorMsg = "Failed to parse form."
 		SendJSONResponse(w, status, data, errorMsg)
 		return
 	}
-	queryUsername := r.FormValue("username")
-	queryPassword := r.FormValue("password")
-	queryNickname := r.FormValue("nickname")
+	queryUsername := r.PostFormValue("username")
+	queryPassword := r.PostFormValue("password")
+	queryNickname := r.PostFormValue("nickname")
 
 	// create user
 	user, ok, errNo := database.CreateUser(queryUsername, queryPassword, queryNickname)
@@ -246,9 +263,9 @@ func signup(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// get user info
-	user, _, _ = database.GetUserInfoById(user.Id)
+	user, _, _ = database.GetUserInfoById(user.Id, 0)
 	data = map[string]interface{}{
-		"user": common.GetVisibleUserInfo(user),
+		"user": user,
 	}
 
 	SendJSONResponse(w, status, data, errorMsg)
@@ -281,7 +298,7 @@ func getUserInfo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// get user info
-	user, ok, errNo := database.GetUserInfoById(userId)
+	user, ok, errNo := database.GetUserInfoById(userId, 0)
 	if !ok {
 		if errNo == 1 { // user not found
 			status = 0
@@ -297,25 +314,78 @@ func getUserInfo(w http.ResponseWriter, r *http.Request) {
 	data = map[string]interface{}{
 		"token": token,
 		"exp":   tool.UnixTimeToRFC3339(exp),
-		"user":  common.GetVisibleUserInfo(user),
+		"user":  user,
 	}
 
 	SendJSONResponse(w, status, data, errorMsg)
 }
 
-func setUserInfo(w http.ResponseWriter, r *http.Request) {
+func getOtherUserInfo(w http.ResponseWriter, r *http.Request) {
 	/*
-	 * @api {get|post} /v1/user/info/set Set user info
-	 * @apiName SetUserInfo
-	 *
-
+	 * @api {post} /v1/user/query Get other user info
+	 * @apiName GetOtherUserInfo
 	 */
 	status := 200
 	data := map[string]interface{}{}
 	errorMsg := ""
 
-	// check method
-	if r.Method != "GET" && r.Method != "POST" {
+	// check method, only accept POST
+	if r.Method != "POST" {
+		status = 0
+		errorMsg = "Invalid request method."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+
+	// parse form
+	err := r.ParseMultipartForm(config.MaxNormalPostSize64)
+	if err != nil {
+		status = 0
+		errorMsg = "Failed to parse form."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+	queryUsername := r.PostFormValue("username")
+	if queryUsername == "" {
+		status = 0
+		errorMsg = "Username cannot be empty."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+
+	// check user
+	_, userId, _, _ := findAndCheckToken(r)
+
+	// get user info
+	user, userExist := database.GetUserInfoByUsername(queryUsername, userId)
+	if !userExist {
+		status = 0
+		errorMsg = "User not found."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+
+	data = map[string]interface{}{
+		"user": user,
+	}
+
+	SendJSONResponse(w, status, data, errorMsg)
+}
+
+func followUser(w http.ResponseWriter, r *http.Request) {
+	/*
+	 * @api {post} /v1/user/follow Follow user
+	 * @apiName FollowUser
+	 *
+	 * @apiParam {String} username Username.
+	 * @apiParam {String} action Follow or Unfollow.
+	 */
+	status := 200
+	data := map[string]interface{}{}
+	errorMsg := ""
+
+	// check method, only accept POST
+	if r.Method != "POST" {
 		status = 0
 		errorMsg = "Invalid request method."
 		SendJSONResponse(w, status, data, errorMsg)
@@ -332,14 +402,81 @@ func setUserInfo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// parse form
-	err := r.ParseForm()
+	err := r.ParseMultipartForm(config.MaxNormalPostSize64)
 	if err != nil {
 		status = 0
 		errorMsg = "Failed to parse form."
 		SendJSONResponse(w, status, data, errorMsg)
 		return
 	}
-	queryNickname := r.FormValue("nickname")
+	queryUserIdTmp, _ := strconv.ParseUint(r.PostFormValue("user_id"), 10, 32)
+	queryUserId := uint(queryUserIdTmp)
+	queryAction := r.PostFormValue("action")
+
+	// check user
+	user, userExist, _ := database.GetUserInfoById(queryUserId, userId)
+	if !userExist {
+		status = 0
+		errorMsg = "User not found."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+	if user.Id == userId {
+		status = 0
+		errorMsg = "Cannot follow yourself."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+
+	// follow or unfollow user
+	ok := database.FollowUser(user.Id, userId, queryAction)
+	if !ok {
+		status = 0
+		errorMsg = "Unknown error."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+
+	SendJSONResponse(w, status, data, errorMsg)
+}
+
+func setUserInfo(w http.ResponseWriter, r *http.Request) {
+	/*
+	 * @api {post} /v1/user/info/set Set user info
+	 * @apiName SetUserInfo
+	 *
+	 * @apiParam {String} nickname Nickname.
+	 */
+	status := 200
+	data := map[string]interface{}{}
+	errorMsg := ""
+
+	// check method, only accept POST
+	if r.Method != "POST" {
+		status = 0
+		errorMsg = "Invalid request method."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+
+	// check token
+	tokenValid, userId, _, _ := findAndCheckToken(r)
+	if !tokenValid {
+		status = 0
+		errorMsg = "Not logged in."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+
+	// parse form
+	err := r.ParseMultipartForm(config.MaxNormalPostSize64)
+	if err != nil {
+		status = 0
+		errorMsg = "Failed to parse form."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+	queryNickname := r.PostFormValue("nickname")
 
 	// set Nickname by userId
 	ok := database.SetUserInfo(userId, queryNickname)
@@ -351,9 +488,9 @@ func setUserInfo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// get user info
-	user, _, _ := database.GetUserInfoById(userId)
+	user, _, _ := database.GetUserInfoById(userId, 0)
 	data = map[string]interface{}{
-		"user": common.GetVisibleUserInfo(user),
+		"user": user,
 	}
 
 	SendJSONResponse(w, status, data, errorMsg)
@@ -361,21 +498,22 @@ func setUserInfo(w http.ResponseWriter, r *http.Request) {
 
 func getVideoList(w http.ResponseWriter, r *http.Request) {
 	/*
-	 * @api {get|post} /v1/video/list Get video list
+	 * @api {post} /v1/video/list Get video list
+	 *                            including normal, user-(uploaded, liked, favorite, watched, followed)
 	 * @apiName GetVideoList
 	 *
 	 * @apiParam {Number} type Video type.
 	 * @apiParam {Number} user_id User id.
-	 * @apiParam {String} action_history Action history.
+	 * @apiParam {String} relation Relation.
 	 * @apiParam {Number} limit Max number of videos.
-	 * @apiParam {Number} page Page number.
+	 * @apiParam {Number} start Start at.
 	 */
 	status := 200
 	data := map[string]interface{}{}
 	errorMsg := ""
 
-	// check method
-	if r.Method != "GET" && r.Method != "POST" {
+	// check method, only accept POST
+	if r.Method != "POST" {
 		status = 0
 		errorMsg = "Invalid request method."
 		SendJSONResponse(w, status, data, errorMsg)
@@ -383,32 +521,35 @@ func getVideoList(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// parse form
-	err := r.ParseForm()
+	err := r.ParseMultipartForm(config.MaxNormalPostSize64)
 	if err != nil {
 		status = 0
 		errorMsg = "Failed to parse form."
 		SendJSONResponse(w, status, data, errorMsg)
 		return
 	}
-	queryType, _ := strconv.Atoi(r.FormValue("type"))
-	queryUserIdTmp, _ := strconv.ParseUint(r.FormValue("user_id"), 10, 32)
+	queryType, _ := strconv.Atoi(r.PostFormValue("type"))
+	queryUserIdTmp, _ := strconv.ParseUint(r.PostFormValue("user_id"), 10, 32)
 	queryUserId := uint(queryUserIdTmp)
-	queryActionHistory := r.FormValue("action_history")
-	queryLimit, _ := strconv.Atoi(r.FormValue("limit"))
-	queryPage, _ := strconv.Atoi(r.FormValue("page"))
+	queryRelation := r.PostFormValue("relation")
+	queryLimit, _ := strconv.Atoi(r.PostFormValue("limit"))
+	queryStart, _ := strconv.Atoi(r.PostFormValue("start"))
 
-	// for some bad parameter, strict limit to 20 per page
-	if queryLimit > 20 {
-		queryLimit = 20
-	} else if queryLimit < 1 {
-		queryLimit = 1
+	// for some bad parameter, strict limit
+	if queryLimit > 9 {
+		queryLimit = 9
+	} else if queryLimit < 3 {
+		queryLimit = 3
 	}
-	if queryPage < 0 {
-		queryPage = 1
+	if queryStart < 0 {
+		queryStart = 0
 	}
+
+	// check user
+	tokenValid, userId, _, _ := findAndCheckToken(r)
 
 	// get video list
-	videoList := database.GetVideoList(queryType, queryUserId, queryActionHistory, queryLimit, queryPage)
+	videoList := database.GetVideoList(queryType, queryUserId, queryRelation, queryLimit, queryStart, userId)
 	if len(videoList) == 0 {
 		status = 0
 		errorMsg = "No more video found."
@@ -418,16 +559,24 @@ func getVideoList(w http.ResponseWriter, r *http.Request) {
 
 	// check relation between user and video
 	// only need to check when user logged in
-	tokenValid, userId, _, _ := findAndCheckToken(r)
 	if tokenValid { // user logged in
 		for i := 0; i < len(videoList); i++ {
 			videoList[i].IsUserLiked, videoList[i].IsUserFavorite, videoList[i].IsUserUploaded,
-				videoList[i].IsUserHistory, videoList[i].IsUserLastPlay = database.CheckUserVideoAllRelation(userId, videoList[i].Id)
+				videoList[i].IsUserWatched, videoList[i].IsUserLastPlay = database.CheckUserVideoAllRelation(userId, videoList[i].Id)
 		}
 	}
 
-	data = map[string]interface{}{
-		"video_list": videoList,
+	// if queryUserId is not 0, get video numbers
+	if queryUserId != 0 {
+		videoNumbers := database.GetVideoNum(queryUserId, queryRelation)
+		data = map[string]interface{}{
+			"video_list": videoList,
+			"video_num":  videoNumbers,
+		}
+	} else {
+		data = map[string]interface{}{
+			"video_list": videoList,
+		}
 	}
 
 	SendJSONResponse(w, status, data, errorMsg)
@@ -435,7 +584,7 @@ func getVideoList(w http.ResponseWriter, r *http.Request) {
 
 func getVideoInfo(w http.ResponseWriter, r *http.Request) {
 	/*
-	 * @api {get} /v1/video/info Get video info
+	 * @api {post} /v1/video/info Get video info
 	 * @apiName GetVideoInfo
 	 *
 	 * @apiParam {String} video_uid Video uid.
@@ -444,8 +593,8 @@ func getVideoInfo(w http.ResponseWriter, r *http.Request) {
 	data := map[string]interface{}{}
 	errorMsg := ""
 
-	// check method
-	if r.Method != "GET" && r.Method != "POST" {
+	// check method, only accept POST
+	if r.Method != "POST" {
 		status = 0
 		errorMsg = "Invalid request method."
 		SendJSONResponse(w, status, data, errorMsg)
@@ -453,17 +602,20 @@ func getVideoInfo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// parse form
-	err := r.ParseForm()
+	err := r.ParseMultipartForm(config.MaxNormalPostSize64)
 	if err != nil {
 		status = 0
 		errorMsg = "Failed to parse form."
 		SendJSONResponse(w, status, data, errorMsg)
 		return
 	}
-	queryVideoUid := r.FormValue("video_uid")
+	queryVideoUid := r.PostFormValue("video_uid")
+
+	// check user
+	tokenValid, userId, _, _ := findAndCheckToken(r)
 
 	// get video info
-	video := database.GetVideoDetail(queryVideoUid)
+	video := database.GetVideoDetailByVideoUid(queryVideoUid, userId)
 	if video.Id == 0 {
 		status = 0
 		errorMsg = "Video not found."
@@ -473,10 +625,9 @@ func getVideoInfo(w http.ResponseWriter, r *http.Request) {
 
 	// check relation between user and video
 	// only need to check when user logged in
-	tokenValid, userId, _, _ := findAndCheckToken(r)
 	if tokenValid { // user logged in
 		// check relationship
-		video.IsUserLiked, video.IsUserFavorite, video.IsUserUploaded, video.IsUserHistory,
+		video.IsUserLiked, video.IsUserFavorite, video.IsUserUploaded, video.IsUserWatched,
 			video.IsUserLastPlay = database.CheckUserVideoAllRelation(userId, video.Id)
 	}
 
@@ -489,7 +640,7 @@ func getVideoInfo(w http.ResponseWriter, r *http.Request) {
 
 func doVideoAction(w http.ResponseWriter, r *http.Request) {
 	/*
-	 * @api {get|post} /v1/video/action Do video action
+	 * @api {post} /v1/video/action Do video action
 	 * @apiName DoVideoAction
 	 *
 	 * @apiParam {String} video_uid Video uid.
@@ -499,8 +650,8 @@ func doVideoAction(w http.ResponseWriter, r *http.Request) {
 	data := map[string]interface{}{}
 	errorMsg := ""
 
-	// check method
-	if r.Method != "GET" && r.Method != "POST" {
+	// check method, only accept POST
+	if r.Method != "POST" {
 		status = 0
 		errorMsg = "Invalid request method."
 		SendJSONResponse(w, status, data, errorMsg)
@@ -517,27 +668,27 @@ func doVideoAction(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// parse form
-	err := r.ParseForm()
+	err := r.ParseMultipartForm(config.MaxNormalPostSize64)
 	if err != nil {
 		status = 0
 		errorMsg = "Failed to parse form."
 		SendJSONResponse(w, status, data, errorMsg)
 		return
 	}
+	queryVideoUid := r.PostFormValue("video_uid")
+	queryAction := r.PostFormValue("action")
 
-	// check video
-	queryVideoUid := r.FormValue("video_uid")
-	queryAction := r.FormValue("action")
-	video := database.GetVideoDetail(queryVideoUid)
-	if video.Id == 0 {
+	// check video (lighter)
+	videoId := database.GetVideoIdByVideoUid(queryVideoUid)
+	if videoId == 0 {
 		status = 0
 		errorMsg = "Video not found."
 		SendJSONResponse(w, status, data, errorMsg)
 		return
 	}
 
-	// do action: like, unlike, favorite, unfavorite, comment
-	ok, errNo := database.GuestDoVideoAction(video, userId, queryAction)
+	// do action: like, unlike, favorite, unfavorite, forward
+	ok, errNo := database.GuestDoVideoAction(videoId, userId, queryAction)
 	if !ok {
 		if errNo == 1 { // already done
 			errorMsg = "Already done."
@@ -557,10 +708,10 @@ func doVideoAction(w http.ResponseWriter, r *http.Request) {
 	SendJSONResponse(w, status, data, errorMsg)
 }
 
-func recordVideoHistory(w http.ResponseWriter, r *http.Request) {
+func recordWatchedVideo(w http.ResponseWriter, r *http.Request) {
 	/*
-	 * @api {get|post} /v1/video/history Record video history
-	 * @apiName RecordVideoHistory
+	 * @api {post} /v1/video/watch Record watched video
+	 * @apiName RecordWatchedVideo
 	 *
 	 * @apiParam {String} video_uid Video uid.
 	 */
@@ -568,8 +719,8 @@ func recordVideoHistory(w http.ResponseWriter, r *http.Request) {
 	data := map[string]interface{}{}
 	errorMsg := ""
 
-	// check method
-	if r.Method != "GET" && r.Method != "POST" {
+	// check method, only accept POST
+	if r.Method != "POST" {
 		status = 0
 		errorMsg = "Invalid request method."
 		SendJSONResponse(w, status, data, errorMsg)
@@ -577,27 +728,29 @@ func recordVideoHistory(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// check token
-	tokenValid, userId, _, _ := findAndCheckToken(r)
-	if !tokenValid {
-		status = 0
-		errorMsg = "Not logged in."
-		SendJSONResponse(w, status, data, errorMsg)
-		return
-	}
+	_, userId, _, _ := findAndCheckToken(r)
+	// not logged-in user should also be able to watch video, just record as userId=0
+
+	//if !tokenValid {
+	//	status = 0
+	//	errorMsg = "Not logged in."
+	//	SendJSONResponse(w, status, data, errorMsg)
+	//	return
+	//}
 
 	// parse form
-	err := r.ParseForm()
+	err := r.ParseMultipartForm(config.MaxNormalPostSize64)
 	if err != nil {
 		status = 0
 		errorMsg = "Failed to parse form."
 		SendJSONResponse(w, status, data, errorMsg)
 		return
 	}
-	queryVideoUid := r.FormValue("video_uid")
+	queryVideoUid := r.PostFormValue("video_uid")
 
-	// check video
-	video := database.GetVideoDetail(queryVideoUid)
-	if video.Id == 0 {
+	// check video (lighter)
+	videoId := database.GetVideoIdByVideoUid(queryVideoUid)
+	if videoId == 0 {
 		status = 0
 		errorMsg = "Video not found."
 		SendJSONResponse(w, status, data, errorMsg)
@@ -605,7 +758,7 @@ func recordVideoHistory(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// record video history
-	ok := database.GuestRecordVideoHistory(video, userId)
+	ok := database.GuestWatchedVideo(videoId, userId)
 	if !ok {
 		status = 0
 		errorMsg = "Unknown error."
@@ -616,15 +769,324 @@ func recordVideoHistory(w http.ResponseWriter, r *http.Request) {
 	SendJSONResponse(w, status, data, errorMsg)
 }
 
+func guestForwardVideo(w http.ResponseWriter, r *http.Request) {
+	/*
+	 * @api {post} /v1/video/forward Forward video
+	 * @apiName GuestForwardVideo
+	 *
+	 * @apiParam {String} video_uid Video uid.
+	 */
+	status := 200
+	data := map[string]interface{}{}
+	errorMsg := ""
+
+	// check method, only accept POST
+	if r.Method != "POST" {
+		status = 0
+		errorMsg = "Invalid request method."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+
+	// check token
+	_, userId, _, _ := findAndCheckToken(r)
+	// not logged-in user should also be able to watch video, just record as userId=0
+
+	//if !tokenValid {
+	//	status = 0
+	//	errorMsg = "Not logged in."
+	//	SendJSONResponse(w, status, data, errorMsg)
+	//	return
+	//}
+
+	// parse form
+	err := r.ParseMultipartForm(config.MaxNormalPostSize64)
+	if err != nil {
+		status = 0
+		errorMsg = "Failed to parse form."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+	queryVideoUid := r.PostFormValue("video_uid")
+
+	// check video (lighter)
+	videoId := database.GetVideoIdByVideoUid(queryVideoUid)
+	if videoId == 0 {
+		status = 0
+		errorMsg = "Video not found."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+
+	// record video history
+	ok := database.GuestForwardVideo(videoId, userId)
+	if !ok {
+		status = 0
+		errorMsg = "Unknown error."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+
+	SendJSONResponse(w, status, data, errorMsg)
+}
+
+func getVideoComment(w http.ResponseWriter, r *http.Request) {
+	/*
+	 * @api {post} /v1/video/comment/list Get video comment list
+	 * @apiName GetVideoComment
+	 *
+	 * @apiParam {String} video_uid Video uid.
+	 * @apiParam {Number} limit Max number of comments.
+	 * @apiParam {Number} start Start at.
+	 */
+	status := 200
+	data := map[string]interface{}{}
+	errorMsg := ""
+
+	// check method, only accept POST
+	if r.Method != "POST" {
+		status := 0
+		data := map[string]interface{}{}
+		errorMsg := "Invalid request method."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+
+	// check token
+	tokenValid, _, _, _ := findAndCheckToken(r)
+	if !tokenValid {
+		status := 0
+		data := map[string]interface{}{}
+		errorMsg := "Not logged in."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+
+	// parse form
+	err := r.ParseMultipartForm(config.MaxNormalPostSize64)
+	if err != nil {
+		status := 0
+		data := map[string]interface{}{}
+		errorMsg := "Failed to parse form."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+	queryVideoUid := r.PostFormValue("video_uid")
+	queryLimit, _ := strconv.Atoi(r.PostFormValue("limit"))
+	queryStart, _ := strconv.Atoi(r.PostFormValue("start"))
+
+	// for some bad parameter, strict limit to 20 per page
+	if queryLimit > 20 {
+		queryLimit = 20
+	} else if queryLimit < 10 {
+		queryLimit = 10
+	}
+	if queryStart < 0 {
+		queryStart = 0
+	}
+
+	// check video (lighter)
+	videoId := database.GetVideoIdByVideoUid(queryVideoUid)
+	if videoId == 0 {
+		status := 0
+		data := map[string]interface{}{}
+		errorMsg := "Video not found."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+
+	// check user
+	tokenValid, userId, _, _ := findAndCheckToken(r)
+
+	// get video comment
+	commentList := database.GetVideoCommentList(videoId, queryLimit, queryStart, userId)
+	if len(commentList) == 0 {
+		status := 0
+		data := map[string]interface{}{}
+		errorMsg := "No more comment found."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+
+	data = map[string]interface{}{
+		"comment_list": commentList,
+	}
+
+	SendJSONResponse(w, status, data, errorMsg)
+}
+
+func makeVideoComment(w http.ResponseWriter, r *http.Request) {
+	/*
+	 * @api {post} /v1/video/comment/make Make video comment
+	 * @apiName MakeVideoComment
+	 *
+	 * @apiParam {String} video_uid Video uid.
+	 * @apiParam {String} content Comment content.
+	 * @apiParam {Number} quote_comment_id Quote comment id.
+	 */
+	status := 200
+	data := map[string]interface{}{}
+	errorMsg := ""
+
+	// check method, only accept POST
+	if r.Method != "POST" {
+		status := 0
+		data := map[string]interface{}{}
+		errorMsg := "Invalid request method."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+
+	// check token
+	tokenValid, userId, _, _ := findAndCheckToken(r)
+	if !tokenValid {
+		status := 0
+		data := map[string]interface{}{}
+		errorMsg := "Not logged in."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+
+	// parse form
+	err := r.ParseMultipartForm(config.MaxNormalPostSize64)
+	if err != nil {
+		status := 0
+		data := map[string]interface{}{}
+		errorMsg := "Failed to parse form."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+	queryVideoUid := r.PostFormValue("video_uid")
+	queryContent := r.PostFormValue("content")
+	queryQuoteCommentIdTmp, _ := strconv.Atoi(r.PostFormValue("quote_comment_id"))
+	queryQuoteCommentId := uint(queryQuoteCommentIdTmp)
+
+	// check video (lighter)
+	videoId := database.GetVideoIdByVideoUid(queryVideoUid)
+	if videoId == 0 {
+		status := 0
+		data := map[string]interface{}{}
+		errorMsg := "Video not found."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+
+	// check duplicate comment
+	if database.CheckVideoCommentDuplicate(videoId, userId, queryContent, queryQuoteCommentId) {
+		status := 0
+		data := map[string]interface{}{}
+		errorMsg := "You have post a same comment, please do not re-post."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+
+	// check if quote comment is not exist
+	if queryQuoteCommentId != 0 && !database.CheckVideoCommentExist(queryQuoteCommentId) {
+		status := 0
+		data := map[string]interface{}{}
+		errorMsg := "Quote comment not exist."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+
+	// make comment
+	ok := database.UserMakeVideoComment(videoId, userId, queryContent, queryQuoteCommentId)
+	if !ok {
+		status := 0
+		data := map[string]interface{}{}
+		errorMsg := "Cannot make comment."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+
+	SendJSONResponse(w, status, data, errorMsg)
+}
+
+func deleteVideoComment(w http.ResponseWriter, r *http.Request) {
+	/*
+	 * @api {post} /v1/video/comment/delete Delete video comment
+	 * @apiName DeleteVideoComment
+	 *
+	 * @apiParam {Number} comment_id Comment id.
+	 */
+	status := 200
+	data := map[string]interface{}{}
+	errorMsg := ""
+
+	// check method, only accept POST
+	if r.Method != "POST" {
+		status := 0
+		data := map[string]interface{}{}
+		errorMsg := "Invalid request method."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+
+	// check token
+	tokenValid, userId, _, _ := findAndCheckToken(r)
+	if !tokenValid {
+		status := 0
+		data := map[string]interface{}{}
+		errorMsg := "Not logged in."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+
+	// parse form
+	err := r.ParseMultipartForm(config.MaxNormalPostSize64)
+	if err != nil {
+		status := 0
+		data := map[string]interface{}{}
+		errorMsg := "Failed to parse form."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+	queryCommentIdTmp, _ := strconv.Atoi(r.PostFormValue("comment_id"))
+	queryCommentId := uint(queryCommentIdTmp)
+
+	// check comment
+	videoComment := database.GetVideoComment(queryCommentId, userId)
+	if videoComment.Id == 0 {
+		status := 0
+		data := map[string]interface{}{}
+		errorMsg := "Comment not found."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+
+	// check user
+	if videoComment.UserId != userId {
+		fmt.Println(userId, videoComment.UserId)
+		status := 0
+		data := map[string]interface{}{}
+		errorMsg := "Permission denied."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+
+	// delete comment
+	ok := database.GuestDeleteVideoComment(queryCommentId)
+
+	if !ok {
+		status := 0
+		data := map[string]interface{}{}
+		errorMsg := "Cannot delete comment."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+
+	SendJSONResponse(w, status, data, errorMsg)
+}
+
 func uploadVideo(w http.ResponseWriter, r *http.Request) {
 	/*
-	 * @api {get|post} /v1/video/upload Upload video
+	 * @api {post} /v1/video/upload Upload video
 	 * @apiName UploadVideo
 	 *
 	 * @apiParam {File} file Video file.
 	 * @apiParam {Number} video_type Video type.
-	 * @apiParam {String} video_title Video title.
 	 * @apiParam {String} video_content Video content.
+	 * @apiParam {String} video_keyword Video keywords.
 	 */
 	status := 200
 	data := map[string]interface{}{}
@@ -650,24 +1112,35 @@ func uploadVideo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// parse form
-	// check file size by MaxBytesReader, limit to {{MaxUploadVideoSize}}MB
-	MaxUploadSize := int64(config.MaxUploadVideoSize * 1024 * 1024)
-	r.Body = http.MaxBytesReader(w, r.Body, MaxUploadSize)
-	err := r.ParseMultipartForm(MaxUploadSize)
+	// check file size by MaxBytesReader, limit to {{config.MaxUploadVideoSize64}}MB
+	r.Body = http.MaxBytesReader(w, r.Body, config.MaxUploadVideoSize64)
+	err := r.ParseMultipartForm(config.MaxUploadVideoSize64)
 	if err != nil {
+		if config.ShowLog {
+			funcName, _, _, _ := runtime.Caller(0)
+			log.Println(runtime.FuncForPC(funcName).Name(), "err: ", err)
+		}
 		status = 0
 		errorMsg = fmt.Sprintf("File size limit to %dMB.", config.MaxUploadVideoSize)
 		SendJSONResponse(w, status, data, errorMsg)
 		return
 	}
-	queryVideoType, _ := strconv.Atoi(r.FormValue("video_type"))
-	queryVideoTitle := r.FormValue("video_title")
-	queryVideoContent := r.FormValue("video_content")
+	queryVideoType, _ := strconv.Atoi(r.PostFormValue("video_type"))
+	queryVideoContent := r.PostFormValue("video_content")
+	queryVideoKeyword := r.PostFormValue("video_keyword")
 
 	// check file title, type, and description
-	if queryVideoTitle == "" || queryVideoContent == "" {
+	if queryVideoContent == "" {
 		status = 0
-		errorMsg = "Video title or content cannot be empty."
+		errorMsg = "Video content cannot be empty."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+
+	// check if video duplicated
+	if database.CheckVideoDuplicate(queryVideoContent, queryVideoKeyword, queryVideoType, userId) {
+		status = 0
+		errorMsg = "Video already exists."
 		SendJSONResponse(w, status, data, errorMsg)
 		return
 	}
@@ -683,6 +1156,10 @@ func uploadVideo(w http.ResponseWriter, r *http.Request) {
 	// check file
 	file, fileHeader, err := r.FormFile("file")
 	if err != nil {
+		if config.ShowLog {
+			funcName, _, _, _ := runtime.Caller(0)
+			log.Println(runtime.FuncForPC(funcName).Name(), "err: ", err)
+		}
 		status = 0
 		errorMsg = "Failed to get file."
 		SendJSONResponse(w, status, data, errorMsg)
@@ -691,8 +1168,20 @@ func uploadVideo(w http.ResponseWriter, r *http.Request) {
 	defer file.Close()
 
 	// check file type (accept all video types)
-	fileType := fileHeader.Header.Get("Content-Type")
-	if !strings.Contains(fileType, "video") {
+	// check from filename, lower filename must include (.mp4 or .mov or .avi or .wmv or .flv or .mkv or .webm
+	// or .ts or .rm or .rmvb or .3gp or .mpeg or .mpg or .m4v or .f4v)
+	fileName := strings.ToLower(fileHeader.Filename)
+	extensionList := []string{".mp4", ".mov", ".avi", ".wmv", ".flv", ".mkv", ".webm", ".ts", ".rm",
+		".rmvb", ".3gp", ".mpeg", ".mpg", ".m4v", ".f4v"}
+	// check if filename contains any extension name
+	extensionNameExist := false
+	for _, extensionName := range extensionList {
+		if strings.HasSuffix(fileName, extensionName) {
+			extensionNameExist = true
+			break
+		}
+	}
+	if !extensionNameExist {
 		status = 0
 		errorMsg = "File type not supported."
 		SendJSONResponse(w, status, data, errorMsg)
@@ -706,6 +1195,10 @@ func uploadVideo(w http.ResponseWriter, r *http.Request) {
 	fileSavePath := path.Join(config.BaseLocalFileDir, "tmp", videoUid)
 	fileBytes, err := io.ReadAll(file)
 	if err != nil {
+		if config.ShowLog {
+			funcName, _, _, _ := runtime.Caller(0)
+			log.Println(runtime.FuncForPC(funcName).Name(), "err: ", err)
+		}
 		status = 0
 		errorMsg = "Failed to receive file."
 		SendJSONResponse(w, status, data, errorMsg)
@@ -713,6 +1206,10 @@ func uploadVideo(w http.ResponseWriter, r *http.Request) {
 	}
 	err = os.WriteFile(fileSavePath, fileBytes, 0644)
 	if err != nil {
+		if config.ShowLog {
+			funcName, _, _, _ := runtime.Caller(0)
+			log.Println(runtime.FuncForPC(funcName).Name(), "err: ", err)
+		}
 		status = 0
 		errorMsg = "Failed to save file."
 		SendJSONResponse(w, status, data, errorMsg)
@@ -720,7 +1217,7 @@ func uploadVideo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// save video info to database
-	video, ok := database.UserCreateVideo(userId, videoUid, queryVideoType, queryVideoTitle, queryVideoContent)
+	video, ok := database.UserCreateVideo(userId, videoUid, queryVideoType, queryVideoContent, queryVideoKeyword)
 	if !ok {
 		status = 0
 		errorMsg = "Failed to save video info."
@@ -737,8 +1234,17 @@ func uploadVideo(w http.ResponseWriter, r *http.Request) {
 		subDir := "origin/remote_process"
 
 		// upload file to qiniu
-		ok = tool.UploadFileToQiniu(fileSavePath, path.Join(config.BaseRemoteFileDir, subDir, videoUid))
-		if !ok {
+		// try to upload 3 times
+		uploadOk := false
+		for i := 0; i < 3; i++ {
+			ok = tool.UploadFileToQiniu(fileSavePath, path.Join(config.BaseRemoteFileDir, subDir, videoUid))
+			if ok {
+				uploadOk = true
+				break
+			}
+		}
+
+		if !uploadOk {
 			status = 0
 			errorMsg = "Failed to upload file to cloud."
 			SendJSONResponse(w, status, data, errorMsg)
@@ -760,22 +1266,113 @@ func uploadVideo(w http.ResponseWriter, r *http.Request) {
 	SendJSONResponse(w, status, data, errorMsg)
 }
 
+func uploadVideoRemote(w http.ResponseWriter, r *http.Request) {
+	/*
+	 * @api {post} /v1/video/uploadRemote Upload video remote (create first, upload later)
+	 * @apiName UploadVideoRemote
+	 *
+	 * @apiParam {Number} video_type Video type.
+	 * @apiParam {String} video_content Video content.
+	 * @apiParam {String} video_keyword Video keywords.
+	 */
+	status := 200
+	data := map[string]interface{}{}
+	errorMsg := ""
+
+	// check method, only accept POST
+	if r.Method != "POST" {
+		status = 0
+		errorMsg = "Invalid request method."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+
+	// receive file and save to {{BaseLocalFileDir}}/tmp/ for temp
+	// check token
+	tokenValid, userId, _, _ := findAndCheckToken(r)
+	if !tokenValid {
+		status := 0
+		data := map[string]interface{}{}
+		errorMsg := "Not logged in."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+
+	// parse form
+	err := r.ParseMultipartForm(config.MaxUploadVideoSize64)
+	if err != nil {
+		if config.ShowLog {
+			funcName, _, _, _ := runtime.Caller(0)
+			log.Println(runtime.FuncForPC(funcName).Name(), "err: ", err)
+		}
+		status = 0
+		errorMsg = fmt.Sprintf("File size limit to %dMB.", config.MaxUploadVideoSize)
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+	queryVideoType, _ := strconv.Atoi(r.PostFormValue("video_type"))
+	queryVideoContent := r.PostFormValue("video_content")
+	queryVideoKeyword := r.PostFormValue("video_keyword")
+
+	// check file title, type, and description
+	if queryVideoContent == "" {
+		status = 0
+		errorMsg = "Video content cannot be empty."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+
+	// check if video duplicated
+	if database.CheckVideoDuplicate(queryVideoContent, queryVideoKeyword, queryVideoType, userId) {
+		status = 0
+		errorMsg = "Video already exists."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+
+	// check video type
+	if queryVideoType < 1 || !database.CheckVideoType(queryVideoType) {
+		status = 0
+		errorMsg = "Invalid video type."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+
+	// generate video uid
+	videoUid := uuid.New().String()
+
+	// save video info to database
+	video, ok := database.UserCreateVideo(userId, videoUid, queryVideoType, queryVideoContent, queryVideoKeyword)
+	if !ok {
+		status = 0
+		errorMsg = "Failed to save video info."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+
+	data = map[string]interface{}{
+		"video": video,
+	}
+
+	SendJSONResponse(w, status, data, errorMsg)
+}
+
 func setVideoInfo(w http.ResponseWriter, r *http.Request) {
 	/*
-	 * @api {get|post} /v1/video/info/set Set video info
+	 * @api {post} /v1/video/info/set Set video info
 	 * @apiName SetVideoInfo
 	 *
 	 * @apiParam {String} video_uid Video uid.
-	 * @apiParam {String} video_title Video title.
 	 * @apiParam {String} video_content Video content.
+	 * @apiParam {String} video_keyword Video keywords.
 	 * @apiParam {Number} video_type Video type.
 	 */
 	status := 200
 	data := map[string]interface{}{}
 	errorMsg := ""
 
-	// check method
-	if r.Method != "GET" && r.Method != "POST" {
+	// check method, only accept POST
+	if r.Method != "POST" {
 		status = 0
 		errorMsg = "Invalid request method."
 		SendJSONResponse(w, status, data, errorMsg)
@@ -792,22 +1389,22 @@ func setVideoInfo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// parse form
-	err := r.ParseForm()
+	err := r.ParseMultipartForm(config.MaxNormalPostSize64)
 	if err != nil {
 		status = 0
 		errorMsg = "Failed to parse form."
 		SendJSONResponse(w, status, data, errorMsg)
 		return
 	}
-	queryVideoUid := r.FormValue("video_uid")
-	queryVideoTitle := r.FormValue("video_title")
-	queryVideoContent := r.FormValue("video_content")
-	queryVideoTypeTmp, _ := strconv.Atoi(r.FormValue("video_type"))
+	queryVideoUid := r.PostFormValue("video_uid")
+	queryVideoContent := r.PostFormValue("video_content")
+	queryVideoKeyword := r.PostFormValue("video_keyword")
+	queryVideoTypeTmp, _ := strconv.Atoi(r.PostFormValue("video_type"))
 	queryVideoType := int8(queryVideoTypeTmp)
 
-	// check video
-	video := database.GetVideoDetail(queryVideoUid)
-	if video.Id == 0 {
+	// check video (lighter)
+	videoId := database.GetVideoIdByVideoUid(queryVideoUid)
+	if videoId == 0 {
 		status = 0
 		errorMsg = "Video not found."
 		SendJSONResponse(w, status, data, errorMsg)
@@ -815,7 +1412,7 @@ func setVideoInfo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// check if video is not uploaded by this user
-	if database.CheckUserVideoRelation(userId, video.Id, "uploaded") {
+	if database.CheckUserVideoRelation(userId, videoId, "uploaded") {
 		status = 0
 		errorMsg = "This video was not uploaded by this user."
 		SendJSONResponse(w, status, data, errorMsg)
@@ -823,7 +1420,7 @@ func setVideoInfo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// edit video info
-	ok := database.SetVideoInfo(queryVideoUid, queryVideoTitle, queryVideoContent, queryVideoType)
+	ok := database.SetVideoInfo(queryVideoUid, queryVideoContent, queryVideoKeyword, queryVideoType)
 	if !ok {
 		status = 0
 		errorMsg = "Unknown error."
@@ -832,7 +1429,7 @@ func setVideoInfo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// get video info
-	video = database.GetVideoDetail(queryVideoUid)
+	video := database.GetVideoDetailByVideoUid(queryVideoUid, userId)
 
 	data = map[string]interface{}{
 		"video": video,
@@ -843,7 +1440,7 @@ func setVideoInfo(w http.ResponseWriter, r *http.Request) {
 
 func deleteVideo(w http.ResponseWriter, r *http.Request) {
 	/*
-	 * @api {get|post} /v1/video/delete Delete video
+	 * @api {post} /v1/video/delete Delete video
 	 * @apiName DeleteVideo
 	 *
 	 * @apiParam {String} video_uid Video uid.
@@ -852,8 +1449,8 @@ func deleteVideo(w http.ResponseWriter, r *http.Request) {
 	data := map[string]interface{}{}
 	errorMsg := ""
 
-	// check method
-	if r.Method != "GET" && r.Method != "POST" {
+	// check method, only accept POST
+	if r.Method != "POST" {
 		status = 0
 		errorMsg = "Invalid request method."
 		SendJSONResponse(w, status, data, errorMsg)
@@ -870,18 +1467,18 @@ func deleteVideo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// parse form
-	err := r.ParseForm()
+	err := r.ParseMultipartForm(config.MaxNormalPostSize64)
 	if err != nil {
 		status = 0
 		errorMsg = "Failed to parse form."
 		SendJSONResponse(w, status, data, errorMsg)
 		return
 	}
-	queryVideoUid := r.FormValue("video_uid")
+	queryVideoUid := r.PostFormValue("video_uid")
 
 	// check video
-	video := database.GetVideoDetail(queryVideoUid)
-	if video.Id == 0 {
+	videoId := database.GetVideoIdByVideoUid(queryVideoUid)
+	if videoId == 0 {
 		status = 0
 		errorMsg = "Video not found."
 		SendJSONResponse(w, status, data, errorMsg)
@@ -889,7 +1486,7 @@ func deleteVideo(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// check if video is not uploaded by this user
-	if database.CheckUserVideoRelation(userId, video.Id, "uploaded") {
+	if database.CheckUserVideoRelation(userId, videoId, "uploaded") {
 		status = 0
 		errorMsg = "This video was not uploaded by this user."
 		SendJSONResponse(w, status, data, errorMsg)
@@ -941,6 +1538,255 @@ func getVideoTypes(w http.ResponseWriter, r *http.Request) {
 	SendJSONResponse(w, status, data, errorMsg)
 }
 
+func searchVideo(w http.ResponseWriter, r *http.Request) {
+	/*
+	 * @api {get|post} /v1/video/search Search video
+	 * @apiName SearchVideo
+	 *
+	 * @apiParam {String} keyword Keyword.
+	 * @apiParam {Number} limit Max number of videos.
+	 * @apiParam {Number} start Start at.
+	 */
+	status := 200
+	data := map[string]interface{}{}
+	errorMsg := ""
+
+	// check method, only accept POST
+	if r.Method != "POST" {
+		status = 0
+		errorMsg = "Invalid request method."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+
+	// parse form
+	err := r.ParseMultipartForm(config.MaxNormalPostSize64)
+	if err != nil {
+		status = 0
+		errorMsg = "Failed to parse form."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+	queryKeyword := r.PostFormValue("keyword")
+	queryLimit, _ := strconv.Atoi(r.PostFormValue("limit"))
+	queryStart, _ := strconv.Atoi(r.PostFormValue("start"))
+	if queryKeyword == "" {
+		status = 0
+		errorMsg = "Keyword cannot be empty."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+
+	// for some bad parameter, strict limit
+	if queryLimit > 9 {
+		queryLimit = 9
+	} else if queryLimit < 3 {
+		queryLimit = 3
+	}
+	if queryStart < 0 {
+		queryStart = 0
+	}
+
+	// check if user logged in
+	currentUserId := uint(0)
+	tokenValid, userId, _, _ := findAndCheckToken(r)
+	if tokenValid {
+		currentUserId = userId
+	}
+
+	// search video
+	videoList := database.SearchVideo(queryKeyword, queryLimit, queryStart, currentUserId)
+	if len(videoList) == 0 {
+		status = 0
+		errorMsg = "No more video found."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+
+	// check relation between user and video
+	// only need to check when user logged in
+	if tokenValid { // user logged in
+		for i := 0; i < len(videoList); i++ {
+			videoList[i].IsUserLiked, videoList[i].IsUserFavorite, videoList[i].IsUserUploaded,
+				videoList[i].IsUserWatched, videoList[i].IsUserLastPlay = database.CheckUserVideoAllRelation(userId, videoList[i].Id)
+		}
+	}
+
+	data = map[string]interface{}{
+		"video_list": videoList,
+	}
+
+	SendJSONResponse(w, status, data, errorMsg)
+}
+
+func getSearchVideoHotkeys(w http.ResponseWriter, r *http.Request) {
+	/*
+	 * @api {post} /v1/video/search/hotkeys Get search video hotkeys
+	 * @apiName GetSearchVideoHotkeys
+	 */
+	status := 200
+	data := map[string]interface{}{}
+	errorMsg := ""
+
+	// check method, only accept POST
+	if r.Method != "POST" {
+		status = 0
+		errorMsg = "Invalid request method."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+
+	// parse form
+	err := r.ParseMultipartForm(config.MaxNormalPostSize64)
+	if err != nil {
+		status = 0
+		errorMsg = "Failed to parse form."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+	queryMaxCount, _ := strconv.Atoi(r.PostFormValue("max_count"))
+	if queryMaxCount < 5 {
+		queryMaxCount = 5
+	}
+	if queryMaxCount > 20 {
+		queryMaxCount = 20
+	}
+
+	// get hotkeys
+	hotkeys := database.GetSearchVideoHotkeys(queryMaxCount)
+	if len(hotkeys) == 0 {
+		status = 0
+		errorMsg = "No hotkeys found."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+
+	data = map[string]interface{}{
+		"hotkeys": hotkeys,
+	}
+
+	SendJSONResponse(w, status, data, errorMsg)
+}
+
+func searchUser(w http.ResponseWriter, r *http.Request) {
+	status := 200
+	data := map[string]interface{}{}
+	errorMsg := ""
+
+	// check method, only accept POST
+	if r.Method != "POST" {
+		status = 0
+		errorMsg = "Invalid request method."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+
+	// parse form
+	err := r.ParseMultipartForm(config.MaxNormalPostSize64)
+	if err != nil {
+		status = 0
+		errorMsg = "Failed to parse form."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+	queryKeyword := r.PostFormValue("keyword")
+	queryLimit, _ := strconv.Atoi(r.PostFormValue("limit"))
+	queryStart, _ := strconv.Atoi(r.PostFormValue("start"))
+	if queryKeyword == "" {
+		status = 0
+		errorMsg = "Keyword cannot be empty."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+
+	// for some bad parameter, strict limit
+	if queryLimit > 9 {
+		queryLimit = 9
+	} else if queryLimit < 3 {
+		queryLimit = 3
+	}
+	if queryStart < 0 {
+		queryStart = 0
+	}
+
+	// check if user logged in
+	currentUserId := uint(0)
+	tokenValid, userId, _, _ := findAndCheckToken(r)
+	if tokenValid {
+		currentUserId = userId
+	}
+
+	// search user
+	userList := database.SearchUser(queryKeyword, queryLimit, queryStart, currentUserId)
+	if len(userList) == 0 {
+		status = 0
+		errorMsg = "No more user found."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+
+	var visibleInfoUserList []model.User
+	for i := 0; i < len(userList); i++ {
+		visibleInfoUserList = append(visibleInfoUserList, userList[i])
+	}
+	data = map[string]interface{}{
+		"user_list": visibleInfoUserList,
+	}
+
+	SendJSONResponse(w, status, data, errorMsg)
+}
+
+func getSearchUserHotkeys(w http.ResponseWriter, r *http.Request) {
+	/*
+	 * @api {get|post} /v1/user/search/hotkeys Get search user hotkeys
+	 * @apiName GetSearchUserHotkeys
+	 */
+	status := 200
+	data := map[string]interface{}{}
+	errorMsg := ""
+
+	// check method, only accept POST
+	if r.Method != "POST" {
+		status = 0
+		errorMsg = "Invalid request method."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+
+	// parse form
+	err := r.ParseMultipartForm(config.MaxNormalPostSize64)
+	if err != nil {
+		status = 0
+		errorMsg = "Failed to parse form."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+
+	// for some bad parameter, strict limit
+	queryMaxCount, _ := strconv.Atoi(r.PostFormValue("max_count"))
+	if queryMaxCount < 5 {
+		queryMaxCount = 5
+	}
+	if queryMaxCount > 20 {
+		queryMaxCount = 20
+	}
+
+	// get hotkeys
+	hotkeys := database.GetSearchUserHotkeys(queryMaxCount)
+	if len(hotkeys) == 0 {
+		status = 0
+		errorMsg = "No hotkeys found."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+
+	data = map[string]interface{}{
+		"hotkeys": hotkeys,
+	}
+
+	SendJSONResponse(w, status, data, errorMsg)
+}
+
 func qiniuHlsCallback(w http.ResponseWriter, r *http.Request) {
 	status := 200
 	data := map[string]interface{}{}
@@ -968,8 +1814,10 @@ func qiniuHlsCallback(w http.ResponseWriter, r *http.Request) {
 	var qiniuCallbackData model.QiniuCallbackData
 	err = json.Unmarshal(postData, &qiniuCallbackData)
 	if err != nil {
-		funcName, _, _, _ := runtime.Caller(0)
-		log.Println(runtime.FuncForPC(funcName).Name(), "failed to parse json:", string(postData))
+		if config.ShowLog {
+			funcName, _, _, _ := runtime.Caller(0)
+			log.Println(runtime.FuncForPC(funcName).Name(), "failed to parse json:", string(postData))
+		}
 		status = 0
 		errorMsg = "Failed to parse json."
 		SendJSONResponse(w, status, data, errorMsg)
@@ -981,8 +1829,8 @@ func qiniuHlsCallback(w http.ResponseWriter, r *http.Request) {
 	videoUid := strings.Split(file, "/")[2][:36]
 
 	// get video info
-	video := database.GetVideoDetail(videoUid)
-	if video.Id == 0 {
+	videoId := database.GetVideoIdByVideoUid(videoUid)
+	if videoId == 0 {
 		status = 0
 		errorMsg = "Video not found."
 		SendJSONResponse(w, status, data, errorMsg)
@@ -1027,8 +1875,10 @@ func qiniuScreenshotCallback(w http.ResponseWriter, r *http.Request) {
 	var qiniuCallbackData model.QiniuCallbackData
 	err = json.Unmarshal(postData, &qiniuCallbackData)
 	if err != nil {
-		funcName, _, _, _ := runtime.Caller(0)
-		log.Println(runtime.FuncForPC(funcName).Name(), "failed to parse json:", string(postData))
+		if config.ShowLog {
+			funcName, _, _, _ := runtime.Caller(0)
+			log.Println(runtime.FuncForPC(funcName).Name(), "failed to parse json:", string(postData))
+		}
 		status = 0
 		errorMsg = "Failed to parse json."
 		SendJSONResponse(w, status, data, errorMsg)
@@ -1040,8 +1890,8 @@ func qiniuScreenshotCallback(w http.ResponseWriter, r *http.Request) {
 	videoUid := strings.Split(file, "/")[2][:36]
 
 	// get video info
-	video := database.GetVideoDetail(videoUid)
-	if video.Id == 0 {
+	videoId := database.GetVideoIdByVideoUid(videoUid)
+	if videoId == 0 {
 		status = 0
 		errorMsg = "Video not found."
 		SendJSONResponse(w, status, data, errorMsg)
@@ -1066,7 +1916,7 @@ func setToken(w http.ResponseWriter, r *http.Request) {
 	errorMsg := ""
 
 	// parse form
-	err := r.ParseForm()
+	err := r.ParseMultipartForm(config.MaxNormalPostSize64)
 	if err != nil {
 		status = 0
 		errorMsg = "Failed to parse form."
@@ -1107,7 +1957,7 @@ func getToken(w http.ResponseWriter, r *http.Request) {
 	errorMsg := ""
 
 	// parse form
-	err := r.ParseForm()
+	err := r.ParseMultipartForm(config.MaxNormalPostSize64)
 	if err != nil {
 		status = 0
 		errorMsg = "Failed to parse form."
@@ -1162,17 +2012,31 @@ func main() {
 	http.HandleFunc("/v1/user/logout", logout)
 	http.HandleFunc("/v1/user/signup", signup)
 	http.HandleFunc("/v1/user/info", getUserInfo)
+	http.HandleFunc("/v1/user/query", getOtherUserInfo)
+	http.HandleFunc("/v1/user/follow", followUser)
 	http.HandleFunc("/v1/user/info/set", setUserInfo)
 
 	http.HandleFunc("/v1/video/list", getVideoList)
 	http.HandleFunc("/v1/video/info", getVideoInfo)
 	http.HandleFunc("/v1/video/action", doVideoAction)
-	http.HandleFunc("/v1/video/record", recordVideoHistory)
+	http.HandleFunc("/v1/video/watch", recordWatchedVideo)
+	http.HandleFunc("/v1/video/forward", guestForwardVideo)
+
+	http.HandleFunc("/v1/video/comment/list", getVideoComment)
+	http.HandleFunc("/v1/video/comment/make", makeVideoComment)
+	http.HandleFunc("/v1/video/comment/delete", deleteVideoComment)
+
 	http.HandleFunc("/v1/video/upload", uploadVideo)
+	http.HandleFunc("/v1/video/uploadRemote", uploadVideoRemote)
 	http.HandleFunc("/v1/video/info/set", setVideoInfo)
 	http.HandleFunc("/v1/video/delete", deleteVideo)
 
 	http.HandleFunc("/v1/video/types", getVideoTypes)
+
+	http.HandleFunc("/v1/video/search", searchVideo)
+	http.HandleFunc("/v1/video/search/hotkeys", getSearchVideoHotkeys)
+	http.HandleFunc("/v1/user/search", searchUser)
+	http.HandleFunc("/v1/user/search/hotkeys", getSearchUserHotkeys)
 
 	http.HandleFunc("/callback/qiniu/hls", qiniuHlsCallback)
 	http.HandleFunc("/callback/qiniu/screenshot", qiniuScreenshotCallback)

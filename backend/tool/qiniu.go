@@ -17,20 +17,23 @@ func UploadFileToQiniu(localPath string, remotePath string) bool {
 	ret := storage.PutRet{}
 	err := formUploader.PutFile(context.Background(), &ret, upToken, remotePath, localPath, nil)
 	if err != nil {
-		funcName, _, _, _ := runtime.Caller(0)
-		log.Println(runtime.FuncForPC(funcName).Name(), err)
+		if config.ShowLog {
+			funcName, _, _, _ := runtime.Caller(0)
+			log.Println(runtime.FuncForPC(funcName).Name(), err)
+		}
 		return false
 	}
-	funcName, _, _, _ := runtime.Caller(0)
-	log.Println(runtime.FuncForPC(funcName).Name(), "upload success", ret.Key, ret.Hash)
+	if config.ShowLog {
+		funcName, _, _, _ := runtime.Caller(0)
+		log.Println(runtime.FuncForPC(funcName).Name(), "upload success", ret.Key, ret.Hash)
+	}
 	return true
 }
 
-func UploadDirToQiniu(dirName string) bool {
+func UploadDirToQiniu(localDirPath string) bool {
 	// {{video_uid}} -> /video/{{video_uid}}/
-	localDirPath := path.Join(config.BaseLocalFileDir, dirName)
-	//remoteDirPath := path.Join(config.BaseRemoteFileDir, dirName) // seems cannot make dir by api?
-	remoteDirPath := path.Join(config.BaseRemoteFileDir, "") // just put in root dir
+	dirName := path.Base(localDirPath)
+	remoteDirPath := path.Join(config.BaseRemoteFileDir, dirName) // just put in root dir
 	// search all files in localDirPath
 	var files []string
 	err := filepath.Walk(localDirPath, func(path string, info os.FileInfo, err error) error {
@@ -41,12 +44,16 @@ func UploadDirToQiniu(dirName string) bool {
 		return nil
 	})
 	if err != nil {
+		if config.ShowLog {
+			funcName, _, _, _ := runtime.Caller(0)
+			log.Println(runtime.FuncForPC(funcName).Name(), "err: ", err)
+		}
 		return false
 	}
 	// upload all files
 	for _, file := range files {
 		remoteFilePath := path.Join(remoteDirPath, file[len(localDirPath):])
-		// try upload 3 times
+		// try to upload 3 times
 		uploadOk := false
 		for i := 0; i < 3; i++ {
 			if UploadFileToQiniu(file, remoteFilePath) {

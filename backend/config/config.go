@@ -4,10 +4,8 @@ import (
 	"github.com/qiniu/go-sdk/v7/auth"
 	"github.com/qiniu/go-sdk/v7/auth/qbox"
 	"github.com/qiniu/go-sdk/v7/storage"
+	"time"
 )
-
-var Test bool
-var ShowLog bool
 
 type DatabaseConfig struct {
 	Host string
@@ -17,8 +15,6 @@ type DatabaseConfig struct {
 	Name string
 }
 
-var DefaultDatabase DatabaseConfig
-
 type RedisConfig struct {
 	Host    string
 	Port    int
@@ -26,23 +22,36 @@ type RedisConfig struct {
 	Channel int
 }
 
+var Test bool // set to false to disable test api
+var ShowLog bool
+
+var TokenExpireTime time.Duration // token expire time
+
+var DefaultDatabase DatabaseConfig
+
 var DefaultRedis RedisConfig
 
 var QiniuStorageCfg storage.Config
 var QiniuPutPolicy storage.PutPolicy
 var QiniuMac *auth.Credentials
 
-var BaseLocalFileDir string
-var BaseRemoteFileDir string
+var BaseLocalFileDir string  // local dir for temp file
+var BaseRemoteFileDir string // remote dir
 
-var VideoProcessType int
+var VideoProcessType int // 1: wait for qiniu transcode callback; 2: transcode by ffmpeg locally
 
-var MaxUploadVideoSize int
+var MaxNormalPostSize int  // MB
+var MaxUploadVideoSize int // MB
+var MaxNormalPostSize64 int64
+var MaxUploadVideoSize64 int64
 
 func InitConfig() {
-	Test = true // set to false to disable test api
+	Test = true
 	ShowLog = true
-	VideoProcessType = 1 // 1: wait for qiniu transcode callback; 2: transcode by ffmpeg locally
+
+	TokenExpireTime = time.Hour * 24 * 3 // 3 days
+
+	VideoProcessType = 1
 
 	DefaultDatabase = DatabaseConfig{
 		Host: "127.0.0.1",
@@ -57,18 +66,22 @@ func InitConfig() {
 		Pass:    "acesaces",
 		Channel: 0,
 	}
+
 	QiniuStorageCfg = storage.Config{
 		Region:        &storage.ZoneHuadongZheJiang2,
 		UseHTTPS:      true,
 		UseCdnDomains: false,
 	}
-
 	QiniuPutPolicy = storage.PutPolicy{
 		Scope: "aces-js",
 	}
 	QiniuMac = qbox.NewMac("mWIWThPUX4LBqsEz8UvduI9DUhmfSEfuVPQ2VzPG", "s5JKrAkJWl4XQpNnP42qHAeEmtfZ75gRPYkSyAkd")
+
 	BaseLocalFileDir = "/root/project/user_upload_files"
 	BaseRemoteFileDir = ""
 
-	MaxUploadVideoSize = 50 // MB
+	MaxNormalPostSize = 10
+	MaxUploadVideoSize = 200
+	MaxNormalPostSize64 = int64(MaxNormalPostSize * 1024 * 1024)
+	MaxUploadVideoSize64 = int64(MaxUploadVideoSize * 1024 * 1024)
 }

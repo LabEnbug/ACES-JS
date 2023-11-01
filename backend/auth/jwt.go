@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"backend/config"
 	"fmt"
 	"github.com/golang-jwt/jwt/v5"
 	"time"
@@ -9,7 +10,7 @@ import (
 //var jwtSecret = []byte("acesacesaces")
 
 func CreateToken(userId uint) (string, int64, error) {
-	exp := time.Now().Add(time.Hour * 72).Unix()
+	exp := time.Now().Add(config.TokenExpireTime).Unix()
 	token := jwt.NewWithClaims(jwt.SigningMethodES256, jwt.MapClaims{
 		"userId": userId,
 		"exp":    exp, // 3 days
