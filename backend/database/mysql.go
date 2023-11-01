@@ -1,6 +1,7 @@
 package database
 
 import (
+	"backend/common"
 	"backend/config"
 	"backend/model"
 	"database/sql"
@@ -212,6 +213,8 @@ func GetVideoList(qType int, qUserId uint, qActionHistory string, limit int, pag
 		if hlsOk == 1 {
 			video.PlayUrl = fmt.Sprintf("http://s348vstvo.bkt.clouddn.com/video/%s/index.m3u8", video.VideoUid)
 		}
+		user, _, _ := GetUserInfoById(video.UserId)
+		video.User = common.GetVisibleUserInfo(user)
 		videoList = append(videoList, video)
 	}
 	return videoList
@@ -239,7 +242,62 @@ func GetVideoDetail(videoUid string) model.Video {
 	if hlsOk == 1 {
 		video.PlayUrl = fmt.Sprintf("http://s348vstvo.bkt.clouddn.com/video/%s/index.m3u8", video.VideoUid)
 	}
+	user, _, _ := GetUserInfoById(video.UserId)
+	video.User = common.GetVisibleUserInfo(user)
 	return video
+}
+
+func CheckUserVideoRelation(userId uint, videoId uint, relationType string) bool {
+	switch relationType {
+	case "like":
+		var count int
+		err := db.QueryRow("SELECT COUNT(1) FROM video_like WHERE video_id=? AND user_id=? AND unlike_time IS NULL LIMIT 1", videoId, userId).Scan(&count)
+		if err != nil || count == 0 {
+			return false
+		}
+		return true
+	case "favorite":
+		var count int
+		err := db.QueryRow("SELECT COUNT(1) FROM video_favorite WHERE video_id=? AND user_id=? AND unfavorite_time IS NULL LIMIT 1", videoId, userId).Scan(&count)
+		if err != nil || count == 0 {
+			return false
+		}
+		return true
+	case "uploaded":
+		var count int
+		err := db.QueryRow("SELECT COUNT(1) FROM video WHERE id=? AND user_id=? LIMIT 1", videoId, userId).Scan(&count)
+		if err != nil || count == 0 {
+			return false
+		}
+		return true
+	case "history":
+		var count int
+		err := db.QueryRow("SELECT COUNT(1) FROM video_history WHERE video_id=? AND user_id=? LIMIT 1", videoId, userId).Scan(&count)
+		if err != nil || count == 0 {
+			return false
+		}
+		return true
+	case "last_play":
+		var videoIdReturn uint
+		err := db.QueryRow("SELECT video_id FROM video_history WHERE user_id=? ORDER BY id DESC LIMIT 1", videoId, userId).Scan(&videoIdReturn)
+		if err != nil || videoIdReturn != videoId {
+			return false
+		}
+		return true
+	default:
+		return false
+	}
+}
+
+func CheckUserVideoAllRelation(userId uint, videoId uint) (bool, bool, bool, bool, bool) {
+	/*
+	 * return: isUserLiked, isUserFavorite, isUserUploaded, isUserHistory, isUserLastPlay
+	 */
+	return CheckUserVideoRelation(userId, videoId, "like"),
+		CheckUserVideoRelation(userId, videoId, "favorite"),
+		CheckUserVideoRelation(userId, videoId, "uploaded"),
+		CheckUserVideoRelation(userId, videoId, "history"),
+		CheckUserVideoRelation(userId, videoId, "last_play")
 }
 
 func checkVideoActionHistory(videoId uint, userId uint, actionType string) (model.VideoAction, error) {
@@ -346,6 +404,15 @@ func GuestRecordVideoHistory(video model.Video, userId uint) bool {
 	return true
 }
 
+func CheckVideoType(videoType int) bool {
+	var count int
+	err := db.QueryRow("SELECT COUNT(1) FROM video_type WHERE id=? LIMIT 1", videoType).Scan(&count)
+	if err != nil || count == 0 {
+		return false
+	}
+	return true
+}
+
 func UserCreateVideo(userId uint, videoUid string, videoType int, videoTitle string, videoContent string) (model.Video, bool) {
 	var video model.Video
 	if _, err := db.Exec("INSERT INTO video (user_id, video_uid, type, title, content, upload_time) VALUES (?, ?, ?, ?, ?, NOW())", userId, videoUid, videoType, videoTitle, videoContent); err != nil {
@@ -359,7 +426,7 @@ func UserCreateVideo(userId uint, videoUid string, videoType int, videoTitle str
 	return video, true
 }
 
-func SetVideoInfo(videoUid string, videoTitle string, videoContent string, videoType int) bool {
+func SetVideoInfo(videoUid string, videoTitle string, videoContent string, videoType int8) bool {
 	if _, err := db.Exec("UPDATE video SET title=?, content=?, type=? WHERE video_uid=?", videoTitle, videoContent, videoType, videoUid); err != nil {
 		funcName, _, _, _ := runtime.Caller(0)
 		log.Println(runtime.FuncForPC(funcName).Name(), "err: ", err)
