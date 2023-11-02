@@ -25,7 +25,7 @@ import {
   IconInteraction,
   IconTag,
   IconLoading,
-  IconLock,
+  IconLock, IconShake, IconPlusCircle, IconPlus, IconUpload,
 } from '@arco-design/web-react/icon';
 import { useSelector, useDispatch } from 'react-redux';
 import store, { GlobalState } from '@/store';
@@ -42,6 +42,7 @@ import useStorage from '@/utils/useStorage';
 import { generatePermission } from '@/routes';
 import {useRouter} from "next/router";
 import GetAxios from '@/utils/getaxios';
+import cs from "classnames";
 
 const FormItem = Form.Item;
 
@@ -291,13 +292,13 @@ function Navbar({ show }: { show: boolean }) {
         </div>
       </div>
       <ul className={styles.right}>
-        <li>
+        <li className={styles['search']}>
           <SearchPopupBox searchPopupBoxVisible={searchPopupBoxVisible} setSearchPopupBoxVisible={setSearchPopupBoxVisible}>
             <Input.Search
               // after enter, popupBox should be closed
               value={searchKeyword}
               onChange={(e) => setSearchKeyword(e)}
-              className={styles.round + ' ' + styles['search-input']}
+              className={styles.round}
               placeholder={t['navbar.search.placeholder']}
               onSearch={searchKeyword !== '' && handleSearchSubmit}
             />
@@ -317,6 +318,16 @@ function Navbar({ show }: { show: boolean }) {
           {/*    onSearch={handleSearchSubmit}*/}
           {/*  />*/}
           {/*</Trigger>*/}
+        </li>
+        <li>
+          {/* upload video button */}
+          <Button icon={<IconUpload />} type='primary' shape='round' onClick={() => {
+            router.push({
+              pathname: '/upload',
+            });
+          }}>
+            上传短视频
+          </Button>
         </li>
         <li>
           <Select
@@ -339,11 +350,11 @@ function Navbar({ show }: { show: boolean }) {
             }}
           />
         </li>
-        <li>
-          <MessageBox>
-            <IconButton icon={<IconNotification />} />
-          </MessageBox>
-        </li>
+        {/*<li>*/}
+        {/*  <MessageBox>*/}
+        {/*    <IconButton icon={<IconNotification />} />*/}
+        {/*  </MessageBox>*/}
+        {/*</li>*/}
         {/* <li>
           <Tooltip
             content={
@@ -366,7 +377,10 @@ function Navbar({ show }: { show: boolean }) {
                 {userLoading ? (
                   <IconLoading />
                 ) : (
-                  <img alt="avatar" src={userInfo.avatar} />
+                  <Avatar size={40}>
+                    {userInfo.avatar_url?<img src={userInfo.avatar_url} />:userInfo.nickname}
+                  </Avatar>
+                  // <img alt="avatar" src={userInfo.avatar} />
                 )}
               </Avatar>
             </Dropdown>

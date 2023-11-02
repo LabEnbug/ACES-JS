@@ -33,8 +33,6 @@ export default function ListSearchResult() {
 
   const [isEndData, setIsEndData] = useState(false);
 
-
-
   const getData = async (q, t) => {
     t === 'video' ? setVideoData(defaultVideoList) : setUserData(defaultUserList);
     setIsEndData(false);
@@ -91,6 +89,7 @@ export default function ListSearchResult() {
 
   useEffect(() => {
     if (router.isReady && q) {
+
       activeKey === 'video' ? setVideoData(defaultVideoList) : setUserData(defaultUserList);
       getData(q, activeKey);
       // add search history to local storage

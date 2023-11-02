@@ -1,0 +1,70 @@
+.container {
+  :global(.arco-card-body) {
+    padding: 20px;
+  }
+}
+
+.wrapper {
+  width: 624px;
+  margin: 0 auto;
+  padding-top: 56px;
+  padding-bottom: 70px;
+
+}
+
+.customUpload {
+  :global(.arco-upload-list-item-text-content) {
+    flex-wrap: wrap;
+  }
+
+  :global(.arco-upload-list-start-icon),
+  :global(.arco-upload-list-cancel-icon) {
+    right: 0;
+    left: unset;
+    top: -20px;
+    transform: none;
+  }
+
+  :global(.arco-upload-list-success-icon) {
+    margin-left: 4px;
+  }
+
+  :global(.arco-upload-list-status) {
+    display: block;
+  }
+
+  :global(.arco-upload-list-item-text-name) {
+    max-width: 78%;
+    margin-right: 0;
+  }
+
+  :global(.arco-upload-list-progress) {
+    display: block;
+    height: 0;
+    margin-top: 0;
+    transition: all 0.2s ease;
+    opacity: 0;
+    overflow: hidden;
+  }
+  :global(.arco-upload-list-item-uploading .arco-upload-list-progress) {
+    margin-top: 8px;
+    opacity: 1;
+    height: 18px;
+  }
+}
+
+.form-extra {
+  width: 680px;
+  margin: 54px auto;
+  background-color: var(--color-fill-1);
+  padding: 20px;
+  //margin-bottom: 60px;
+
+  > h6 {
+    margin-top: 0;
+  }
+
+  > div {
+    margin-bottom: 0;
+  }
+}

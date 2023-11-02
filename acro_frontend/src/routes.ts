@@ -62,6 +62,11 @@ export const routes: IRoute[] = [
     ignore: true,
   },
   {
+    name: 'menu.upload',
+    key: 'upload',
+    ignore: true,
+  },
+  {
     name: 'menu.dashboard',
     key: 'dashboard',
     children: [

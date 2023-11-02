@@ -29,6 +29,7 @@
   margin: 8px;
 
   :global(.arco-card-body) {
+    padding-top: 0;
     padding-left: 0;
     padding-right: 0;
     padding-bottom: 0;
@@ -201,12 +202,23 @@
 
 
 .usercard {
+  margin-top: 12px;
   margin-left: 12px;
   margin-bottom: 12px;
 
   .nickname {
     margin-left: 8px;
     color: var(--color-text-1);
+
+    display: -webkit-inline-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.6em;
+    max-height: 1.2em;
+    min-height: 1.2em;
+    word-wrap: break-word;
   }
 
   .username {
@@ -221,6 +233,30 @@
 
 .zoom:hover {
   transform: scale(1.02);
+}
+
+.addon-info {
+  display: flex;
+  align-items: center;
+  margin-left: 12px;
+}
+
+.user-addon-count-info {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+
+  //margin-left: 4px;
+  //margin-right: 4px;
+
+  .user-addon-count-type {
+
+  }
+  .user-addon-count-data {
+    margin-left: 4px;
+    color: var(--color-text-2)
+  }
 }
 
 .add-card {

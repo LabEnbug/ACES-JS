@@ -19,7 +19,7 @@ import {useRouter} from "next/router";
 import videojs from "video.js";
 import {Like} from "@icon-park/react";
 import IconButton from "@/components/NavBar/IconButton";
-import {IconClockCircle, IconShake} from "@arco-design/web-react/icon";
+import {IconClockCircle, IconHeartFill, IconShake} from "@arco-design/web-react/icon";
 
 interface CardBlockType {
   type: 'uploaded' | 'like' | 'favorite' | 'watched' ;
@@ -147,17 +147,29 @@ function CardBlock(props: CardBlockType) {
         <div className={styles['card-extra-like-count']} style={{ color: card.is_user_liked?'red':'#ffffff' }}>{card.be_liked_count}</div>
       </div>
       {/* if saw before, show tag */}
-      {card.is_user_watched && type !== 'watched' ? (
-        <div className={styles['card-extra-seen']}>
-          <Tag
-            icon={<IconClockCircle />}
-            style={{
-              backgroundColor: 'rgba(var(--gray-8), 0.5)',
-            }}
-          >观看过</Tag>
-        </div>
-      ) : null}
-      {/* if uploaded by this user, video control */}
+      <div style={{ display: 'flex', marginBottom: '8px' }}>
+        {card.is_user_liked ? (
+          <div className={styles['card-extra-seen']}>
+            <Tag
+              icon={<IconHeartFill />}
+              style={{
+                backgroundColor: 'rgba(var(--gray-8), 0.5)',
+              }}
+            >点赞过</Tag>
+          </div>
+        ) : null}
+        {card.is_user_watched && type !== 'watched' ? (
+          <div className={styles['card-extra-seen']}>
+            <Tag
+              icon={<IconClockCircle />}
+              style={{
+                backgroundColor: 'rgba(var(--gray-8), 0.5)',
+              }}
+            >观看过</Tag>
+          </div>
+        ) : null}
+      </div>
+      {/* todo: if uploaded by this user, add video control button */}
 
       <div className={styles['card-block-mask']}>
         {/*<div style={{ marginTop: '280px' }}></div>*/}

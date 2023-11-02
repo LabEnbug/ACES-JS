@@ -1,23 +1,73 @@
+.container {
+  overflow: hidden;
+
+  :global(.arco-card) {
+    margin-bottom: 16px;
+  }
+}
+
 .info-wrapper {
   display: flex;
   padding: 32px;
 
-  .nickname {
-    height: 40px;
-    font-size: x-large;
-    margin-left: 4px;
-    color: var(--color-text-1);
-    .change-nickname {
+  .user-info {
+    display: flex;
+
+    .base-info {
       margin-left: 16px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+
+      .nickname {
+        height: auto;
+        font-size: x-large;
+        margin-left: 4px;
+        color: var(--color-text-1);
+        display: flex;
+        // child vertical align center
+        align-items: center;
+
+        .change-nickname {
+          margin-left: 16px;
+        }
+
+        .follow {
+          margin-left: 16px;
+        }
+      }
+
+      .username {
+        margin-left: 4px;
+        color: var(--color-text-3);
+      }
     }
-    .interest {
-      margin-left: 16px;
+
+    .addon-info {
+      margin-left: 32px;
+      display: flex;
+      align-items: center;
     }
   }
+}
 
-  .username {
-    margin-left: 4px;
-    color: var(--color-text-3);
+.user-addon-count-info {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+
+  margin-left: 16px;
+  margin-right: 16px;
+
+  font-size: medium;
+
+  .user-addon-count-type {
+
+  }
+  .user-addon-count-data {
+    margin-top: 4px;
+    color: var(--color-text-1)
   }
 }
 
@@ -43,6 +93,13 @@
 
   .single-content {
     margin-top: 30px;
+  }
+}
+
+.video-list-container {
+  margin-top: 16px;
+  :global(.arco-tabs-header-title-text) {
+    font-size: larger;
   }
 }
 

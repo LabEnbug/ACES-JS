@@ -9,7 +9,7 @@ import {
   Typography,
   Dropdown,
   Menu,
-  Skeleton, Avatar,
+  Skeleton, Avatar, Divider,
 } from '@arco-design/web-react';
 import useLocale from '@/utils/useLocale';
 import locale from './locale';
@@ -19,7 +19,18 @@ import {useRouter} from "next/router";
 import videojs from "video.js";
 import {Like} from "@icon-park/react";
 import IconButton from "@/components/NavBar/IconButton";
-import {IconClockCircle, IconShake} from "@arco-design/web-react/icon";
+import {
+  IconCheck,
+  IconClockCircle,
+  IconEye, IconHeart, IconHeartFill,
+  IconMinusCircle,
+  IconPlus,
+  IconShake,
+  IconThumbUp
+} from "@arco-design/web-react/icon";
+import GetAxios from "@/utils/getaxios";
+import GetUserInfo from "@/utils/getuserinfo";
+import UserAddonCountInfo from "@/pages/user/user-addon-count-info";
 
 interface CardBlockType {
   type: 'video' | 'user' ;
@@ -30,12 +41,14 @@ interface CardBlockType {
 
 
 function CardBlock(props: CardBlockType) {
-  const { type, card = {} } = props;
+  let { type, card = {} } = props;
   const [visible, setVisible] = useState(false);
-  const [status, setStatus] = useState(card.status);
+
   const [loading, setLoading] = useState(props.loading);
 
-  const t = useLocale(locale);
+  const [followLoading, setFollowLoading] = useState(false);
+  const [followHovering, setFollowHovering] = useState(false);
+  const [isFollowed, setIsFollowed] = useState(false);
 
   const router = useRouter();
 
@@ -66,6 +79,9 @@ function CardBlock(props: CardBlockType) {
 
   useEffect(() => {
     setLoading(props.loading);
+    if (type === 'user') {
+      setIsFollowed(card.be_followed);
+    }
   }, [props.loading]);
 
 
@@ -123,6 +139,34 @@ function CardBlock(props: CardBlockType) {
 
   const className = cs(styles['card-block'], styles[`${type}-card`], styles[`zoom`]);
 
+  const followUser = (follow) => {
+    setFollowLoading(true);
+    const baxios = GetAxios();
+    let params = new FormData();
+    params.append('user_id', card.user_id);
+    params.append('action', follow?'unfollow':'follow');
+    baxios.post('/v1-api/v1/user/follow', params)
+      .then(response => {
+        const data = response.data
+        if (data.status !== 200) {
+          console.error(data.err_msg);
+          return;
+        }
+        setIsFollowed(!follow);
+        card.be_followed = !follow;
+      })
+      .catch(error => {
+        console.error(error);
+      })
+      .finally(() => {setFollowLoading(false);});
+  }
+
+  function parseData(data: number) {
+    if (data < 10000) {
+      return data;
+    }
+    return (data / 10000).toFixed(1) + '万';
+  }
 
   return type === 'video' ? (
     <Card
@@ -141,22 +185,54 @@ function CardBlock(props: CardBlockType) {
     >
       <div className={styles['card-extra-like']}>
         <IconButton
-          icon={<Like theme="filled" size="24" fill={card.is_user_liked?"red":"#ffffff"} onClick={()=> {console.log(card)}}/>}
+          icon={<Like theme="filled" size="24" fill={card.is_user_liked?"red":"#ffffff"} onClick={(event)=> {
+            console.log(card);
+            event.stopPropagation();
+          }}/>}
         />
         { /* if liked, show red count text */ }
-        <div className={styles['card-extra-like-count']} style={{ color: card.is_user_liked?'red':'#ffffff' }}>{card.like_count}</div>
+        <div className={styles['card-extra-like-count']} style={{ color: card.is_user_liked?'red':'#ffffff' }}>{card.be_liked_count}</div>
       </div>
+
       {/* if saw before, show tag */}
-      {card.is_user_watched ? (
-        <div className={styles['card-extra-seen']}>
-          <Tag
-            icon={<IconClockCircle />}
-            style={{
-              backgroundColor: 'rgba(var(--gray-8), 0.5)',
-            }}
-          >观看过</Tag>
-        </div>
-      ) : null}
+      <div style={{ marginTop: '12px' }}>
+        {card.is_user_liked || card.is_user_watched ? (
+          <div style={{ display: 'flex', marginBottom: '8px' }}>
+            {card.is_user_liked ? (
+              <div className={styles['card-extra-seen']}>
+                <Tag
+                  icon={<IconHeartFill />}
+                  style={{
+                    backgroundColor: 'rgba(var(--gray-8), 0.5)',
+                  }}
+                >点赞过</Tag>
+              </div>
+            ) : null}
+            {card.is_user_watched ? (
+              <div className={styles['card-extra-seen']}>
+                <Tag
+                  icon={<IconEye />}
+                  style={{
+                    backgroundColor: 'rgba(var(--gray-8), 0.5)',
+                  }}
+                >观看过</Tag>
+              </div>
+            ) : null}
+          </div>
+        ):null}
+
+        {!card.user.is_followed ? (
+          <div style={{ display: 'flex', marginBottom: '8px' }}>
+            <div className={styles['card-extra-seen']}>
+              <Tag
+                style={{
+                  backgroundColor: 'rgba(var(--gray-8), 0.5)',
+                }}
+              >关注的用户</Tag>
+            </div>
+          </div>
+        ) : null}
+      </div>
       {/* todo: if uploaded by this user, show video control */}
 
       <div className={styles['card-block-mask']}>
@@ -183,7 +259,6 @@ function CardBlock(props: CardBlockType) {
               <div className={styles.username}>@{card.user?card.user.username:''}</div>
             </div>
           </div>
-
           <div className={styles.content} >{card.content}</div>
           <div className={styles.keyword}>{parseKeyword(card.keyword)}</div>
           <div className={styles.time}>{parseTime(card.upload_time)}</div>
@@ -212,12 +287,55 @@ function CardBlock(props: CardBlockType) {
           }}
         >
           { /* add avatar to the left */}
-          <Avatar size={50} style={{ marginTop: '0' }}>
-            {card?(card.avatar_url?<img src={card.avatar_url} />:card.nickname):'A'}
+          <Avatar size={64} style={{ marginTop: '0' }}>
+            {card.avatar_url?<img src={card.avatar_url} />:card.nickname}
           </Avatar>
-          <div style={{ marginLeft: '8px' }}>
-            <div className={styles.nickname}>{card?card.nickname:''}</div>
-            <div className={styles.username}>@{card?card.username:''}</div>
+          <div>
+            <div style={{ display: 'flex' }}>
+              <div style={{ marginLeft: '8px' }}>
+                <div className={styles.nickname}>{card.nickname}</div>
+                <div className={styles.username}>@{card.username}</div>
+              </div>
+              {!loading?(
+                <div style={{
+                  marginLeft: '16px',
+                  marginRight: '8px',
+                  marginTop: 'auto',
+                  marginBottom: 'auto',
+                }}>
+                  <Button
+                    size={'mini'}
+                    type={isFollowed ? "secondary" : "primary"}
+                    icon={isFollowed ? (followHovering ? <IconMinusCircle /> : <IconCheck />) : <IconPlus />}
+                    onClick={(e) => {
+                      followUser(isFollowed);
+                      e.stopPropagation();
+                    }}
+                    loading={followLoading}
+                    onMouseEnter={() => setFollowHovering(true)}
+                    onMouseLeave={() => setFollowHovering(false)}
+                  >
+                    {isFollowed ? (followHovering ? "取消" : "已") : null}关注
+                  </Button>
+                </div>
+              ):null}
+            </div>
+            <div className={styles['addon-info']}>
+              <div className={styles['user-addon-count-info']}>
+                <div className={styles['user-addon-count-type']}>粉丝</div>
+                <div className={styles['user-addon-count-data']}>{parseData(card?card.be_followed_count:0)}</div>
+              </div>
+              <Divider type="vertical" />
+              <div className={styles['user-addon-count-info']}>
+                <div className={styles['user-addon-count-type']}>获赞</div>
+                <div className={styles['user-addon-count-data']}>{parseData(card?card.be_liked_count:0)}</div>
+              </div>
+              <Divider type="vertical" />
+              <div className={styles['user-addon-count-info']}>
+                <div className={styles['user-addon-count-type']}>浏览量</div>
+                <div className={styles['user-addon-count-data']}>{parseData(card?card.be_watched_count:0)}</div>
+              </div>
+            </div>
           </div>
         </div>
       </div>

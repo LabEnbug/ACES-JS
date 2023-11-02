@@ -13,6 +13,7 @@ import {Popconfirm} from "@arco-design/web-react";
 import {IconCheck, IconLoading, IconMinus, IconMinusCircle, IconPlus} from "@arco-design/web-react/icon";
 import active from "@antv/g2/src/interaction/action/element/active";
 import GetAxios from "@/utils/getaxios";
+import UserAddonCountInfo from "@/pages/user/user-addon-count-info";
 
 const { Title } = Typography;
 const { Row, Col } = Grid;
@@ -25,6 +26,7 @@ export default function ListSearchResult() {
   const [followHovering, setFollowHovering] = useState(false);
   const [videoData, setVideoData] = useState(defaultVideoList);
   const [videoNum, setVideoNum] = useState({});
+  const [videoNumU, setVideoNumU] = useState(0);
 
   const [userData, setUserData] = useState(null);
 
@@ -85,11 +87,24 @@ export default function ListSearchResult() {
       .finally(() => setLoading(false));
   }
 
+  // deep clone {}
+  const cloneDeep = (obj) => {
+    let newObj = {};
+    for (let key in obj) {
+      if (typeof obj[key] === 'object') {
+        newObj[key] = cloneDeep(obj[key]);
+      } else {
+        newObj[key] = obj[key];
+      }
+    }
+    return newObj;
+  }
+
   const getVideoData = async (userid, t) => {
     setIsEndData(false);
     setLoading(true);
     let param = new FormData();
-    param.append('user_id', userid);
+    param.append('user_id', isSelf ? (t === 'watched' ? 0 : userid ) : userid);
     param.append('relation', t);
     // sleep
     // await new Promise(resolve => setTimeout(resolve, 3000));
@@ -104,7 +119,7 @@ export default function ListSearchResult() {
         }
         setVideoData(data.data.video_list);
         if (data.data.video_num) {
-          let tmp = videoNum;
+          let tmp = cloneDeep(videoNum);
           tmp[t] = data.data.video_num;
           setVideoNum(tmp);
         }
@@ -135,7 +150,7 @@ export default function ListSearchResult() {
         }
         setVideoData(videoData.concat(data.data.video_list));
         if (data.data.video_num) {
-          let tmp = videoNum;
+          let tmp = cloneDeep(videoNum);
           tmp[t] = data.data.video_num;
           setVideoNum(tmp);
         }
@@ -240,7 +255,7 @@ export default function ListSearchResult() {
   }
 
   return (
-    <>
+    <div className={styles['container']}>
       <Card className={styles['info-wrapper']}>
         { noSuchUser ? (
           <div style={{ textAlign: 'center', marginTop: 16 }}>
@@ -251,20 +266,16 @@ export default function ListSearchResult() {
             </div>
           </div>
         ) : (
-          <div style={{ display: 'flex' }}>
+          <div className={styles['user-info']}>
             { /* add avatar to the left */}
             <Avatar size={64} style={{ }}>
               {userData?(userData.avatar_url?<img src={userData.avatar_url} />:userData.nickname):'A'}
             </Avatar>
-            <div style={{
-              marginLeft: '16px',
-              //vertical center
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'center',
-            }}>
+            <div className={styles['base-info']}>
               <div className={styles.nickname}>
-                {userData?userData.nickname:''}
+                {userData?(
+                  <div>{userData.nickname}</div>
+                ):''}
                 {isSelf?(
                   <Popconfirm
                     position='bottom'
@@ -280,7 +291,7 @@ export default function ListSearchResult() {
                 ):userData?(
                   <Button
                     type={userData.be_followed ? "secondary" : "primary"}
-                          className={styles['interest']}
+                          className={styles['follow']}
                     icon={userData.be_followed ? (followHovering ? <IconMinusCircle /> : <IconCheck />) : <IconPlus />}
                     onClick={() => {followUser(userData.be_followed)}}
                     loading={followLoading}
@@ -293,12 +304,20 @@ export default function ListSearchResult() {
               </div>
               <div className={styles.username}>@{userData?userData.username:''}</div>
             </div>
+            <div className={styles['addon-info']}>
+              <UserAddonCountInfo type={"关注"} data={userData?userData.follow_count:0} />
+              <Divider type='vertical' style={{ height: "2em" }} />
+              <UserAddonCountInfo type={"粉丝"} data={userData?userData.be_followed_count:0} />
+              <Divider type='vertical' style={{ height: "2em" }} />
+              <UserAddonCountInfo type={"获赞"} data={userData?userData.be_liked_count:0} />
+              <Divider type='vertical' style={{ height: "2em" }} />
+              <UserAddonCountInfo type={"浏览量"} data={userData?userData.be_watched_count:0} />
+            </div>
           </div>
         )}
       </Card>
       { noSuchUser ? null : (
         <>
-          <div style={{ marginTop: '16px' }}></div>
           <Card
             // style={{ height: 'calc(100vh - 150px)' }}
           >
@@ -309,6 +328,7 @@ export default function ListSearchResult() {
               onChange={setActiveKey}
             >
               <Tabs.TabPane key="uploaded" title={t['cardList.tab.title.uploaded'] + (videoNum['uploaded']&&videoNum['uploaded']!==0?" ("+videoNum['uploaded']+")":"")} />
+              {/*<Tabs.TabPane key="uploaded" title={t['cardList.tab.title.uploaded'] + (videoNumU!==0?" ("+videoNumU+")":"")} />*/}
               <Tabs.TabPane key="liked" title={t['cardList.tab.title.liked'] + (videoNum['liked']&&videoNum['liked']!==0?" ("+videoNum['liked']+")":"")} />
               <Tabs.TabPane key="favorite" title={t['cardList.tab.title.favorite'] + (videoNum['favorite']&&videoNum['favorite']!==0?" ("+videoNum['favorite']+")":"")} />
               {/* watched is only for self */ }
@@ -365,6 +385,6 @@ export default function ListSearchResult() {
         </>
       )
       }
-    </>
+    </div>
   );
 }

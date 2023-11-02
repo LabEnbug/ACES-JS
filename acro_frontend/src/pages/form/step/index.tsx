@@ -46,20 +46,7 @@ function StepForm() {
       <Card>
         <Title heading={5}>{t['stepForm.desc.basicInfo']}</Title>
         <div className={styles.wrapper}>
-          <Steps current={current} lineless>
-            <Steps.Step
-              title={t['stepForm.title.basicInfo']}
-              description={t['stepForm.desc.basicInfo']}
-            />
-            <Steps.Step
-              title={t['stepForm.title.channel']}
-              description={t['stepForm.desc.channel']}
-            />
-            <Steps.Step
-              title={t['stepForm.title.created']}
-              description={t['stepForm.desc.created']}
-            />
-          </Steps>
+
           <Form form={form} className={styles.form}>
             {current === 1 && (
               <Form.Item noStyle>

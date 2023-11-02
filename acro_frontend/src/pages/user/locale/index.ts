@@ -7,7 +7,7 @@ const i18n = {
   },
   'zh-CN': {
     'cardList.tab.title.uploaded': '作品',
-    'cardList.tab.title.liked': '喜欢',
+    'cardList.tab.title.liked': '赞过',
     'cardList.tab.title.favorite': '收藏',
     'cardList.tab.title.watched': '观看记录',
   },
