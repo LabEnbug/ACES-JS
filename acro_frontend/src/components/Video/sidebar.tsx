@@ -23,7 +23,7 @@ function IconButton(props) {
 }
 
 function SideBar(props, ref) {
-  const { videoinfo, clicklike, className, clickfoward, userlike, ikecount, userfavorite, followed, changefollow, favoritecount, clickfavorite, forwardedcount, commentedcount, ...rest } = props;
+  const { videoinfo, clicklike, className, clickfoward, userlike, cilckcomment, ikecount, userfavorite, followed, changefollow, favoritecount, clickfavorite, forwardedcount, commentedcount, ...rest } = props;
   const t = useLocale(locale);
   return (
     <Space className={styles['icon-group']}
@@ -57,7 +57,7 @@ function SideBar(props, ref) {
       <IconButton 
         icon={
           <>
-            <MessageUnread theme="filled" size="36" fill="#ffffff"/>
+            <MessageUnread theme="filled" size="36" fill="#ffffff" onClick={cilckcomment}/>
             <p >{commentedcount}</p>
           </>
         }

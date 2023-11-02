@@ -10,7 +10,8 @@ import GetAxios from '@/utils/getaxios';
 import { Message } from '@arco-design/web-react';
 import locale from './locale';
 import useLocale from '@/utils/useLocale';
-
+import cs from 'classnames';
+import CommentPop from '@/components/Comment'
 function VideoPlayer({
   hlsPlayList,
   playIndex,
@@ -42,6 +43,8 @@ function VideoPlayer({
   const [forwardedcount, SetForwardedCount] = useState(0);
   const [commentedcount, SetCommentedCount] = useState(0);
   const [follow, SetFollow] = useState(false);
+  const [commentvis, SetCommentVis] = useState(false);
+  const [backgroundimage, SetBackGroundImage] = useState('');
   const [videoinfo, setVideoInfo ] = useState({
     nickname: 'default',
     username: 'default',
@@ -52,14 +55,36 @@ function VideoPlayer({
     keyword: '#default',
     user_id: -1
   });
-
+  let clickTimeout = useRef(null);
   const JudgeStatus = (data: any) => {
     if (data.status != 200) {
       // Message.error(t['message.notfind'])
-      return false
+      return false;
     }
-    return true
+    return true;
   }
+
+  const OpenComments = () => {
+    const imag = playerRef.current.el().style.backgroundImage;
+    SetCommentVis(true);
+    SetBackGroundImage(imag);
+  }
+
+  const handlePlayerClick = () => {
+    // 如果我们已经有一个等待的单击（意味着这可能是一个双击）
+    if (clickTimeout.current !== null) {
+      clearTimeout(clickTimeout.current); // 清除定时器
+      clickTimeout.current = null;
+      console.log('1234')
+    } else {
+      // 如果还没有等待的单击（意味着这是第一次点击）
+      console.log('12345')
+      clickTimeout.current = setTimeout(() => {
+        playerRef.current.paused() ? playerRef.current.play() : playerRef.current.pause();
+        clickTimeout.current = null;
+      }, 250); // 300ms的延迟来检测是否有第二次点击（双击）
+    }
+  };
 
   const getVideoInfo = (uid)=> {
     const baxios = GetAxios();
@@ -132,6 +157,26 @@ function VideoPlayer({
         }
         setS(!status);
         window.localStorage.setItem(`is_user_${a_type}`, !status);
+      } else {
+        Message.error(t['message.notlog']);
+      }
+    }).catch(e => {
+      console.error(e);
+    })
+  };
+
+  const videoDoubleClick = () => {
+    const item_name = 'is_user_like';
+    const param = new FormData();
+    const baxios = GetAxios();
+    const status = window.localStorage.getItem(item_name) == null ? false : JSON.parse(window.localStorage.getItem(item_name));
+    param.append('action',  'like');
+    param.append('video_uid', videoinfo['video_uid']);
+    baxios.post('v1-api/v1/video/action', param).then(res=> {
+      if (JudgeStatus(res.data)) {
+        SetUserLike(true);
+        window.localStorage.setItem(item_name, true);
+        status ? true :  SetLikeCount((pre)=> pre+1)
       } else {
         Message.error(t['message.notlog']);
       }
@@ -233,6 +278,10 @@ function VideoPlayer({
         poster: hlsPlayList[realindex]['cover_url'],
         preload: "auto",
         autoplay: true,
+        userActions: {
+          doubleClick: false, // 值也可以是一个函数
+          click: false,
+        },
         ...options
       });
 
@@ -277,6 +326,8 @@ function VideoPlayer({
         setFullScreen(playerRef.current.isFullscreen());
       });
 
+      playerRef.current.on('click', handlePlayerClick);
+      
       playerRef.current.el().classList.add(styles['video-background']);
       playerRef.current.controlBar.getChild('playToggle').hide();
       playerRef.current.controlBar.getChild('VolumePanel').hide();
@@ -323,7 +374,6 @@ function VideoPlayer({
       }
     };
     window.addEventListener('wheel', handleMouseWheel);
-
     return () => {
       window.removeEventListener('wheel', handleMouseWheel);
     };
@@ -349,10 +399,12 @@ function VideoPlayer({
     };
   }, [playstate, currentVideoIndex, playerRef]);
 
+
+
   return (
-    <>
+    <div style={{display: 'inline-flex', width: '100%', height: '100%'}}>
       <div data-vjs-player className={styles['video-container']} >
-        <video ref={videoRef} id="specified-area" className={`vjs-default-skin video-js ${styles['video-pos-js-9-16']}`} controls></video>
+        <video ref={videoRef} onDoubleClick={videoDoubleClick} id="specified-area" className={`vjs-default-skin video-js ${styles['video-pos-js-9-16']}`} controls></video>
         <SideBar videoinfo={videoinfo} 
                  userfavorite={userfavorite} 
                  userlike={userlike} 
@@ -365,6 +417,7 @@ function VideoPlayer({
                  clickfoward={clickfoward}
                  followed={follow}
                  changefollow={changefollow}
+                 cilckcomment={OpenComments}
         />
         <FootBar id='footbar'
                  ref={playerRef}
@@ -383,7 +436,10 @@ function VideoPlayer({
                />
         <BriefIntri videoinfo={videoinfo} />
       </div>
-    </>
+      <div className={commentvis ? cs(styles['comment-container-vis']) : styles['comment-container-dis']} style={commentvis ? {backgroundImage: backgroundimage} : {}}>
+      <CommentPop />
+      </div>
+    </div>
   );
 };
 
