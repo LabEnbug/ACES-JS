@@ -567,8 +567,13 @@ func getVideoList(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// if queryUserId is not 0, get video numbers
-	if queryUserId != 0 {
-		videoNumbers := database.GetVideoNum(queryUserId, queryRelation)
+	if queryUserId != 0 || queryRelation == "watched" {
+		var videoNumbers int
+		if queryRelation == "watched" {
+			videoNumbers = database.GetVideoNum(userId, queryRelation)
+		} else {
+			videoNumbers = database.GetVideoNum(queryUserId, queryRelation)
+		}
 		data = map[string]interface{}{
 			"video_list": videoList,
 			"video_num":  videoNumbers,
@@ -692,7 +697,6 @@ func doVideoAction(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		if errNo == 1 { // already done
 			errorMsg = "Already done."
-			status = 0
 		} else {
 			errorMsg = "Unknown error."
 			status = 0
@@ -1353,6 +1357,239 @@ func uploadVideoRemote(w http.ResponseWriter, r *http.Request) {
 	data = map[string]interface{}{
 		"video": video,
 	}
+
+	SendJSONResponse(w, status, data, errorMsg)
+}
+
+func uploadVideoFile(w http.ResponseWriter, r *http.Request) {
+	/*
+	 * @api {post} /v1/video/upload/file Upload video file
+	 * @apiName UploadVideoFile
+	 *
+	 * @apiParam {File} file Video file.
+	 */
+	status := 200
+	data := map[string]interface{}{}
+	errorMsg := ""
+
+	// check method, only accept POST
+	if r.Method != "POST" {
+		status = 0
+		errorMsg = "Invalid request method."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+
+	// receive file and save to {{BaseLocalFileDir}}/tmp/ for temp
+	// check token
+	tokenValid, userId, _, _ := findAndCheckToken(r)
+	if !tokenValid {
+		status := 0
+		data := map[string]interface{}{}
+		errorMsg := "Not logged in."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+
+	// parse form
+	// check file size by MaxBytesReader, limit to {{config.MaxUploadVideoSize64}}MB
+	r.Body = http.MaxBytesReader(w, r.Body, config.MaxUploadVideoSize64)
+	err := r.ParseMultipartForm(config.MaxUploadVideoSize64)
+	if err != nil {
+		if config.ShowLog {
+			funcName, _, _, _ := runtime.Caller(0)
+			log.Println(runtime.FuncForPC(funcName).Name(), "err: ", err)
+		}
+		status = 0
+		errorMsg = fmt.Sprintf("File size limit to %dMB.", config.MaxUploadVideoSize)
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+
+	// check file
+	file, fileHeader, err := r.FormFile("file")
+	if err != nil {
+		if config.ShowLog {
+			funcName, _, _, _ := runtime.Caller(0)
+			log.Println(runtime.FuncForPC(funcName).Name(), "err: ", err)
+		}
+		status = 0
+		errorMsg = "Failed to get file."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+	defer file.Close()
+
+	// check file type (accept all video types)
+	// check from filename, lower filename must include (.mp4 or .mov or .avi or .wmv or .flv or .mkv or .webm
+	// or .ts or .rm or .rmvb or .3gp or .mpeg or .mpg or .m4v or .f4v)
+	fileName := strings.ToLower(fileHeader.Filename)
+	extensionList := []string{".mp4", ".mov", ".avi", ".wmv", ".flv", ".mkv", ".webm", ".ts", ".rm",
+		".rmvb", ".3gp", ".mpeg", ".mpg", ".m4v", ".f4v"}
+	// check if filename contains any extension name
+	extensionNameExist := false
+	for _, extensionName := range extensionList {
+		if strings.HasSuffix(fileName, extensionName) {
+			extensionNameExist = true
+			break
+		}
+	}
+	if !extensionNameExist {
+		status = 0
+		errorMsg = "File type not supported."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+
+	// generate video uid
+	videoUid := uuid.New().String()
+
+	// save file to {{BaseLocalFileDir}}/tmp/{{video_uid}}
+	fileSavePath := path.Join(config.BaseLocalFileDir, "tmp", videoUid)
+	fileBytes, err := io.ReadAll(file)
+	if err != nil {
+		if config.ShowLog {
+			funcName, _, _, _ := runtime.Caller(0)
+			log.Println(runtime.FuncForPC(funcName).Name(), "err: ", err)
+		}
+		status = 0
+		errorMsg = "Failed to receive file."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+	err = os.WriteFile(fileSavePath, fileBytes, 0644)
+	if err != nil {
+		if config.ShowLog {
+			funcName, _, _, _ := runtime.Caller(0)
+			log.Println(runtime.FuncForPC(funcName).Name(), "err: ", err)
+		}
+		status = 0
+		errorMsg = "Failed to save file."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+
+	// save video info to database
+	ok := database.UserCreateVideoWithoutInfo(userId, videoUid)
+	if !ok {
+		status = 0
+		errorMsg = "Failed to save video info."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+
+	data = map[string]interface{}{
+		"video_uid": videoUid,
+	}
+
+	SendJSONResponse(w, status, data, errorMsg)
+}
+
+func confirmVideoUpload(w http.ResponseWriter, r *http.Request) {
+	/*
+	 * @api {post} /v1/video/upload/confirm Confirm video upload
+	 * @apiName ConfirmVideoUpload
+	 *
+	 * @apiParam {string} video_uid Video uid.
+	 * @apiParam {Number} video_type Video type.
+	 * @apiParam {String} video_content Video content.
+	 * @apiParam {String} video_keyword Video keywords.
+	 */
+	status := 200
+	data := map[string]interface{}{}
+	errorMsg := ""
+
+	// check method, only accept POST
+	if r.Method != "POST" {
+		status = 0
+		errorMsg = "Invalid request method."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+
+	// check token
+	tokenValid, userId, _, _ := findAndCheckToken(r)
+	if !tokenValid {
+		status := 0
+		data := map[string]interface{}{}
+		errorMsg := "Not logged in."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+
+	// parse form
+	err := r.ParseMultipartForm(config.MaxNormalPostSize64)
+	if err != nil {
+		status = 0
+		errorMsg = "Failed to parse form."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+	queryVideoUid := r.PostFormValue("video_uid")
+	queryVideoType, _ := strconv.Atoi(r.PostFormValue("video_type"))
+	queryVideoContent := r.PostFormValue("video_content")
+	queryVideoKeyword := r.PostFormValue("video_keyword")
+
+	// check if user has created this video
+	if !database.CheckUserVideoRelation(userId, database.GetVideoIdByVideoUid(queryVideoUid), "uploaded") {
+		status = 0
+		errorMsg = "This video was not uploaded by this user."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+
+	// update video info
+	ok := database.UserConfirmCreateVideoWithInfo(queryVideoUid, queryVideoType, queryVideoContent, queryVideoKeyword)
+	if !ok {
+		status = 0
+		errorMsg = "Failed to save video info."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+
+	// get video info
+	video := database.GetVideoDetailByVideoUid(queryVideoUid, userId)
+
+	// upload file to qiniu
+	fileSavePath := path.Join(config.BaseLocalFileDir, "tmp", queryVideoUid)
+
+	// process video, 2 choices:
+	// 1. upload file directly to qiniu and wait for auto hls transcode callback,
+	// 2. transcode to hls by ffmpeg and upload to qiniu
+
+	// make choice
+	if config.VideoProcessType == 1 { // choice 1
+		subDir := "origin/remote_process"
+
+		// upload file to qiniu
+		// try to upload 3 times
+		uploadOk := false
+		for i := 0; i < 3; i++ {
+			ok := tool.UploadFileToQiniu(fileSavePath, path.Join(config.BaseRemoteFileDir, subDir, queryVideoUid))
+			if ok {
+				uploadOk = true
+				break
+			}
+		}
+
+		if !uploadOk {
+			status = 0
+			errorMsg = "Failed to upload file to cloud."
+			SendJSONResponse(w, status, data, errorMsg)
+			return
+		}
+
+		// just return, wait for callback asynchronously
+		data = map[string]interface{}{
+			"video": video,
+		}
+	} else { // choice 2
+		// not implement now
+		//subDir := "origin/local_process" // if transcode locally
+	}
+
+	// delete tmp file
+	_ = os.Remove(fileSavePath)
 
 	SendJSONResponse(w, status, data, errorMsg)
 }
@@ -2028,6 +2265,8 @@ func main() {
 
 	http.HandleFunc("/v1/video/upload", uploadVideo)
 	http.HandleFunc("/v1/video/uploadRemote", uploadVideoRemote)
+	http.HandleFunc("/v1/video/upload/file", uploadVideoFile)
+	http.HandleFunc("/v1/video/upload/confirm", confirmVideoUpload)
 	http.HandleFunc("/v1/video/info/set", setVideoInfo)
 	http.HandleFunc("/v1/video/delete", deleteVideo)
 

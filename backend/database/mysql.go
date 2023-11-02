@@ -304,7 +304,7 @@ func GetVideoNum(qUserId uint, qRelation string) int {
 	// get video num
 	var err error
 	var count int
-	if qRelation == "like" {
+	if qRelation == "liked" {
 		// get user's liked video num
 		err = db.QueryRow("SELECT COUNT(1) FROM video_like WHERE user_id=? AND unlike_time IS NULL", qUserId).Scan(&count)
 	} else if qRelation == "favorite" {
@@ -511,7 +511,7 @@ func GuestWatchedVideo(videoId uint, userId uint) bool {
 }
 
 func GuestForwardVideo(videoId uint, userId uint) bool {
-	if _, err := db.Exec("INSERT INTO video_forward (video_id, user_id, watch_time) VALUES (?, ?, NOW())", videoId, userId); err != nil {
+	if _, err := db.Exec("INSERT INTO video_forward (video_id, user_id, forward_time) VALUES (?, ?, NOW())", videoId, userId); err != nil {
 		if config.ShowLog {
 			funcName, _, _, _ := runtime.Caller(0)
 			log.Println(runtime.FuncForPC(funcName).Name(), "err: ", err)
@@ -588,11 +588,6 @@ func UserMakeVideoComment(videoId uint, userId uint, content string, quoteCommen
 		return false
 	}
 
-	// update video comment count
-	if _, err := db.Exec("UPDATE video SET comment_count=comment_count+1 WHERE id=?", videoId); err != nil {
-		return false
-	}
-
 	return true
 }
 
@@ -631,6 +626,25 @@ func CheckVideoType(videoType int) bool {
 	var count int
 	err := db.QueryRow("SELECT COUNT(1) FROM video_type WHERE id=? LIMIT 1", videoType).Scan(&count)
 	if err != nil || count == 0 {
+		return false
+	}
+	return true
+}
+
+func UserCreateVideoWithoutInfo(userId uint, videoUid string) bool {
+	_, err := db.Exec("INSERT INTO video (user_id, video_uid, upload_time) VALUES (?, ?, NOW())", userId, videoUid)
+	if err != nil {
+		if config.ShowLog {
+			funcName, _, _, _ := runtime.Caller(0)
+			log.Println(runtime.FuncForPC(funcName).Name(), "err: ", err)
+		}
+		return false
+	}
+	return true
+}
+
+func UserConfirmCreateVideoWithInfo(videoUid string, videoType int, videoContent string, videoKeyword string) bool {
+	if _, err := db.Exec("UPDATE video SET content=?, keyword=?, type=? WHERE video_uid=?", videoContent, videoKeyword, videoType, videoUid); err != nil {
 		return false
 	}
 	return true
