@@ -17,8 +17,39 @@ export const routes: IRoute[] = [
     key: 'video',
   },
   {
-    name: 'menu.video.beauty',
-    key: 'video?type=beauty',
+    name: 'menu.video.knowledge',
+    key: 'video?type=knowledge',
+  },
+  {
+    name: 'menu.video.hotpot',
+    key: 'video?type=hotpot',
+  },
+  {
+    name: 'menu.video.game',
+    key: 'video?type=game',
+  },
+  {
+    name: 'menu.video.entertainment',
+    key: 'video?type=entertainment',
+  },
+  {
+    name: 'menu.video.fantasy',
+    key: 'video?type=fantasy',
+  },
+  {
+    name: 'menu.video.music',
+    key: 'video?type=music',
+  },
+  {
+    name: 'menu.video.food',
+    key: 'video?type=food',
+  },
+  {
+    name: 'menu.video.sport',
+    key: 'video?type=sport',
+  },  {
+    name: 'menu.video.fashion',
+    key: 'video?type=fashion',
   },
   {
     name: 'menu.search',

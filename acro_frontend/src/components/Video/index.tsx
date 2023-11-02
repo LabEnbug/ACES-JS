@@ -6,6 +6,10 @@ import { createCanvas, loadImage } from 'canvas';
 import SideBar from './sidebar';
 import FootBar from './footbar';
 import BriefIntri from './brief_intro'
+import GetAxios from '@/utils/getaxios';
+import { Message } from '@arco-design/web-react';
+import locale from './locale';
+import useLocale from '@/utils/useLocale';
 
 function VideoPlayer({
   hlsPlayList,
@@ -15,6 +19,7 @@ function VideoPlayer({
   options,
   ...props
 }) {
+  const t = useLocale(locale);
   const videoRef = useRef(null);
   const playerRef = useRef(null);
   const [currentVideoIndex, setCurrentVideoIndex] = useState(playIndex);
@@ -30,20 +35,134 @@ function VideoPlayer({
   const [volume, setVolume] = useState(0);
   const [playrate, setPlayRate] = useState(1);
   const [fullscreen, setFullScreen] = useState(false);
+  const [userfavorite, SetUserfavorite] = useState(false);
+  const [userlike, SetUserLike] = useState(false);
+  const [likecount, SetLikeCount] = useState(0);
+  const [favoritecount, SetFavoriteCount] = useState(0);
+  const [forwardedcount, SetForwardedCount] = useState(0);
+  const [commentedcount, SetCommentedCount] = useState(0);
+  const [follow, SetFollow] = useState(false);
   const [videoinfo, setVideoInfo ] = useState({
     nickname: 'default',
     username: 'default',
     content: 'default',
-    be_commented_count: 0,
-    be_favorite_count: 0,
-    be_liked_count: 0,
-    be_forwarded_count: 0,
     be_watched_count: 0,
     time: "2023-10-31T18:43:57.000Z",
     video_uid:  null,
     keyword: '#default',
+    user_id: -1
   });
 
+  const JudgeStatus = (data: any) => {
+    if (data.status != 200) {
+      // Message.error(t['message.notfind'])
+      return false
+    }
+    return true
+  }
+
+  const getVideoInfo = (uid)=> {
+    const baxios = GetAxios();
+    const param1 = new FormData();
+    param1.append('video_uid',  uid);
+    baxios.post('v1-api/v1/video/info', param1).then(res => {
+        if (JudgeStatus(res.data)) {
+          const video = res.data.data.video;
+          setVideoInfo({
+            nickname: video['user']['nickname'],
+            username: video['user']['username'],
+            content: video['content'],
+            be_watched_count: video['be_watched_count'],
+            video_uid:  video['video_uid'],
+            time:  video['upload_time'],
+            keyword: video['keyword'],
+            user_id: video['user']['user_id'],
+          });
+          SetUserfavorite(video['is_user_favorite']);
+          SetUserLike(video['is_user_liked']);
+          SetFavoriteCount(video['be_favorite_count']);
+          SetLikeCount(video['be_liked_count']);
+          SetForwardedCount(video['be_forwarded_count']);
+          SetCommentedCount(video['be_commented_count']);
+          SetFollow(video['user']['be_followed']);
+          window.localStorage.setItem('is_user_favorite', video['is_user_favorite']);
+          window.localStorage.setItem('is_user_like', video['is_user_liked']);
+          window.localStorage.setItem('follow',  video['user']['be_followed']);
+        }
+      }).catch(error => {
+        console.error(error)
+      });
+  }
+
+  const changefollow = ()=> {
+    const status = window.localStorage.getItem('follow') == null ? false : JSON.parse(window.localStorage.getItem('follow'));
+    const action = status ? `unfollow` : `follow`;
+    const param = new FormData();
+    const baxios = GetAxios();
+    param.append('action',  action);
+    param.append('user_id', videoinfo['user_id']);
+
+    baxios.post('v1-api/v1/user/follow', param).then(res=> {
+      if (JudgeStatus(res.data)) {
+        window.localStorage.setItem(`follow`, !status);
+        SetFollow(!status);
+      } else {
+        Message.error(t['message.notlog'])
+      }
+    }).catch(e => {
+      console.error(e);
+    })
+  }
+  
+  const clickCount = (a_type, setS, setC)=> {
+    const item_name = `is_user_${a_type}`;
+    const status = window.localStorage.getItem(item_name) == null ? false : JSON.parse(window.localStorage.getItem(item_name));
+    const action = status ? `un${a_type}` : `${a_type}`;
+    const param = new FormData();
+    const baxios = GetAxios();
+
+    param.append('action',  action);
+    param.append('video_uid', videoinfo['video_uid']);
+    baxios.post('v1-api/v1/video/action', param).then(res=> {
+      if (JudgeStatus(res.data)) {
+        if (status) {
+          setC((pre)=>(pre-1)) ;
+        } else {
+          setC((pre)=>(pre+1)) ;
+        }
+        setS(!status);
+        window.localStorage.setItem(`is_user_${a_type}`, !status);
+      } else {
+        Message.error(t['message.notlog']);
+      }
+    }).catch(e => {
+      console.error(e);
+    })
+  }
+
+  const clickfoward = ()=> {
+    const param = new FormData();
+    const baxios = GetAxios();
+    param.append('video_uid',  videoinfo['video_uid']);
+    const currentURL = window.location.href;
+    const textArea = document.createElement("textarea");
+    textArea.value = currentURL;
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    try {
+      document.execCommand('copy');
+      baxios.post('v1-api/v1/video/forward', param).then(res=> {}).catch(e => {
+        console.error(e);
+      });
+      SetForwardedCount((pre)=>(pre+1))
+      Message.info(t['message.share']);
+    } catch (err) {
+      // console.error('Unable to copy to clipboard', err);
+      Message.error(t['message.share.failed']);
+    }
+    document.body.removeChild(textArea);
+  }
 
   const changeFullScreen = () => {
     setFullScreen(!playerRef.current.isFullscreen())
@@ -105,7 +224,7 @@ function VideoPlayer({
     }
     console.log(hlsPlayList)
     const realindex = currentVideoIndex >= 0 ? currentVideoIndex % hlsPlayList.length : currentVideoIndex % hlsPlayList.length + hlsPlayList.length;
-    reflectPlayIndex(realindex);
+    reflectPlayIndex(Number.isNaN(realindex) ? 0 : realindex);
     if (!playerRef.current && videoRef.current && hlsPlayList.length > 0) {
       playerRef.current = videojs(videoRef.current, {
         crossOrigin: "Anonymous",
@@ -118,16 +237,9 @@ function VideoPlayer({
       });
 
       playerRef.current.on('ended', () => {
-        // if (currentVideoIndex < hlsPlayList.length - 1) {
-        //   setCurrentVideoIndex((prevIndex) => prevIndex + 1);
-        // } else {
-        //   setCurrentVideoIndex(0);
-        // }
         const autoNext = window.localStorage.getItem('autonext') ? JSON.parse(window.localStorage.getItem('autonext')) : false;
         if (autoNext) {
           setCurrentVideoIndex((prevIndex) => prevIndex + 1);
-          // console.log(21371983791)
-          // playerRef.current.play();
         } else {
           playerRef.current.currentTime(0);
           playerRef.current.play();
@@ -181,20 +293,7 @@ function VideoPlayer({
       upDateBackGround(playerRef, hlsPlayList[realindex]['cover_url'])
     }
     if (hlsPlayList.length > 0) {
-      console.log(hlsPlayList[realindex])
-      setVideoInfo({
-        nickname: hlsPlayList[realindex]['user']['nickname'],
-        username: hlsPlayList[realindex]['user']['username'],
-        content: hlsPlayList[realindex]['content'],
-        be_commented_count: hlsPlayList[realindex]['be_commented_count'],
-        be_favorite_count: hlsPlayList[realindex]['be_favorite_count'],
-        be_liked_count: hlsPlayList[realindex]['be_liked_count'],
-        be_forwarded_count: hlsPlayList[realindex]['be_forwarded_count'],
-        be_watched_count: hlsPlayList[realindex]['be_watched_count'],
-        video_uid:  hlsPlayList[realindex]['video_uid'],
-        time:  hlsPlayList[realindex]['upload_time'],
-        keyword: hlsPlayList[realindex]['keyword'],
-      })
+      getVideoInfo(hlsPlayList[realindex]['video_uid'])
       console.log(hlsPlayList[realindex]);
     }
   }, [hlsPlayList, options, currentVideoIndex]);
@@ -219,7 +318,7 @@ function VideoPlayer({
             prevIndex + 1
           );
         } else if (event.deltaY < -5) {
-          setCurrentVideoIndex((prevIndex) => (prevIndex - 1));
+          setCurrentVideoIndex((prevIndex) => prevIndex > 0 ? (prevIndex - 1) : 0);
         }
       }
     };
@@ -233,23 +332,40 @@ function VideoPlayer({
   useEffect(() => {
     const handleKeyDown = (event) => {
       if (event.key === 'ArrowUp') {
-        setCurrentVideoIndex((prevIndex) => prevIndex - 1);
+        setCurrentVideoIndex((prevIndex) => prevIndex > 0 ? prevIndex - 1 : 0);
       } else if (event.key === 'ArrowDown') {
         setCurrentVideoIndex((prevIndex) => prevIndex + 1);
+      } else if (event.keyCode == 32) {
+        if (!playstate) {
+          playerRef.current.pause();
+        } else {
+          playerRef.current.play();
+        }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
-
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [hlsPlayList, currentVideoIndex]);
+  }, [playstate, currentVideoIndex, playerRef]);
 
   return (
     <>
       <div data-vjs-player className={styles['video-container']} >
         <video ref={videoRef} id="specified-area" className={`vjs-default-skin video-js ${styles['video-pos-js-9-16']}`} controls></video>
-        <SideBar videoinfo={videoinfo} />
+        <SideBar videoinfo={videoinfo} 
+                 userfavorite={userfavorite} 
+                 userlike={userlike} 
+                 ikecount={likecount} 
+                 favoritecount={favoritecount}  
+                 forwardedcount={forwardedcount}
+                 commentedcount={commentedcount}
+                 clickfavorite={{'func': clickCount, 'params': ['favorite', SetUserfavorite, SetFavoriteCount]}}
+                 clicklike={{'func': clickCount, 'params': ['like', SetUserLike, SetLikeCount]}}
+                 clickfoward={clickfoward}
+                 followed={follow}
+                 changefollow={changefollow}
+        />
         <FootBar id='footbar'
                  ref={playerRef}
                  visible={footBarVis}
@@ -259,7 +375,7 @@ function VideoPlayer({
                  volume={volume}
                  volumechange={changeVolume}
                  setauto={setAuto}
-                 autoNext={autoNext}
+                 autostate={autoNext}
                  playbackrate={playrate}
                  setplaybackrate={setPlayBackRate}
                  fullscreen={fullscreen}

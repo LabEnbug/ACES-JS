@@ -54,6 +54,7 @@ function IconButton(props) {
 function FootBar(props, ref) {
   const { visible, playstate, timestate, playclick, volume, volumechange, autostate, setauto, playbackrate, setplaybackrate, fullscreen, fullscreenchange } = props;
   const t = useLocale(locale);
+
   return (
     <div>
         {

@@ -68,9 +68,15 @@ const i18n = {
     'menu.search': 'Search Result',
     'menu.user': 'User Page',
     'menu.video.comprehensive': 'Comprehensive',
-    'menu.video.beauty': 'Beauty',
-    'menu.video.kid': 'Kid',
-    'menu.video.exploration': 'Exploration',
+    'menu.video.knowledge': 'Knowledge',
+    'menu.video.hotpot': 'Hot',
+    'menu.video.game': 'Game',
+    'menu.video.entertainment': 'Entertain',
+    'menu.video.fantasy': 'Fantasy',
+    'menu.video.music': 'Music',
+    'menu.video.food': 'Food',
+    'menu.video.sport': 'Sport',
+    'menu.video.fashion': 'Fashion'
   },
   'zh-CN': {
     'menu.dashboard': '仪表盘',
@@ -140,9 +146,15 @@ const i18n = {
     'menu.search': '搜索结果',
     'menu.user': '用户页',
     'menu.video.comprehensive': '综合',
-    'menu.video.beauty': '美女',
-    'menu.video.kid': '萌娃',
-    'menu.video.exploration': '探索',
+    'menu.video.knowledge': '知识',
+    'menu.video.hotpot': '热点',
+    'menu.video.game': '游戏',
+    'menu.video.entertainment': '娱乐',
+    'menu.video.fantasy': '二次元',
+    'menu.video.music': '音乐',
+    'menu.video.food': '美食',
+    'menu.video.sport': '体育',
+    'menu.video.fashion': '时尚'
   },
 };
 

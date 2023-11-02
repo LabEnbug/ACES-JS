@@ -1,26 +1,25 @@
 import React from 'react';
-import {Result, Button, Message} from '@arco-design/web-react';
+import { Message } from '@arco-design/web-react';
 import locale from './locale';
 import useLocale from '@/utils/useLocale';
 import styles from './style/index.module.less';
 import VideoPlayer from '@/components/Video';
 import {useState, useEffect} from 'react'
-import axios from 'axios';
 import {useRouter} from 'next/router';
-import {useSelector, useDispatch} from 'react-redux';
-import store, {GlobalState} from '@/store';
-import {GlobalContext} from '@/context';
 import GetAxios from '@/utils/getaxios';
+import GetVideType from '@/utils/getvideotype'
 
 function VideoP() {
+  const default_type = 'comprehensive'
   const t = useLocale(locale);
   const router = useRouter();
-  const type = router.query['type'] || 'comprehensive';
+  const type = router.query['type'] || default_type;
   const video_uid = router.query['video_uid'];
   const pathname = router.pathname;
   const [playlist, SetPlayList] = useState<any>([]);
   const [playIndex, SetPlayIndex] = useState(0);
   const limit = 10;
+
   // const page = 1;
 
 
@@ -33,12 +32,14 @@ function VideoP() {
   }
 
   const reflectPlayIndex = (index) => {
-    SetPlayIndex(index)
+    SetPlayIndex(index);
+    const pre_type = window.localStorage.getItem('pretype') || 'comprehensive';
     if (playlist.length > 0) {
       router.push({
         pathname: pathname,
         query: {
-          'video_uid': playlist[index]['video_uid']
+          'type': pre_type, 
+          'video_uid': playlist[index]['video_uid'],
         },
       }, undefined, {shallow: true});
       window.localStorage.setItem('playvideo-id', playlist[index]['video_uid'])
@@ -63,15 +64,22 @@ function VideoP() {
 
 
   useEffect(() => {
-    if (playlist.length == 0) {
+    const pre_type = window.localStorage.getItem('pretype');
+
+    if (type != default_type && GetVideType(type) >= 999) {
+      router.push('/video');
+    }
+    if (playlist.length == 0 || (pre_type != type)) {
       const baxios = GetAxios()
       const param = new FormData()
       param.append('limit', limit)
       // param.append('page', page)
-      param.append('type', type)
+      if (type != default_type)
+        param.append('type', GetVideType(type))
       baxios.post('/v1-api/v1/video/list', param)
         .then(response => {
-          const data = response.data
+          const data = response.data;
+          window.localStorage.setItem('pretype', type);
           if (JudgeStatus(data)) {
             if (video_uid && data.data.video_list.length > 0 && video_uid != data.data.video_list[playIndex]['video_uid']) {
               const param1 = new FormData()
@@ -91,9 +99,45 @@ function VideoP() {
         .catch(error => {
           console.error(error);
         });
+    } else if (playIndex >= playlist.length - 3 ) {
+      const baxios = GetAxios();
+      const param = new FormData();
+      param.append('limit', limit);
+      if (type != default_type)
+        param.append('type', GetVideType(type))
+      param.append('start', playlist.length);
+      baxios.post('/v1-api/v1/video/list', param).then(res=> {
+        const data = res.data;
+        if (JudgeStatus(data)) {
+          SetPlayList(playlist.concat(data.data.video_list))
+        }
+      }).catch(error => {
+        console.error(error)
+      })
     }
-  }, [router.isReady, type]);
 
+  }, [router.isReady, type, video_uid, playIndex]);
+
+
+  useEffect(() => {
+    let lastHistoryState = window.history.state;
+
+    const handleRouteChange = (url) => {
+      // 检查新的state是否小于旧的state，如果是，那么很可能是后退操作
+      const currentHistoryState = window.history.state;
+      if (currentHistoryState.idx < lastHistoryState.idx) {
+        window.location.reload();
+        // 这里你可以添加你的业务逻辑
+      }
+    };
+
+    router.events.on('routeChangeStart', handleRouteChange);
+
+    return () => {
+      router.events.off('routeChangeStart', handleRouteChange);
+    };
+  }, [router]);
+  
   return (
     <div className={styles.container}>
       <div className={styles.wrapper}>
