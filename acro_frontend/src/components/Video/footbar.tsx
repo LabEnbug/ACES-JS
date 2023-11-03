@@ -76,7 +76,7 @@ function FootBar(props, ref) {
                         <VolumeSlider value={volume} onChange={volumechange} />
                     </div>
                     <div className={styles['foot-group-right']}>
-                        <Switch checkedText='Auto' uncheckedText='Auto' onChange={setauto} defaultChecked={autostate} className={autostate ? styles['foot-autoplay-on'] : styles['foot-autoplay-off']}/>
+                        <Switch checkedText={t['footbar.auto']} uncheckedText={t['footbar.auto']} onChange={setauto} defaultChecked={autostate} className={autostate ? styles['foot-autoplay-on'] : styles['foot-autoplay-off']}/>
                         <Select
                             triggerElement={<p className={styles['foot-playback']}>{'倍速'}</p>}
                             options={[

@@ -1,9 +1,13 @@
-import { useState } from 'react';
-import {  Tabs, Typography, Comment, Avatar } from '@arco-design/web-react';
+import { useEffect, useState } from 'react';
+import {  Tabs, Typography, Comment, Avatar, Input, Tooltip, Message } from '@arco-design/web-react';
 import useLocale from '@/utils/useLocale';
 import locale from './locale';
 import { IconHeart, IconMessage, IconStar } from '@arco-design/web-react/icon';
+import styles from './style/index.module.less';
+import GetAxios from '@/utils/getaxios';
+import GetUserInfo from "@/utils/getuserinfo";
 
+const TextArea = Input.TextArea;
 const TabPane = Tabs.TabPane;
 const style = {
   textAlign: 'center',
@@ -11,13 +15,64 @@ const style = {
   textAlign: 'left',
 };
 
+
 function CommentDrawer(props) {
+    const {videoinfo} = props;
     const t = useLocale(locale);
+    const [valuebottom, setValueBottom] = useState('');
+    const [ comment, SetComment ] = useState([]);  
+    const [ log, setLog ] = useState(false);
     const actions = (
         <span className='custom-comment-action'>
           <IconMessage /> Reply
         </span>
-      );
+    );
+
+    const JudgeStatus = (data: any) => {
+      if (data.status != 200) {
+        Message.error(data.err_msg);
+        return false;
+      }
+      return true;
+    }
+
+    const handleKeyDownBottom = (e, uid) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        const baxio = GetAxios();
+        const param = new FormData();
+        // 如果只按下了Enter，阻止默认行为并触发你的事件
+        e.preventDefault();
+        if (e.target.value === '') {
+          Message.error(t['comment.input.enter.empty']);
+          return;
+        }
+        param.append('video_uid', uid);
+        param.append('content', e.target.value);
+        param.append('quote_comment_id', 0);
+        baxio.post('v1-api/v1/video/comment/make', param).then(res=> {
+          if (JudgeStatus(res)) {
+            Message.info(t['comment.input.post.success']);
+            setValueBottom('');
+          }
+        }).catch(e => {
+          Message.info(t['comment.input.post.failed']);
+          console.error(e);
+        })
+      }
+    };
+
+    useEffect(()=> {
+      setLog(GetUserInfo() ? true : false);
+    }, [log]);
+
+    useEffect(()=> {
+      const baxio = GetAxios();
+      if (comment.length == 0) {
+
+      }
+    }, [comment]);
+    
+
     return (
         <Tabs defaultActiveTab='1'>
           <TabPane key='1' title={t['comment']} style={{'color': '#ffffff'}}>
@@ -52,6 +107,25 @@ function CommentDrawer(props) {
                     />
                 </Comment>
             </Comment>
+            {
+              log ?           
+              <Tooltip position='top' trigger='hover' content={ t['comment.input.enter'] }>
+                <TextArea
+                  className={styles['comment-input']}
+                  placeholder={t['comment.input.placeholder']}
+                  // autoSize={{ minRows: 1, maxRows: 3 }}
+                  // searchButton='Search'
+                  // maxLength={120}
+                  // showWordLimit
+                  value = {valuebottom}
+                  onChange={(e)=>{
+                    setValueBottom(e)
+                  }}
+                  onKeyDown={(e) => (handleKeyDownBottom(e, videoinfo['video_uid']))}
+                />
+              </Tooltip> : <></> 
+            
+            }
             </Typography.Paragraph>
           </TabPane>
           <TabPane key='2' title='Tab 2' disabled>

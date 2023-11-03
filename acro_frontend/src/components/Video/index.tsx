@@ -66,7 +66,7 @@ function VideoPlayer({
 
   const OpenComments = () => {
     const imag = playerRef.current.el().style.backgroundImage;
-    SetCommentVis(true);
+    SetCommentVis((pre)=>(!pre));
     SetBackGroundImage(imag);
   }
 
@@ -75,10 +75,8 @@ function VideoPlayer({
     if (clickTimeout.current !== null) {
       clearTimeout(clickTimeout.current); // 清除定时器
       clickTimeout.current = null;
-      console.log('1234')
     } else {
       // 如果还没有等待的单击（意味着这是第一次点击）
-      console.log('12345')
       clickTimeout.current = setTimeout(() => {
         playerRef.current.paused() ? playerRef.current.play() : playerRef.current.pause();
         clickTimeout.current = null;
@@ -254,8 +252,9 @@ function VideoPlayer({
         const filteredImageData = ctx.canvas.toDataURL('image/jpeg');
         // playerRef.current.el().classList.add(containerStyle);
         // 图像加载完成后，将其设置为背景图像
-        playerRef.current.el().style.backgroundColor = 'blue';
+        // playerRef.current.el().style.backgroundColor = 'blue';
         playerRef.current.el().style.backgroundImage = `url(${filteredImageData})`;
+        SetBackGroundImage(`url(${filteredImageData})`);
         // playerRef.current.el().style.filter = 'blur(10px)';
       };
 
@@ -326,7 +325,7 @@ function VideoPlayer({
         setFullScreen(playerRef.current.isFullscreen());
       });
 
-      playerRef.current.on('click', handlePlayerClick);
+      // playerRef.current.on('click', handlePlayerClick);
       
       playerRef.current.el().classList.add(styles['video-background']);
       playerRef.current.controlBar.getChild('playToggle').hide();
@@ -381,16 +380,20 @@ function VideoPlayer({
 
   useEffect(() => {
     const handleKeyDown = (event) => {
+      const specifiedArea = document.getElementById('specified-area');
+      if (specifiedArea && specifiedArea.contains(event.target)) {
+        if (event.keyCode == 32) {
+          if (!playstate) {
+            playerRef.current.pause();
+          } else {
+            playerRef.current.play();
+          }
+        }
+      }
       if (event.key === 'ArrowUp') {
         setCurrentVideoIndex((prevIndex) => prevIndex > 0 ? prevIndex - 1 : 0);
       } else if (event.key === 'ArrowDown') {
         setCurrentVideoIndex((prevIndex) => prevIndex + 1);
-      } else if (event.keyCode == 32) {
-        if (!playstate) {
-          playerRef.current.pause();
-        } else {
-          playerRef.current.play();
-        }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -404,7 +407,7 @@ function VideoPlayer({
   return (
     <div style={{display: 'inline-flex', width: '100%', height: '100%'}}>
       <div data-vjs-player className={styles['video-container']} >
-        <video ref={videoRef} onDoubleClick={videoDoubleClick} id="specified-area" className={`vjs-default-skin video-js ${styles['video-pos-js-9-16']}`} controls></video>
+        <video ref={videoRef} onClick={handlePlayerClick} onDoubleClick={videoDoubleClick} id="specified-area" className={`vjs-default-skin video-js ${styles['video-pos-js-9-16']}`} controls></video>
         <SideBar videoinfo={videoinfo} 
                  userfavorite={userfavorite} 
                  userlike={userlike} 
@@ -437,7 +440,7 @@ function VideoPlayer({
         <BriefIntri videoinfo={videoinfo} />
       </div>
       <div className={commentvis ? cs(styles['comment-container-vis']) : styles['comment-container-dis']} style={commentvis ? {backgroundImage: backgroundimage} : {}}>
-      <CommentPop />
+        <CommentPop videoinfo={videoinfo} />
       </div>
     </div>
   );

@@ -1,5 +1,6 @@
 const i18n = {
   'en-US': {
+    'footbar.auto': 'Next',
     'tooltip.like': 'Like',
     'tooltip.favorite': 'Collection',
     'tooltip.forward': 'Forward',
@@ -13,6 +14,7 @@ const i18n = {
     'message.notlog': 'Please login first!'
   },
   'zh-CN': {
+    'footbar.auto': '连播',
     'tooltip.like': '点赞',
     'tooltip.favorite': '收藏',
     'tooltip.forward': '转发',
