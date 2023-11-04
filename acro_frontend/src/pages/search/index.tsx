@@ -18,7 +18,7 @@ import { useRouter } from 'next/router';
 import { GlobalState } from '@/store';
 import { Empty } from '@arco-design/web-react';
 import { IconLoading } from '@arco-design/web-react/icon';
-import GetAxios from '@/utils/getaxios';
+import baxios from "@/utils/getaxios";
 
 const { Title } = Typography;
 const { Row, Col } = Grid;
@@ -51,7 +51,6 @@ export default function ListSearchResult() {
     param.append('limit', '12');
     // sleep
     // await new Promise(resolve => setTimeout(resolve, 3000));
-    const baxios = GetAxios();
     baxios
       .post(
         t === 'video' ? '/v1-api/v1/video/search' : '/v1-api/v1/user/search',
@@ -83,7 +82,6 @@ export default function ListSearchResult() {
     const s = t === 'video' ? videoData.length : userData.length;
     param.append('start', s.toString());
     param.append('limit', '12');
-    const baxios = GetAxios();
     baxios
       .post(
         t === 'video' ? '/v1-api/v1/video/search' : '/v1-api/v1/user/search',

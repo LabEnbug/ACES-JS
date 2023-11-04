@@ -9,14 +9,14 @@ import '../style/global.less';
 import { ConfigProvider } from '@arco-design/web-react';
 import zhCN from '@arco-design/web-react/es/locale/zh-CN';
 import enUS from '@arco-design/web-react/es/locale/en-US';
-import axios from 'axios';
 import NProgress from 'nprogress';
 import rootReducer from '../store';
 import { GlobalContext } from '../context';
-import GetUserInfo from '@/utils/getuserinfo';
 import changeTheme from '@/utils/changeTheme';
 import useStorage from '@/utils/useStorage';
 import Layout from './layout';
+import {getToken} from "@/utils/authentication";
+import baxios from "@/utils/getaxios";
 
 const store = createStore(rootReducer);
 
@@ -31,7 +31,7 @@ export default function MyApp({
   renderConfig,
 }: AppProps & { renderConfig: RenderConfig }) {
   const { arcoLang, arcoTheme } = renderConfig;
-  const [lang, setLang] = useStorage('arco-lang', arcoLang || 'en-US');
+  const [lang, setLang] = useStorage('arco-lang', arcoLang || 'zh-CN');
   const [theme, setTheme] = useStorage('arco-theme', 'dark');
   // setTheme('dark')
   const router = useRouter();
@@ -46,21 +46,48 @@ export default function MyApp({
     }
   }, [lang]);
 
-  function fetchUserInfo() {
-    // store.dispatch({
-    //   type: 'update-userInfo',
-    //   payload: { userLoading: true },
-    // });
-    const userinfo = GetUserInfo();
+  async function GetUserInfo() {
+    try {
+      const response = await baxios
+        .post('/v1-api/v1/user/info');
+      const data = response.data;
+      if (data.status !== 200) {
+        console.error(data.err_msg);
+        throw new Error(data.err_msg);
+      }
+      console.log(data);
+      return data.data.user;
+    } catch (error) {
+      throw error;
+    }
+  }
 
+
+
+  function fetchUserInfo() {
     store.dispatch({
       type: 'update-userInfo',
-      payload: { userInfo: userinfo, userLoading: false },
+      payload: { userLoading: true },
+    });
+    GetUserInfo().then((userinfo) => {
+      store.dispatch({
+        type: 'update-userInfo',
+        payload: { userInfo: userinfo, userLoading: false, isLogin: true },
+      });
+    }).catch((error) => {
+      store.dispatch({
+        type: 'update-userInfo',
+        payload: { userInfo: null, userLoading: false, isLogin: false },
+      });
     });
   }
 
   useEffect(() => {
-    // fetchUserInfo()
+    const token = getToken();
+    if (token) {
+      baxios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    }
+    fetchUserInfo()
     // if (checkLogin()) {
     //   fetchUserInfo();
     // }

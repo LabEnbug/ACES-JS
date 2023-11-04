@@ -13,7 +13,7 @@ import {
   IconMinusCircle,
   IconPlus,
 } from '@arco-design/web-react/icon';
-import GetAxios from '@/utils/getaxios';
+import baxios from "@/utils/getaxios";
 
 interface CardBlockType {
   type: 'video' | 'user';
@@ -114,7 +114,6 @@ function CardBlock(props) {
 
   const followUser = (follow) => {
     setFollowLoading(true);
-    const baxios = GetAxios();
     const params = new FormData();
     params.append('user_id', card.user_id);
     params.append('action', follow ? 'unfollow' : 'follow');

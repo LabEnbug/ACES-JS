@@ -3,10 +3,10 @@ import {  Tabs, Typography, Comment, Avatar, Input, Tooltip, Message, Button } f
 import useLocale from '@/utils/useLocale';
 import locale from './locale';
 import styles from './style/index.module.less';
-import GetAxios from '@/utils/getaxios';
 import GetUserInfo from "@/utils/getuserinfo";
 import GetDataTime from '@/utils/getdatadate'
 import Replay from './replay';
+import baxios from "@/utils/getaxios";
 
 const TextArea = Input.TextArea;
 
@@ -24,7 +24,6 @@ function CommentDrawer(props) {
       const atBottom = e.target.scrollHeight - e.target.scrollTop === e.target.clientHeight;
       if (atBottom) {
         // div滚动到底部时的逻辑处理
-        const baxios = GetAxios();
         const param = new FormData();
 
         param.append('video_uid', videoinfo['video_uid']);
@@ -45,7 +44,6 @@ function CommentDrawer(props) {
     };
 
     const fetchMoreComment = (comment_id, offset) => {
-      const baxios = GetAxios();
       const param = new FormData();
       param.append('video_uid', videoinfo['video_uid']);
       param.append('limit', '5');
@@ -139,7 +137,6 @@ function CommentDrawer(props) {
 
     const handleKeyDownBottom = (e, uid) => {
       if (e.key === 'Enter' && !e.shiftKey) {
-        const baxio = GetAxios();
         const param = new FormData();
         // 如果只按下了Enter，阻止默认行为并触发你的事件
         e.preventDefault();
@@ -150,7 +147,7 @@ function CommentDrawer(props) {
         param.append('video_uid', uid);
         param.append('content', e.target.value);
         param.append('quote_comment_id', '0');
-        baxio.post('v1-api/v1/video/comment/make', param).then(res=> {
+        baxios.post('v1-api/v1/video/comment/make', param).then(res=> {
           if (JudgeStatus(res.data)) {
             const randomId = Math.round( Math.random()*(1000) + 50);
             Message.info(t['comment.input.post.success']);
@@ -184,7 +181,6 @@ function CommentDrawer(props) {
 
     useEffect(()=> {
       console.log(videoinfo);
-      const baxios = GetAxios();
       const param = new FormData();
       param.append('video_uid', videoinfo['video_uid']);
       param.append('limit', '20');

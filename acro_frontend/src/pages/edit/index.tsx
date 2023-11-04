@@ -1,11 +1,9 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import styles from './style/index.module.less';
 import { GlobalState } from '@/store';
 import {
   Button,
   Card,
-  DatePicker,
-  Descriptions,
   Form,
   Input,
   InputTag,
@@ -15,39 +13,38 @@ import {
   Space,
   Tag,
   Typography,
-  Upload,
 } from '@arco-design/web-react';
-import GetAxios from '@/utils/getaxios';
-import axios, { Canceler } from 'axios';
-import { IconCheck } from '@arco-design/web-react/icon';
 import { useRouter } from 'next/router';
-import MessageBox from '@/components/MessageBox';
 import { useSelector } from 'react-redux';
+import baxios from "@/utils/getaxios";
 
 const { Title, Paragraph } = Typography;
 
-function UploadShortVideo() {
+function EditShortVideo() {
   const [loading, setLoading] = useState(false);
   const [current, setCurrent] = useState(1);
-  const [uploading, setUploading] = useState(false);
   const [videoUid, setVideoUid] = useState('');
   const [form] = Form.useForm();
-  const [cancelTokenSource, setCancelTokenSource] = useState(null);
 
   const [videoInfo, setVideoInfo] = useState(null);
 
-  const { userInfo } = useSelector((state: GlobalState) => state);
+  const { isLogin } = useSelector((state: GlobalState) => state);
 
   const router = useRouter();
   const { video_uid } = router.query;
 
   useEffect(() => {
+    if (!isLogin) {
+      Message.error('请先登录');
+      // window.location.href = '/';
+      return;
+    }
     if (!video_uid) {
-      window.location.href = '/';
+        Message.error('无此视频');
+        // window.location.href = '/';
     } else if (router.isReady && video_uid) {
       setVideoUid(video_uid.toString());
       // get video info
-      const baxios = GetAxios();
       const param = new FormData();
       param.append('video_uid', video_uid.toString());
       baxios
@@ -80,7 +77,6 @@ function UploadShortVideo() {
     console.log(videoUid);
     setLoading(true);
 
-    const baxios = GetAxios();
     const param = new FormData();
     param.append('video_uid', videoUid);
     param.append('video_type', form.getFieldValue('type'));
@@ -159,7 +155,7 @@ function UploadShortVideo() {
                     },
                   ]}
                 >
-                  <Select>
+                  <Select disabled={!isLogin}>
                     {Object.keys(typeMap).map((key) => (
                       <Select.Option key={key} value={key}>
                         {typeMap[key]}
@@ -183,6 +179,7 @@ function UploadShortVideo() {
                   ]}
                 >
                   <Input.TextArea
+                    disabled={!isLogin}
                     maxLength={{ length: 120, errorOnly: true }}
                     showWordLimit
                     autoSize={{ minRows: 1, maxRows: 6 }}
@@ -209,7 +206,7 @@ function UploadShortVideo() {
                       });
                   }}
                 >
-                  <InputTag allowClear dragToSort />
+                  <InputTag disabled={!isLogin} allowClear dragToSort />
                 </Form.Item>
               </Form.Item>
             )}
@@ -332,4 +329,4 @@ function UploadShortVideo() {
   );
 }
 
-export default UploadShortVideo;
+export default EditShortVideo;

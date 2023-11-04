@@ -4,11 +4,10 @@ import useLocale from '@/utils/useLocale';
 import locale from './locale';
 import { IconHeart, IconMessage, IconStar } from '@arco-design/web-react/icon';
 import styles from './style/index.module.less';
-import GetAxios from '@/utils/getaxios';
 import GetUserInfo from "@/utils/getuserinfo";
 import cs from 'classnames';
 import { VideoOne } from '@icon-park/react';
-import { prepareCommonToken } from 'antd/es/tag/style';
+import baxios from "@/utils/getaxios";
 const TextArea = Input.TextArea;
 const TabPane = Tabs.TabPane;
 
@@ -44,7 +43,6 @@ const t = useLocale(locale);
 
   const handleKeyDownBottom = (e, uid, comment_id, addC) => {
     if (e.key === 'Enter' && !e.shiftKey) {
-      const baxio = GetAxios();
       const param = new FormData();
       // 如果只按下了Enter，阻止默认行为并触发你的事件
       e.preventDefault();
@@ -55,7 +53,7 @@ const t = useLocale(locale);
       param.append('video_uid', uid);
       param.append('content', e.target.value);
       param.append('quote_comment_id', comment_id.toString());
-      baxio.post('v1-api/v1/video/comment/make', param).then(res=> {
+      baxios.post('v1-api/v1/video/comment/make', param).then(res=> {
         if (JudgeStatus(res.data)) {
           Message.info(t['comment.input.post.success']);
           console.log(quote_comment['child_comment_count_left'] )

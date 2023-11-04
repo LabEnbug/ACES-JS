@@ -17,12 +17,12 @@ import {
   Typography,
   Upload,
 } from '@arco-design/web-react';
-import GetAxios from '@/utils/getaxios';
 import axios, { Canceler } from 'axios';
 import { IconCheck } from '@arco-design/web-react/icon';
 import { useRouter } from 'next/router';
 import MessageBox from '@/components/MessageBox';
 import { useSelector } from 'react-redux';
+import baxios from "@/utils/getaxios";
 
 const { Title, Paragraph } = Typography;
 
@@ -35,19 +35,17 @@ function UploadShortVideo() {
   const [form] = Form.useForm();
   const [cancelTokenSource, setCancelTokenSource] = useState(null);
 
-  const { userInfo } = useSelector((state: GlobalState) => state);
+  const { isLogin } = useSelector((state: GlobalState) => state);
 
   const router = useRouter();
 
   useEffect(() => {
     // todo, if not logged in, jump out
-    console.log(userInfo);
-    if (!userInfo) {
-      console.log(1111);
-      // router.push({
-      //   pathname: '/',
-      // });
-      // return;
+    console.log(isLogin);
+    if (!isLogin) {
+      Message.error('请先登录');
+      // window.location.href = '/';
+      return;
     }
   }, []);
 
@@ -91,7 +89,6 @@ function UploadShortVideo() {
     const formData = new FormData();
     formData.append('file', files[0].originFile);
 
-    const baxios = GetAxios();
     const source = axios.CancelToken.source();
     setCancelTokenSource(source);
     baxios
@@ -215,7 +212,6 @@ function UploadShortVideo() {
     console.log(videoUid);
     setLoading(true);
 
-    const baxios = GetAxios();
     const param = new FormData();
     param.append('video_uid', videoUid);
     param.append('video_type', form.getFieldValue('type'));
@@ -334,6 +330,7 @@ function UploadShortVideo() {
                 >
                   <div className={styles.customUpload}>
                     <Upload
+                      disabled={!isLogin}
                       limit={1}
                       drag
                       accept="video/*"
@@ -412,7 +409,7 @@ function UploadShortVideo() {
                     },
                   ]}
                 >
-                  <Select>
+                  <Select disabled={!isLogin}>
                     {Object.keys(typeMap).map((key) => (
                       <Select.Option key={key} value={key}>
                         {typeMap[key]}
@@ -436,6 +433,7 @@ function UploadShortVideo() {
                   ]}
                 >
                   <Input.TextArea
+                    disabled={!isLogin}
                     maxLength={{ length: 120, errorOnly: true }}
                     showWordLimit
                     autoSize={{ minRows: 1, maxRows: 6 }}
@@ -462,7 +460,7 @@ function UploadShortVideo() {
                       });
                   }}
                 >
-                  <InputTag allowClear dragToSort />
+                  <InputTag allowClear dragToSort disabled={!isLogin} />
                 </Form.Item>
               </Form.Item>
             )}
@@ -525,13 +523,13 @@ function UploadShortVideo() {
                     <Button
                       size="large"
                       onClick={() => setCurrent(current - 1)}
-                      disabled={loading}
+                      disabled={loading || !isLogin}
                     >
                       返回修改
                     </Button>
                   )}
                   {current === 1 && (
-                    <Button type="primary" size="large" onClick={toNext}>
+                    <Button disabled={!isLogin} type="primary" size="large" onClick={toNext}>
                       下一步
                     </Button>
                   )}
@@ -539,7 +537,7 @@ function UploadShortVideo() {
                     <Button
                       type="primary"
                       size="large"
-                      loading={loading}
+                      loading={loading || !isLogin}
                       onClick={toConfirm}
                     >
                       {loading ? '发布中' : '确认发布'}

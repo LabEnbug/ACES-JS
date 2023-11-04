@@ -6,12 +6,12 @@ import { createCanvas, loadImage } from 'canvas';
 import SideBar from './sidebar';
 import FootBar from './footbar';
 import BriefIntri from './brief_intro';
-import GetAxios from '@/utils/getaxios';
 import { Message } from '@arco-design/web-react';
 import locale from './locale';
 import useLocale from '@/utils/useLocale';
 import cs from 'classnames';
 import SiderTabs from '@/components/SiderTabs';
+import baxios from "@/utils/getaxios";
 function VideoPlayer({
   hlsPlayList,
   playIndex,
@@ -87,7 +87,6 @@ function VideoPlayer({
   };
 
   const getVideoInfo = (uid) => {
-    const baxios = GetAxios();
     const param1 = new FormData();
     param1.append('video_uid', uid);
     baxios
@@ -132,7 +131,6 @@ function VideoPlayer({
         : JSON.parse(window.localStorage.getItem('follow'));
     const action = status ? `unfollow` : `follow`;
     const param = new FormData();
-    const baxios = GetAxios();
     param.append('action', action);
     param.append('user_id', videoinfo['user_id'].toString());
 
@@ -159,7 +157,6 @@ function VideoPlayer({
         : JSON.parse(window.localStorage.getItem(item_name));
     const action = status ? `un${a_type}` : `${a_type}`;
     const param = new FormData();
-    const baxios = GetAxios();
 
     param.append('action', action);
     param.append('video_uid', videoinfo['video_uid']);
@@ -189,7 +186,6 @@ function VideoPlayer({
   const videoDoubleClick = () => {
     const item_name = 'is_user_like';
     const param = new FormData();
-    const baxios = GetAxios();
     const status =
       window.localStorage.getItem(item_name) == null
         ? false
@@ -214,7 +210,6 @@ function VideoPlayer({
 
   const clickfoward = () => {
     const param = new FormData();
-    const baxios = GetAxios();
     param.append('video_uid', videoinfo['video_uid']);
     const currentURL = window.location.href;
     const textArea = document.createElement('textarea');

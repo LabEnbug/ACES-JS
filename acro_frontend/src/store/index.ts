@@ -34,11 +34,12 @@ export default function store(state = initialState, action) {
       };
     }
     case 'update-userInfo': {
-      const { userInfo = initialState.userInfo, userLoading } = action.payload;
+      const { userInfo = initialState.userInfo, userLoading, isLogin } = action.payload;
       return {
         ...state,
-        userLoading,
         userInfo,
+        userLoading,
+        isLogin,
       };
     }
     case 'update-baxios': {

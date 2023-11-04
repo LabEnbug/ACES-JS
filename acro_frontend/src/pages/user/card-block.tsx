@@ -33,7 +33,7 @@ import {
   IconMore,
   IconShake,
 } from '@arco-design/web-react/icon';
-import GetAxios from '@/utils/getaxios';
+import baxios from "@/utils/getaxios";
 
 interface CardBlockType {
   type: string;
@@ -242,7 +242,6 @@ function CardBlock(props: CardBlockType) {
                     okButtonProps={{ loading: deleteLoading }}
                     onOk={() => {
                       setDeleteLoading(true);
-                      const baxios = GetAxios();
                       const params = new FormData();
                       params.append('video_uid', card.video_uid);
                       baxios

@@ -9,7 +9,7 @@ import {
   Button,
   List,
   Divider,
-  Avatar,
+  Avatar, Message,
 } from '@arco-design/web-react';
 import useLocale from '@/utils/useLocale';
 import locale from './locale';
@@ -27,8 +27,8 @@ import {
   IconMinusCircle,
   IconPlus,
 } from '@arco-design/web-react/icon';
-import GetAxios from '@/utils/getaxios';
 import UserAddonCountInfo from '@/pages/user/user-addon-count-info';
+import baxios from "@/utils/getaxios";
 
 const { Title } = Typography;
 const { Row, Col } = Grid;
@@ -61,7 +61,6 @@ export default function ListSearchResult() {
 
   const getUserInfoData = async (username) => {
     setLoading(true);
-    const baxios = GetAxios();
     const params = new FormData();
     params.append('username', username);
     baxios
@@ -85,7 +84,6 @@ export default function ListSearchResult() {
 
   const getSelfInfoData = async () => {
     setLoading(true);
-    const baxios = GetAxios();
     baxios
       .post('/v1-api/v1/user/info')
       .then((response) => {
@@ -126,7 +124,6 @@ export default function ListSearchResult() {
     param.append('limit', '12');
     // sleep
     // await new Promise(resolve => setTimeout(resolve, 3000));
-    const baxios = GetAxios();
     baxios
       .post('/v1-api/v1/video/list', param)
       .then((response) => {
@@ -160,13 +157,10 @@ export default function ListSearchResult() {
     const s = videoData.length;
     param.append('start', s.toString());
     param.append('limit', '12');
-    const baxios = GetAxios();
     baxios
       .post('/v1-api/v1/video/list', param)
       .then((response) => {
         const data = response.data;
-        // sleep 1000ms
-        setTimeout(() => {}, 3000);
         if (data.status !== 200) {
           console.error(data.err_msg);
           setIsEndData(true);
@@ -242,7 +236,6 @@ export default function ListSearchResult() {
 
   function handleChangeNickname() {
     return new Promise<void>((resolve, reject) => {
-      const baxios = GetAxios();
       const params = new FormData();
       params.append('nickname', nicknameForChange);
       baxios
@@ -251,6 +244,8 @@ export default function ListSearchResult() {
           const data = response.data;
           if (data.status !== 200) {
             console.error(data.err_msg);
+            Message.error(data.err_msg);
+            resolve()
             return;
           }
           setUserData(data.data.user);
@@ -266,7 +261,6 @@ export default function ListSearchResult() {
 
   const followUser = (follow) => {
     setFollowLoading(true);
-    const baxios = GetAxios();
     const params = new FormData();
     params.append('user_id', userData.user_id);
     params.append('action', follow ? 'unfollow' : 'follow');

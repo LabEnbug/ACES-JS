@@ -1,6 +1,8 @@
 /**
  * { data-analysis:  ['read', 'write'] }
  */
+import useStorage from "@/utils/useStorage";
+import {useEffect} from "react";
 
 export type UserPermission = Record<string, string[]>;
 
@@ -59,9 +61,11 @@ export default (params: AuthParams, userPermission: UserPermission) => {
 };
 
 export function setToken(token: string) {
-  localStorage.setItem('token', token);
+  localStorage.setItem('token', token === null ? '' : token);
 }
 
 export function getToken() {
   return localStorage.getItem('token') || '';
 }
+
+

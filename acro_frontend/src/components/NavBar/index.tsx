@@ -31,7 +31,7 @@ import {
   IconShake,
   IconPlusCircle,
   IconPlus,
-  IconUpload,
+  IconUpload, IconPen,
 } from '@arco-design/web-react/icon';
 import { useSelector, useDispatch } from 'react-redux';
 import store, { GlobalState } from '@/store';
@@ -47,19 +47,20 @@ import defaultLocale from '@/locale';
 import useStorage from '@/utils/useStorage';
 import { generatePermission } from '@/routes';
 import { useRouter } from 'next/router';
-import GetAxios from '@/utils/getaxios';
 import cs from 'classnames';
+import {getToken, setToken} from "@/utils/authentication";
+import baxios from "@/utils/getaxios";
 
 const FormItem = Form.Item;
 
 function Navbar({ show }: { show: boolean }) {
   const t = useLocale();
-  const { userInfo, userLoading } = useSelector((state: GlobalState) => state);
+  const { userInfo, userLoading, isLogin } = useSelector((state: GlobalState) => state);
   const dispatch = useDispatch();
   const [_, setUserStatus] = useStorage('userStatus');
-  const [role, setRole] = useStorage('userRole', 'admin');
-  const [signinmodel, SetSignInModel] = useState(false);
-  const [signupmodel, SetSignUpModel] = useState(false);
+  const [role, setRole] = useStorage('userRole', 'user');
+  const [signInModal, SetSignInModal] = useState(false);
+  const [signUpModal, SetSignUpModal] = useState(false);
 
   const router = useRouter();
   const [searchKeyword, setSearchKeyword] = useState('');
@@ -67,39 +68,15 @@ function Navbar({ show }: { show: boolean }) {
   const [searchPopupBoxVisible, setSearchPopupBoxVisible] = useState(false);
 
   const showSignInModal = () => {
-    SetSignInModel(true);
+    SetSignInModal(true);
   };
 
   const showSignUpModal = () => {
-    SetSignUpModel(true);
+    SetSignUpModal(true);
   };
 
   const { setLang, lang, theme, setTheme } = useContext(GlobalContext);
 
-  // function logout() {
-  //   setUserStatus('logout');
-  //   window.location.href = '/login';
-  // }
-
-  // function onMenuItemClick(key) {
-  //   if (key === 'logout') {
-  //     logout();
-  //   } else {
-  //     Message.info(`You clicked ${key}`);
-  //   }
-  // }
-
-  useEffect(() => {
-    dispatch({
-      type: 'update-userInfo',
-      payload: {
-        userInfo: {
-          ...userInfo,
-          permissions: generatePermission(role),
-        },
-      },
-    });
-  }, [role]);
 
   useEffect(() => {
     if (router.query.q) {
@@ -134,72 +111,77 @@ function Navbar({ show }: { show: boolean }) {
     );
   }
 
-  const handleChangeRole = () => {
-    const newRole = role === 'admin' ? 'user' : 'admin';
-    setRole(newRole);
-  };
-
-  const handlelogout = () => {
-    const baxios = GetAxios();
-
+  const handleLogout = () => {
     baxios
-      .get('/v1-api/v1/user/logout')
+      .post('/v1-api/v1/user/logout')
       .then((response) => {
+        setToken(null);
         Message.info(t['navbar.menu.logout.message']);
-        localStorage.removeItem('userInfo');
-        window.location.pathname = '/';
+        dispatch({
+          type: 'update-userInfo',
+          payload: { ...userInfo, userLoading: false, isLogin: false },
+        });
+        if (baxios.defaults.headers.common['Authorization']) {
+          delete baxios.defaults.headers.common['Authorization'];
+        }
+        // localStorage.removeItem('userInfo');
+        // window.location.pathname = '/';
       })
       .catch((error) => {
         console.error(error);
       });
   };
 
-  const droplist = (
+  const dropList = (
     // <Menu onClickMenuItem={onMenuItemClick}>
     <Menu>
-      <Menu.SubMenu
-        key="role"
-        title={
-          <>
-            <IconUser className={styles['dropdown-icon']} />
-            <span className={styles['user-role']}>
-              {role === 'admin'
-                ? t['menu.user.role.admin']
-                : t['menu.user.role.user']}
-            </span>
-          </>
-        }
-      >
-        <Menu.Item onClick={handleChangeRole} key="switch role">
-          <IconTag className={styles['dropdown-icon']} />
-          {t['menu.user.switchRoles']}
-        </Menu.Item>
-      </Menu.SubMenu>
+      {/*<Menu.SubMenu*/}
+      {/*  key="role"*/}
+      {/*  title={*/}
+      {/*    <>*/}
+      {/*      <IconUser className={styles['dropdown-icon']} />*/}
+      {/*      <span className={styles['user-role']}>*/}
+      {/*        {role === 'admin'*/}
+      {/*          ? t['menu.user.role.admin']*/}
+      {/*          : t['menu.user.role.user']}*/}
+      {/*      </span>*/}
+      {/*    </>*/}
+      {/*  }*/}
+      {/*>*/}
+      {/*  <Menu.Item onClick={handleChangeRole} key="switch role">*/}
+      {/*    <IconTag className={styles['dropdown-icon']} />*/}
+      {/*    {t['menu.user.switchRoles']}*/}
+      {/*  </Menu.Item>*/}
+      {/*</Menu.SubMenu>*/}
+      {/*<Menu.Item key="setting">*/}
+      {/*  <IconSettings className={styles['dropdown-icon']} />*/}
+      {/*  {t['menu.user.setting']}*/}
+      {/*</Menu.Item>*/}
       <Menu.Item key="setting">
-        <IconSettings className={styles['dropdown-icon']} />
-        {t['menu.user.setting']}
+        <IconUser className={styles['dropdown-icon']} />
+        {t['menu.user']}
       </Menu.Item>
-      <Menu.SubMenu
-        key="more"
-        title={
-          <div style={{ width: 80 }}>
-            <IconExperiment className={styles['dropdown-icon']} />
-            {t['message.seeMore']}
-          </div>
-        }
-      >
-        <Menu.Item key="workplace">
-          <IconDashboard className={styles['dropdown-icon']} />
-          {t['menu.dashboard.workplace']}
-        </Menu.Item>
-        <Menu.Item key="card list">
-          <IconInteraction className={styles['dropdown-icon']} />
-          {t['menu.list.cardList']}
-        </Menu.Item>
-      </Menu.SubMenu>
+      {/*<Menu.SubMenu*/}
+      {/*  key="more"*/}
+      {/*  title={*/}
+      {/*    <div style={{ width: 80 }}>*/}
+      {/*      <IconExperiment className={styles['dropdown-icon']} />*/}
+      {/*      {t['message.seeMore']}*/}
+      {/*    </div>*/}
+      {/*  }*/}
+      {/*>*/}
+      {/*  <Menu.Item key="workplace">*/}
+      {/*    <IconDashboard className={styles['dropdown-icon']} />*/}
+      {/*    {t['menu.dashboard.workplace']}*/}
+      {/*  </Menu.Item>*/}
+      {/*  <Menu.Item key="card list">*/}
+      {/*    <IconInteraction className={styles['dropdown-icon']} />*/}
+      {/*    {t['menu.list.cardList']}*/}
+      {/*  </Menu.Item>*/}
+      {/*</Menu.SubMenu>*/}
 
       <Divider style={{ margin: '4px 0' }} />
-      <Menu.Item key="logout" onClick={handlelogout}>
+      <Menu.Item key="logout" onClick={handleLogout}>
         <IconPoweroff className={styles['dropdown-icon']} />
         {t['navbar.logout']}
       </Menu.Item>
@@ -210,7 +192,6 @@ function Navbar({ show }: { show: boolean }) {
   const [confirmLoading, setConfirmLoading] = useState(false);
 
   function onSignInOk() {
-    const baxios = GetAxios();
     form
       .validate()
       .then((res) => {
@@ -219,50 +200,85 @@ function Navbar({ show }: { show: boolean }) {
         //   username: res.username,
         //   password: res.password
         // }
-        const params = new FormData();
-        params.append('username', res.username);
-        params.append('password', res.password);
-        baxios
-          .post('/v1-api/v1/user/login', params)
-          .then((response) => {
-            const data = response.data;
-            localStorage.setItem('userInfo', JSON.stringify(data));
-            window.location.pathname = '/';
-          })
-          .catch((error) => {
-            console.error(error);
-          });
+        setConfirmLoading(true);
+        // sleep 1000ms
+        setTimeout(() => {
+          const params = new FormData();
+          params.append('username', res.username);
+          params.append('password', res.password);
+          baxios
+            .post('/v1-api/v1/user/login', params)
+            .then((response) => {
+              const data = response.data;
+              if (data.status !== 200) {
+                console.error(data.err_msg);
+                Message.error(data.err_msg);
+                return;
+              }
+              console.log(data);
+              setToken(data.data.token);
+              baxios.defaults.headers.common['Authorization'] = `Bearer ${data.data.token}`;
+              // localStorage.setItem('userInfo', JSON.stringify(data));
+              // window.location.pathname = '/';
+              Message.success(t['navbar.model.signin.message.success']);
+              SetSignInModal(false);
+            })
+            .catch((error) => {
+              console.error(error);
+              Message.error(error);
+            })
+            .finally(() => {setConfirmLoading(false);
+            });
+        }, 1000);
       })
       .catch((e) => {
-        Message.error(t['navbar.model.signup.message.error']);
+
       });
   }
   function onSignUpOk() {
-    const baxios = GetAxios();
     form
       .validate()
       .then((res) => {
         console.log(res);
-        const params = {
-          username: res.username,
-          password: res.password,
-          nickname: res.nickname,
-        };
-        baxios
-          .get('/v1-api/v1/user/signup', { params })
-          .then((response) => {
-            const data = response.data;
-            console.log(data);
-            localStorage.setItem('userInfo', JSON.stringify(data));
-            window.location.pathname = '/';
-          })
-          .catch((error) => {
-            console.log(1234);
-            console.error(error);
-          });
+        // const params = {
+        //   username: res.username,
+        //   password: res.password,
+        //   nickname: res.nickname,
+        // };
+        setConfirmLoading(true);
+        // sleep 1000ms
+        setTimeout(() => {
+          const params = new FormData();
+          params.append('username', res.username);
+          params.append('nickname', res.nickname);
+          params.append('password', res.password);
+          baxios
+            .post('/v1-api/v1/user/signup', params)
+            .then((response) => {
+              const data = response.data;
+              if (data.status !== 200) {
+                console.error(data.err_msg);
+                Message.error(data.err_msg);
+                return;
+              }
+              console.log(data);
+              setToken(data.data.token);
+              baxios.defaults.headers.common['Authorization'] = `Bearer ${data.data.token}`;
+              // localStorage.setItem('userInfo', JSON.stringify(data));
+              // window.location.pathname = '/';
+              Message.success(t['navbar.model.signup.message.success']);
+              SetSignUpModal(false);
+              SetSignInModal(true);
+            })
+            .catch((error) => {
+              console.error(error);
+              Message.error(error);
+            })
+            .finally(() => {setConfirmLoading(false)});
+        }, 1000);
       })
       .catch((e) => {
-        Message.error(t['navbar.model.signup.message.error']);
+
       });
   }
 
@@ -367,9 +383,9 @@ function Navbar({ show }: { show: boolean }) {
           </Tooltip>
         </li> */}
         {/* <Settings /> */}
-        {userInfo ? (
+        {isLogin ? (
           <li>
-            <Dropdown droplist={droplist} position="br" disabled={userLoading}>
+            <Dropdown droplist={dropList} position="br" disabled={userLoading}>
               <Avatar
                 size={32}
                 style={{ cursor: 'pointer' }}
@@ -412,9 +428,11 @@ function Navbar({ show }: { show: boolean }) {
           </div>
         }
         className={styles['auth-model']}
-        visible={signinmodel}
+        visible={signInModal}
+        confirmLoading={confirmLoading}
+        okText={t['navbar.button.signin']}
         onOk={() => onSignInOk()}
-        onCancel={() => SetSignInModel(false)}
+        onCancel={() => SetSignInModal(false)}
         autoFocus={false}
         focusLock={true}
         closable={false}
@@ -428,19 +446,19 @@ function Navbar({ show }: { show: boolean }) {
               style: { flexBasis: 90 },
             }}
             wrapperCol={{
-              style: { flexBasis: 'calc(100% - 90px)' },
+              // style: { flexBasis: 'calc(100% - 90px)' },
             }}
           >
-            <FormItem field="username" rules={[{ required: true }]}>
+            <FormItem field="username" rules={[{ required: true, message: t['navbar.model.username.require'] }]}>
               <Input
                 prefix={<IconUser />}
-                placeholder={t['navbar.model.signin.account']}
+                placeholder={t['navbar.model.username']}
               />
             </FormItem>
-            <FormItem field="password" rules={[{ required: true }]}>
+            <FormItem field="password" rules={[{ required: true, message: t['navbar.model.password.require'] }]}>
               <Input.Password
                 prefix={<IconLock />}
-                placeholder={t['navbar.model.signin.passward']}
+                placeholder={t['navbar.model.password']}
               />
             </FormItem>
           </Form>
@@ -453,9 +471,11 @@ function Navbar({ show }: { show: boolean }) {
           </div>
         }
         className={styles['auth-model']}
-        visible={signupmodel}
+        visible={signUpModal}
+        confirmLoading={confirmLoading}
+        okText={t['navbar.button.signup']}
         onOk={() => onSignUpOk()}
-        onCancel={() => SetSignUpModel(false)}
+        onCancel={() => SetSignUpModal(false)}
         autoFocus={false}
         focusLock={true}
         closable={false}
@@ -469,25 +489,25 @@ function Navbar({ show }: { show: boolean }) {
               style: { flexBasis: 90 },
             }}
             wrapperCol={{
-              style: { flexBasis: 'calc(100% - 90px)' },
+              // style: { flexBasis: 'calc(100% - 90px)' },
             }}
           >
-            <FormItem field="username" rules={[{ required: true }]}>
+            <FormItem field="username" rules={[{ required: true, message: t['navbar.model.username.require'] }]}>
               <Input
                 prefix={<IconUser />}
-                placeholder={t['navbar.model.signin.account']}
+                placeholder={t['navbar.model.username']}
               />
             </FormItem>
-            <FormItem field="nickname" rules={[{ required: true }]}>
+            <FormItem field="nickname" rules={[{ required: true, message: t['navbar.model.nickname.require'] }]}>
               <Input
-                prefix={<IconUser />}
-                placeholder={t['navbar.model.signup.nickname']}
+                prefix={<IconPen />}
+                placeholder={t['navbar.model.nickname']}
               />
             </FormItem>
-            <FormItem field="password" rules={[{ required: true }]}>
+            <FormItem field="password" rules={[{ required: true, message: t['navbar.model.password.require'] }]}>
               <Input.Password
                 prefix={<IconLock />}
-                placeholder={t['navbar.model.signin.passward']}
+                placeholder={t['navbar.model.password']}
               />
             </FormItem>
 
@@ -499,9 +519,9 @@ function Navbar({ show }: { show: boolean }) {
                 {
                   validator: (v, cb) => {
                     if (!v) {
-                      return cb('confirm_password is required');
+                      return cb(t['navbar.model.password.confirm.require']);
                     } else if (form.getFieldValue('password') !== v) {
-                      return cb('confirm_password must be equal with password');
+                      return cb(t['navbar.model.password.confirm.error']);
                     }
                     cb(null);
                   },
@@ -510,7 +530,7 @@ function Navbar({ show }: { show: boolean }) {
             >
               <Input.Password
                 prefix={<IconLock />}
-                placeholder="please confirm your password"
+                placeholder={t['navbar.model.password.confirm']}
               />
             </FormItem>
           </Form>

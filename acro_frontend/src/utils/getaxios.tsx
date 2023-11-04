@@ -1,23 +1,16 @@
 import axios from 'axios';
+import {getToken} from "@/utils/authentication";
 
-export default function GetUserInfo() {
-  const userinfo = window.localStorage.getItem('userInfo')
-    ? JSON.parse(window.localStorage.getItem('userInfo'))
-    : null;
-  return userinfo
-    ? axios.create({
-        headers: {
-          Authorization: `Bearer ${userinfo.data.token}`,
-        },
-      })
-    : axios.create();
-}
+const baxios = axios.create();
 
-// const baxios = axios.create({
-//   // baseURL: ,
-//   headers: {
-//     // Authorization: `Bearer ${token}`,
-//   }
-// })
+baxios.interceptors.request.use((config) => {
+  const token = getToken();
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+}, (error) => {
+  return Promise.reject(error);
+});
 
-// export default baxios;
+export default baxios;

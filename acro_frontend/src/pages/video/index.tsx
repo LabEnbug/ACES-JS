@@ -6,8 +6,8 @@ import styles from './style/index.module.less';
 import VideoPlayer from '@/components/Video';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import GetAxios from '@/utils/getaxios';
 import GetVideType from '@/utils/getvideotype';
+import baxios from "@/utils/getaxios";
 
 function VideoP() {
   const default_type = 'comprehensive';
@@ -53,7 +53,6 @@ function VideoP() {
     const pre = window.localStorage.getItem('playvideo-pre-id');
     const uid = window.localStorage.getItem('playvideo-id');
     if (uid && pre != uid) {
-      const baxios = GetAxios();
       const param = new FormData();
       param.append('video_uid', uid);
       baxios
@@ -74,7 +73,6 @@ function VideoP() {
       router.push('/video');
     }
     if (playlist.length == 0 || pre_type != type) {
-      const baxios = GetAxios();
       const param = new FormData();
       param.append('limit', limit);
       // param.append('page', page)
@@ -111,7 +109,6 @@ function VideoP() {
           console.error(error);
         });
     } else if (playIndex >= playlist.length - 3) {
-      const baxios = GetAxios();
       const param = new FormData();
       param.append('limit', limit);
       if (type != default_type) param.append('type', GetVideType(type));
@@ -157,6 +154,7 @@ function VideoP() {
           playIndex={playIndex}
           reflectPlayIndex={reflectPlayIndex}
           recordWatched={recordWatched}
+          options={undefined}
         />
       </div>
     </div>
