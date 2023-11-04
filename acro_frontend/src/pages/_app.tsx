@@ -17,6 +17,7 @@ import useStorage from '@/utils/useStorage';
 import Layout from './layout';
 import {getToken} from "@/utils/authentication";
 import baxios from "@/utils/getaxios";
+import FetchUserInfo from "@/utils/getuserinfo";
 
 const store = createStore(rootReducer);
 
@@ -46,48 +47,48 @@ export default function MyApp({
     }
   }, [lang]);
 
-  async function GetUserInfo() {
-    try {
-      const response = await baxios
-        .post('/v1-api/v1/user/info');
-      const data = response.data;
-      if (data.status !== 200) {
-        console.error(data.err_msg);
-        throw new Error(data.err_msg);
-      }
-      console.log(data);
-      return data.data.user;
-    } catch (error) {
-      throw error;
-    }
-  }
-
-
-
-  function fetchUserInfo() {
-    store.dispatch({
-      type: 'update-userInfo',
-      payload: { userLoading: true },
-    });
-    GetUserInfo().then((userinfo) => {
-      store.dispatch({
-        type: 'update-userInfo',
-        payload: { userInfo: userinfo, userLoading: false, isLogin: true },
-      });
-    }).catch((error) => {
-      store.dispatch({
-        type: 'update-userInfo',
-        payload: { userInfo: null, userLoading: false, isLogin: false },
-      });
-    });
-  }
+  // async function GetUserInfo() {
+  //   try {
+  //     const response = await baxios
+  //       .post('/v1-api/v1/user/info');
+  //     const data = response.data;
+  //     if (data.status !== 200) {
+  //       console.error(data.err_msg);
+  //       throw new Error(data.err_msg);
+  //     }
+  //     console.log(data);
+  //     return data.data.user;
+  //   } catch (error) {
+  //     throw error;
+  //   }
+  // }
+  //
+  //
+  // // how to make fetchUserInfo() usable by other components?
+  // function fetchUserInfo() {
+  //   store.dispatch({
+  //     type: 'update-userInfo',
+  //     payload: { userLoading: true },
+  //   });
+  //   GetUserInfo().then((userinfo) => {
+  //     store.dispatch({
+  //       type: 'update-userInfo',
+  //       payload: { userInfo: userinfo, userLoading: false, isLogin: true },
+  //     });
+  //   }).catch((error) => {
+  //     store.dispatch({
+  //       type: 'update-userInfo',
+  //       payload: { userInfo: null, userLoading: false, isLogin: false },
+  //     });
+  //   });
+  // }
 
   useEffect(() => {
     const token = getToken();
     if (token) {
       baxios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
     }
-    fetchUserInfo()
+    FetchUserInfo(store.dispatch);
     // if (checkLogin()) {
     //   fetchUserInfo();
     // }

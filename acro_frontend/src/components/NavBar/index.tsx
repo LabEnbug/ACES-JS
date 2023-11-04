@@ -50,6 +50,7 @@ import { useRouter } from 'next/router';
 import cs from 'classnames';
 import {getToken, setToken} from "@/utils/authentication";
 import baxios from "@/utils/getaxios";
+import FetchUserInfo from "@/utils/getuserinfo";
 
 const FormItem = Form.Item;
 
@@ -222,6 +223,9 @@ function Navbar({ show }: { show: boolean }) {
               // window.location.pathname = '/';
               Message.success(t['navbar.model.signin.message.success']);
               SetSignInModal(false);
+              // get user info
+              FetchUserInfo(dispatch);
+
             })
             .catch((error) => {
               console.error(error);
