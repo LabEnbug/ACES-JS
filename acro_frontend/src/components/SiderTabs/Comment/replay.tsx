@@ -32,7 +32,7 @@ const JudgeStatus = (data: any) => {
 }
 const actions = (props)=> {
 const t = useLocale(locale);
-  const {time, comment_id, video_uid, addC, quote_comment} = props;
+  const {time, comment_id, video_uid, addC, quote_comment, setP} = props;
   const replyInputRef = useRef(null);
   const [showReply, setShowReply] = useState(false);
   const [value, setValue] = useState('');
@@ -41,7 +41,7 @@ const t = useLocale(locale);
   };
 
 
-  const handleKeyDownBottom = (e, uid, comment_id, addC) => {
+  const handleKeyDownBottom = (e, uid, comment_id, addC, setP) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       const param = new FormData();
       // 如果只按下了Enter，阻止默认行为并触发你的事件
@@ -55,21 +55,30 @@ const t = useLocale(locale);
       param.append('quote_comment_id', comment_id.toString());
       baxios.post('v1-api/v1/video/comment/make', param).then(res=> {
         if (JudgeStatus(res.data)) {
+          const data = res.data.data;
           Message.info(t['comment.input.post.success']);
-          console.log(quote_comment['child_comment_count_left'] )
           addC(pre => {
             return {
                 ...pre,
-                [comment_id]: [{
+                [data.comment.quote_comment_id]: pre[data.comment.quote_comment_id].concat([{
                     quote_user: quote_comment['child_comment_count_left'] ? null : quote_comment['user'],
-                    comment_time: getNowFormatDate(),
+                    comment_time: data.comment.comment_time,
                     content: e.target.value,
-                    user: {
-                        'nickname': '我'
-                    },
-                    id: 105
-                }].concat(pre[comment_id])
+                    user: data.comment.user,
+                    id: data.comment.id
+                }])
             }
+          });
+          setP(pre=>{
+            const new_array = [];
+            console.log(pre)
+            pre.forEach(item=> {
+              if (item.id === data.comment.quote_comment_id) {
+                item.child_comment_count_left +=1;
+              }
+              new_array.push(item);
+            });
+            return new_array;
           });
           setValue('');
           setShowReply(false);
@@ -105,7 +114,7 @@ const t = useLocale(locale);
       {showReply && (
         <div ref={replyInputRef}>
             <Tooltip position='tr' trigger='hover' content={t['comment.input.enter']}>
-                <TextArea value={value} className={styles['replay-input']} onChange={(e)=>{ setValue(e)}} onKeyDown={(e)=>{handleKeyDownBottom(e, video_uid, comment_id, addC)}}  placeholder="写下你的回复..." />
+                <TextArea value={value} className={styles['replay-input']} onChange={(e)=>{ setValue(e)}} onKeyDown={(e)=>{handleKeyDownBottom(e, video_uid, comment_id, addC, setP)}}  placeholder="写下你的回复..." />
              </Tooltip>
         </div>
       )}

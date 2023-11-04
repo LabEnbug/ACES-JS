@@ -33,7 +33,19 @@ function CommentDrawer(props) {
 
         baxios.post('v1-api/v1/video/comment/list', param).then(res=>{
           if (res.data.status === 200) {
-            console.log(res)
+            const news = {}
+            res.data.data.comment_list.forEach(item => {
+              if (item.child_comment_list && item.child_comment_list.length > 0) {
+                news[item.id] = [].concat(item.child_comment_list);
+              } else {
+                news[item.id] = [];
+              } 
+            });
+            SetCommentS(pre=>(Object.assign({}, news, pre)));
+            if (res.data.data.comment_list.length < 20) {
+              setDisplayNoMore(true);
+            }
+            SetComment(pre=>(pre.concat(res.data.data.comment_list)));
           } else {
             setDisplayNoMore(true);
           }   
@@ -52,8 +64,6 @@ function CommentDrawer(props) {
 
       baxios.post('v1-api/v1/video/comment/list', param).then(res=>{
         if (res.data.status === 200) {
-          console.log(res)
-          console.log(commentS)
           commentS[comment_id] = commentS[comment_id].concat(res.data.data.child_comment_list);
           
           SetCommentS(pre=> ({
@@ -73,7 +83,8 @@ function CommentDrawer(props) {
                            comment_id={comment_info['id']} 
                            video_uid={videoinfo['video_uid']} 
                            addC={SetCommentS} 
-                           quote_comment={comment_info}  />}
+                           quote_comment={comment_info}
+                           setP={SetComment}  />}
           author={<> {comment_info['user']['nickname']} { comment_info['quote_user'] ? <><div className={styles['right-arrow']} />  <span> {comment_info['quote_user']['nickname']} </span></> : <></>} </>}
           avatar={(    
             <Avatar
@@ -91,8 +102,6 @@ function CommentDrawer(props) {
     }
 
     const generateParentC = (comment_info) => {
-      console.log(comment_info)
-      console.log(comment_info.id)
       const fetchmore = comment_info['child_comment_count_left'] + 1 > commentS[comment_info.id].length && commentS[comment_info.id].length > 0
       return (
           <Comment
@@ -149,20 +158,18 @@ function CommentDrawer(props) {
         param.append('quote_comment_id', '0');
         baxios.post('v1-api/v1/video/comment/make', param).then(res=> {
           if (JudgeStatus(res.data)) {
-            const randomId = Math.round( Math.random()*(1000) + 50);
+            const data = res.data.data;
             Message.info(t['comment.input.post.success']);
             SetCommentS(pre=>({
               ...pre,
-              [randomId]: []
+              [data.comment.id]: []
             }));
             SetComment(pre => {
                 return [{
-                  comment_time: GetDataTime(),
+                  comment_time: data.comment.comment_time,
                   content: e.target.value,
-                  user: {
-                    'nickname': '我'
-                  },
-                  id: randomId,
+                  user: data.comment.user,
+                  id: data.comment.id,
                   child_comment_count_left: 0,
                 }].concat(pre);
             });
@@ -180,17 +187,16 @@ function CommentDrawer(props) {
     }, [log]);
 
     useEffect(()=> {
-      console.log(videoinfo);
       const param = new FormData();
+      SetCommentS({});
+      SetComment([]);
       param.append('video_uid', videoinfo['video_uid']);
       param.append('limit', '20');
       param.append('start', Object.keys(comment).length.toString());
       param.append('comment_id', '0');
 
       baxios.post('v1-api/v1/video/comment/list', param).then(res=>{
-        console.log(res);
         if (res.data.status === 200) {
-            console.log(213123123123);
             const news = {}
             res.data.data.comment_list.forEach(item => {
               if (item.child_comment_list && item.child_comment_list.length > 0) {
@@ -213,7 +219,7 @@ function CommentDrawer(props) {
     }, [videoinfo.video_uid])
 
     return (
-          <>
+          <div style={{height: '100%'}}>
             <div className={styles['comment-main-div']} onScroll={handleScroll} >
               {comment.map((item, index)=> generateParentC(item))}
               {displaynomore ? <div className={styles['divider']}>没有更多评论</div> : <></>}
@@ -237,7 +243,7 @@ function CommentDrawer(props) {
               </Tooltip> : <></> 
             
             }
-          </>
+          </div>
       );
   }
   
