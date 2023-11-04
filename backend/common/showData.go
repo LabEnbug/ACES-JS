@@ -20,5 +20,7 @@ func MakeVideoSupInfo(video model.Video, screenshotOk uint8, hlsOk uint8, user m
 	}
 	video.UploadTimeStr = tool.DatabaseTimeToRFC3339(video.UploadTime)
 	video.User = user
+	video.IsTop = video.Top.Valid
+	video.IsPrivate = video.Private == 1
 	return video
 }

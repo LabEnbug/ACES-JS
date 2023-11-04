@@ -56,15 +56,6 @@ func CloseDBPool() {
 	}
 }
 
-func GetUserIsFollowed(userId uint, followUserId uint) bool {
-	var count int
-	err := db.QueryRow("SELECT COUNT(1) FROM user_follow WHERE user_id=? AND follow_user_id=? AND unfollow_time IS NULL LIMIT 1", userId, followUserId).Scan(&count)
-	if err != nil || count == 0 {
-		return false
-	}
-	return true
-}
-
 func GetUserInfoById(userId uint, currentUserId uint) (model.User, bool, int) {
 	var user model.User
 	ok := true
@@ -86,7 +77,8 @@ func GetUserInfoById(userId uint, currentUserId uint) (model.User, bool, int) {
 		}
 	}
 	if currentUserId != 0 {
-		user.BeFollowed = GetUserIsFollowed(currentUserId, user.Id)
+		user.BeFollowed = CheckUserFollowed(user.Id, currentUserId)
+		user.IsSelf = user.Id == currentUserId
 	}
 	user = common.MakeUserSupInfo(user)
 	return user, ok, errNo
@@ -105,7 +97,8 @@ func GetUserInfoByUsername(userName string, currentUserId uint) (model.User, boo
 	}
 
 	if currentUserId != 0 {
-		user.BeFollowed = GetUserIsFollowed(currentUserId, user.Id)
+		user.BeFollowed = CheckUserFollowed(user.Id, currentUserId)
+		user.IsSelf = user.Id == currentUserId
 	}
 	user = common.MakeUserSupInfo(user)
 	return user, true
@@ -193,6 +186,15 @@ func SetLastLogin(userId uint) {
 	}
 }
 
+func CheckUserFollowed(followUserId uint, userId uint) bool {
+	var count int
+	err := db.QueryRow("SELECT COUNT(1) FROM user_follow WHERE follow_user_id=? AND user_id=? AND unfollow_time IS NULL LIMIT 1", followUserId, userId).Scan(&count)
+	if err != nil || count == 0 {
+		return false
+	}
+	return true
+}
+
 func FollowUser(followUserId uint, userId uint, action string) bool {
 	if action == "follow" {
 		_, err := db.Exec("INSERT INTO user_follow (follow_user_id, user_id, follow_time) VALUES (?, ?, NOW())", followUserId, userId)
@@ -204,7 +206,7 @@ func FollowUser(followUserId uint, userId uint, action string) bool {
 			return false
 		}
 	} else if action == "unfollow" {
-		_, err := db.Exec("UPDATE user_follow SET unfollow_time=NOW() WHERE follow_user_id=? AND user_id=?", followUserId, userId)
+		_, err := db.Exec("UPDATE user_follow SET unfollow_time=NOW() WHERE follow_user_id=? AND user_id=? AND unfollow_time IS NULL", followUserId, userId)
 		if err != nil {
 			if config.ShowLog {
 				funcName, _, _, _ := runtime.Caller(0)
@@ -241,33 +243,34 @@ func GetVideoList(qType int, qUserId uint, qRelation string, limit int, start in
 				// get user's followed user's video list
 				rows, err = db.Query("SELECT id, user_id, video_uid, type, content, keyword, upload_time, be_liked_count, be_favorite_count, be_commented_count, be_forwarded_count, be_watched_count, screenshot, hls FROM video WHERE deleted=0 AND hls=1 AND user_id IN (SELECT follow_user_id FROM user_follow WHERE user_id=? AND unfollow_time IS NULL ORDER BY id DESC) ORDER BY id DESC LIMIT ?, ?", currentUserId, start, limit)
 			} else if qRelation == "watched" {
-				// get user's watched video list
-				rows, err = db.Query("SELECT id, user_id, video_uid, type, content, keyword, upload_time, be_liked_count, be_favorite_count, be_commented_count, be_forwarded_count, be_watched_count, screenshot, hls FROM video WHERE deleted=0 AND hls=1 AND id IN (SELECT DISTINCT(video_id) FROM video_watch WHERE user_id=? ORDER BY id DESC) LIMIT ?, ?", currentUserId, start, limit)
+				// get user's watched video list, fix wrong order on 20231104
+				rows, err = db.Query("SELECT v.id, v.user_id, v.video_uid, v.type, v.content, v.keyword, v.upload_time, v.be_liked_count, v.be_favorite_count, v.be_commented_count, v.be_forwarded_count, v.be_watched_count, v.screenshot, v.hls FROM (SELECT video_id FROM (SELECT video_id, MAX(id) AS max_id FROM video_watch WHERE user_id=? GROUP BY video_id ) vw ORDER BY max_id DESC LIMIT ?, ?) AS subquery JOIN video v ON v.id = subquery.video_id WHERE v.deleted=0 AND v.hls=1", currentUserId, start, limit)
 			} else {
-				rows, err = db.Query("SELECT id, user_id, video_uid, type, content, keyword, upload_time, be_liked_count, be_favorite_count, be_commented_count, be_forwarded_count, be_watched_count, screenshot, hls FROM video WHERE deleted=0 AND hls=1 ORDER BY id DESC LIMIT ?, ?", start, limit)
+				// comprehensive video list
+				rows, err = db.Query("SELECT id, user_id, video_uid, type, content, keyword, upload_time, be_liked_count, be_favorite_count, be_commented_count, be_forwarded_count, be_watched_count, screenshot, hls FROM video WHERE deleted=0 AND hls=1 ORDER BY RAND() DESC LIMIT ?, ?", start, limit)
 			}
 		} else {
-			rows, err = db.Query("SELECT id, user_id, video_uid, type, content, keyword, upload_time, be_liked_count, be_favorite_count, be_commented_count, be_forwarded_count, be_watched_count, screenshot, hls FROM video WHERE deleted=0 AND hls=1 AND type=? ORDER BY id DESC LIMIT ?, ?", qType, start, limit)
-
+			// specific type video list
+			rows, err = db.Query("SELECT id, user_id, video_uid, type, content, keyword, upload_time, be_liked_count, be_favorite_count, be_commented_count, be_forwarded_count, be_watched_count, screenshot, hls FROM video WHERE deleted=0 AND hls=1 AND type=? ORDER BY RAND() DESC LIMIT ?, ?", qType, start, limit)
 		}
 	} else {
 		// specific user
 		if qType == 0 {
 			// all relations
 			if qRelation == "liked" {
-				// get user's liked video list
-				rows, err = db.Query("SELECT id, user_id, video_uid, type, content, keyword, upload_time, be_liked_count, be_favorite_count, be_commented_count, be_forwarded_count, be_watched_count, screenshot, hls FROM video WHERE deleted=0 AND hls=1 AND id IN (SELECT video_id FROM video_like WHERE user_id=? AND unlike_time IS NULL ORDER BY id DESC) LIMIT ?, ?", qUserId, start, limit)
+				// get user's liked video list, fix wrong order on 20231104
+				rows, err = db.Query("SELECT v.id, v.user_id, v.video_uid, v.type, v.content, v.keyword, v.upload_time, v.be_liked_count, v.be_favorite_count, v.be_commented_count, v.be_forwarded_count, v.be_watched_count, v.screenshot, v.hls FROM (SELECT video_id FROM (SELECT video_id, MAX(id) AS max_id FROM video_like WHERE user_id=? AND unlike_time IS NULL GROUP BY video_id ) vl ORDER BY max_id DESC LIMIT ?, ?) AS subquery JOIN video v ON v.id = subquery.video_id WHERE v.deleted=0 AND v.hls=1", qUserId, start, limit)
 			} else if qRelation == "favorite" {
-				// get user's favorite video list
-				rows, err = db.Query("SELECT id, user_id, video_uid, type, content, keyword, upload_time, be_liked_count, be_favorite_count, be_commented_count, be_forwarded_count, be_watched_count, screenshot, hls FROM video WHERE deleted=0 AND hls=1 AND id IN (SELECT video_id FROM video_favorite WHERE user_id=? AND unfavorite_time IS NULL ORDER BY id DESC) LIMIT ?, ?", qUserId, start, limit)
+				// get user's favorite video list, fix wrong order on 20231104
+				rows, err = db.Query("SELECT v.id, v.user_id, v.video_uid, v.type, v.content, v.keyword, v.upload_time, v.be_liked_count, v.be_favorite_count, v.be_commented_count, v.be_forwarded_count, v.be_watched_count, v.screenshot, v.hls FROM (SELECT video_id FROM (SELECT video_id, MAX(id) AS max_id FROM video_favorite WHERE user_id=? AND unfavorite_time IS NULL GROUP BY video_id ) vf ORDER BY max_id DESC LIMIT ?, ?) AS subquery JOIN video v ON v.id = subquery.video_id WHERE v.deleted=0 AND v.hls=1", qUserId, start, limit)
 			} else {
 				// get user's all uploaded video list
-				rows, err = db.Query("SELECT id, user_id, video_uid, type, content, keyword, upload_time, be_liked_count, be_favorite_count, be_commented_count, be_forwarded_count, be_watched_count, screenshot, hls FROM video WHERE deleted=0 AND user_id=? ORDER BY id DESC LIMIT ?, ?", qUserId, start, limit)
+				rows, err = db.Query("SELECT id, user_id, video_uid, type, content, keyword, upload_time, be_liked_count, be_favorite_count, be_commented_count, be_forwarded_count, be_watched_count, screenshot, hls FROM video WHERE deleted=0 AND hls=1 AND user_id=? ORDER BY id DESC LIMIT ?, ?", qUserId, start, limit)
 			}
 		} else {
 			// qActionHistory valid only when qType == 0, else ignored.
 			// get user's uploaded video list by type
-			rows, err = db.Query("SELECT id, user_id, video_uid, type, content, keyword, upload_time, be_liked_count, be_favorite_count, be_commented_count, be_forwarded_count, be_watched_count, screenshot, hls FROM video WHERE deleted=0 AND user_id=? AND type=? ORDER BY id DESC LIMIT ?, ?", qUserId, qType, start, limit)
+			rows, err = db.Query("SELECT id, user_id, video_uid, type, content, keyword, upload_time, be_liked_count, be_favorite_count, be_commented_count, be_forwarded_count, be_watched_count, screenshot, hls FROM video WHERE deleted=0 AND hls=1 AND user_id=? AND type=? ORDER BY id DESC LIMIT ?, ?", qUserId, qType, start, limit)
 		}
 	}
 
@@ -315,7 +318,7 @@ func GetVideoNum(qUserId uint, qRelation string) int {
 		err = db.QueryRow("SELECT COUNT(DISTINCT(video_id)) FROM video_watch WHERE user_id=?", qUserId).Scan(&count)
 	} else {
 		// get user's all uploaded video num
-		err = db.QueryRow("SELECT COUNT(1) FROM video WHERE deleted=0 AND user_id=?", qUserId).Scan(&count)
+		err = db.QueryRow("SELECT COUNT(1) FROM video WHERE deleted=0 AND hls=1 AND user_id=?", qUserId).Scan(&count)
 	}
 	if err != nil {
 		if config.ShowLog {
@@ -385,7 +388,7 @@ func CheckUserVideoRelation(userId uint, videoId uint, relationType string) bool
 		return true
 	case "uploaded":
 		var count int
-		err := db.QueryRow("SELECT COUNT(1) FROM video WHERE id=? AND user_id=? LIMIT 1", videoId, userId).Scan(&count)
+		err := db.QueryRow("SELECT COUNT(1) FROM video WHERE id=? AND user_id=? AND deleted=0 LIMIT 1", videoId, userId).Scan(&count)
 		if err != nil || count == 0 {
 			return false
 		}
@@ -521,82 +524,169 @@ func GuestForwardVideo(videoId uint, userId uint) bool {
 	return true
 }
 
-func GetVideoCommentList(videoId uint, limit int, start int, currentUserId uint) []model.VideoComment {
-	var videoComments []model.VideoComment
-	// inner join video for video_uid
-	rows, err := db.Query("SELECT video_comment.id, video.video_uid, video_comment.user_id, "+
-		"video_comment.content, video_comment.quote_comment_id, video_comment.comment_time FROM video_comment "+
-		"INNER JOIN video ON video_comment.video_id=video.id WHERE video_comment.video_id=? AND "+
-		"video_comment.delete_time IS NULL ORDER BY video_comment.id DESC LIMIT ?, ?", videoId, start, limit)
+func GetVideoChildCommentList(videoId uint, quoteRootCommentId uint, limit int, start int, currentUserId uint) ([]model.VideoCommentChild, int) {
+	var childCommentList []model.VideoCommentChild
+	var rows *sql.Rows
+	var err error
+
+	childCommentCountLeft := 0
+
+	rows, err = db.Query("SELECT id, user_id, content, quote_user_id, quote_child_comment_id, comment_time FROM video_comment WHERE video_id=? AND quote_root_comment_id=? AND delete_time IS NULL ORDER BY id DESC LIMIT ?, ?", videoId, quoteRootCommentId, start, limit)
 	if err != nil {
 		if config.ShowLog {
 			funcName, _, _, _ := runtime.Caller(0)
-			log.Println(runtime.FuncForPC(funcName).Name(), "err: ", err)
+			log.Println(runtime.FuncForPC(funcName).Name(), err)
 		}
-		return videoComments
+		return childCommentList, childCommentCountLeft
 	}
+
 	defer rows.Close()
 
 	for rows.Next() {
-		var videoComment model.VideoComment
-		err := rows.Scan(&videoComment.Id, &videoComment.VideoUid, &videoComment.UserId, &videoComment.Content, &videoComment.QuoteCommentId, &videoComment.CommentTime)
+		var childComment model.VideoCommentChild
+
+		// for child comment, quoteRootCommentId is always the same as the parent comment
+		childComment.QuoteRootCommentId = quoteRootCommentId
+
+		err := rows.Scan(&childComment.Id, &childComment.UserId, &childComment.Content, &childComment.QuoteUserId, &childComment.QuoteChildCommentId, &childComment.CommentTime)
 		if err != nil {
 			if config.ShowLog {
 				funcName, _, _, _ := runtime.Caller(0)
-				log.Println(runtime.FuncForPC(funcName).Name(), "err: ", err)
+				log.Println(runtime.FuncForPC(funcName).Name(), err)
 			}
-			return videoComments
+			return childCommentList, childCommentCountLeft
 		}
-		videoComment.CommentTimeStr = tool.DatabaseTimeToRFC3339(videoComment.CommentTime)
-		user, _, _ := GetUserInfoById(videoComment.UserId, currentUserId)
-		videoComment.User = user
-		videoComments = append(videoComments, videoComment)
-	}
-	return videoComments
-}
+		childComment.CommentTimeStr = tool.DatabaseTimeToRFC3339(childComment.CommentTime)
+		user, _, _ := GetUserInfoById(childComment.UserId, currentUserId)
+		childComment.User = user
+		if childComment.QuoteUserId != 0 {
+			quoteUser, _, _ := GetUserInfoById(childComment.QuoteUserId, currentUserId)
+			childComment.QuoteUser = quoteUser
+		}
 
-func CheckVideoCommentDuplicate(videoId uint, userId uint, content string, quoteCommentId uint) bool {
-	var count int
-	err := db.QueryRow("SELECT COUNT(1) FROM video_comment WHERE user_id=? AND video_id=? AND content=? AND quote_comment_id=? LIMIT 1", userId, videoId, content, quoteCommentId).Scan(&count)
-	if err != nil || count == 0 {
-		return false
+		childCommentList = append(childCommentList, childComment)
 	}
-	return true
-}
 
-func CheckVideoCommentExist(videoCommentId uint) bool {
-	var count int
-	err := db.QueryRow("SELECT COUNT(1) FROM video_comment WHERE id=? LIMIT 1", videoCommentId).Scan(&count)
-	if err != nil || count == 0 {
-		return false
+	if len(childCommentList) == 0 {
+		return childCommentList, childCommentCountLeft
 	}
-	return true
-}
 
-func UserMakeVideoComment(videoId uint, userId uint, content string, quoteCommentId uint) bool {
-	var err error
-	if quoteCommentId == 0 { // not quote
-		_, err = db.Exec("INSERT INTO video_comment (video_id, user_id, content, comment_time) VALUES (?, ?, ?, NOW())", videoId, userId, content)
-	} else {
-		_, err = db.Exec("INSERT INTO video_comment (video_id, user_id, content, quote_comment_id, comment_time) VALUES (?, ?, ?, ?, NOW())", videoId, userId, content, quoteCommentId)
-	}
+	// get comment count left
+	err = db.QueryRow("SELECT COUNT(1) FROM video_comment WHERE video_id=? AND quote_root_comment_id=? AND id<? AND delete_time IS NULL", videoId, quoteRootCommentId, childCommentList[len(childCommentList)-1].Id).
+		Scan(&childCommentCountLeft)
 	if err != nil {
 		if config.ShowLog {
 			funcName, _, _, _ := runtime.Caller(0)
-			log.Println(runtime.FuncForPC(funcName).Name(), "err: ", err, "videoId:", videoId, "userId:", userId, "content:", content, "quoteCommentId:", quoteCommentId)
+			log.Println(runtime.FuncForPC(funcName).Name(), err)
 		}
-		return false
+		return childCommentList, childCommentCountLeft
 	}
 
-	return true
+	return childCommentList, childCommentCountLeft
 }
 
-func GetVideoComment(videoCommentId uint, currentUserId uint) model.VideoComment {
-	var videoComment model.VideoComment
-	err := db.QueryRow("SELECT video_comment.id, video.video_uid, video_comment.user_id, "+
-		"video_comment.content, video_comment.quote_comment_id, video_comment.comment_time FROM video_comment "+
-		"INNER JOIN video ON video_comment.video_id=video.id WHERE video_comment.id=? AND "+
-		"video_comment.delete_time IS NULL LIMIT 1", videoCommentId).Scan(&videoComment.Id, &videoComment.VideoUid, &videoComment.UserId, &videoComment.Content, &videoComment.QuoteCommentId, &videoComment.CommentTime)
+func GetVideoRootCommentList(videoId uint, limit int, start int, currentUserId uint) ([]model.VideoCommentRoot, int) {
+	var rootCommentList []model.VideoCommentRoot
+	var rows *sql.Rows
+	var err error
+	rootCommentCountLeft := 0
+
+	rows, err = db.Query("SELECT id, user_id, content, comment_time FROM video_comment WHERE video_id=? AND quote_root_comment_id=0 AND delete_time IS NULL ORDER BY id DESC LIMIT ?, ?", videoId, start, limit)
+	if err != nil {
+		if config.ShowLog {
+			funcName, _, _, _ := runtime.Caller(0)
+			log.Println(runtime.FuncForPC(funcName).Name(), err)
+		}
+		return rootCommentList, rootCommentCountLeft
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		var rootComment model.VideoCommentRoot
+		err := rows.Scan(&rootComment.Id, &rootComment.UserId, &rootComment.Content, &rootComment.CommentTime)
+		if err != nil {
+			if config.ShowLog {
+				funcName, _, _, _ := runtime.Caller(0)
+				log.Println(runtime.FuncForPC(funcName).Name(), err)
+			}
+			return rootCommentList, rootCommentCountLeft
+		}
+		rootComment.CommentTimeStr = tool.DatabaseTimeToRFC3339(rootComment.CommentTime)
+		user, _, _ := GetUserInfoById(rootComment.UserId, currentUserId)
+		rootComment.User = user
+		// for root comment, get 1 latest child comment
+		rootComment.ChildCommentList, rootComment.ChildCommentCountLeft = GetVideoChildCommentList(videoId, rootComment.Id, 1, 0, currentUserId)
+		rootCommentList = append(rootCommentList, rootComment)
+	}
+
+	if len(rootCommentList) == 0 {
+		return rootCommentList, rootCommentCountLeft
+	}
+
+	// get comment count left
+	err = db.QueryRow("SELECT COUNT(1) FROM video_comment WHERE video_id=? AND id<? AND quote_root_comment_id=0 AND delete_time IS NULL", videoId, rootCommentList[len(rootCommentList)-1].Id).
+		Scan(&rootCommentCountLeft)
+	if err != nil {
+		if config.ShowLog {
+			funcName, _, _, _ := runtime.Caller(0)
+			log.Println(runtime.FuncForPC(funcName).Name(), err)
+		}
+		return rootCommentList, rootCommentCountLeft
+	}
+
+	return rootCommentList, rootCommentCountLeft
+}
+
+//func CheckVideoCommentDuplicate(videoId uint, userId uint, content string, quoteCommentId uint) bool {
+//	var count int
+//	err := db.QueryRow("SELECT COUNT(1) FROM video_comment WHERE user_id=? AND video_id=? AND content=? AND quote_comment_id=? LIMIT 1", userId, videoId, content, quoteCommentId).Scan(&count)
+//	if err != nil || count == 0 {
+//		return false
+//	}
+//	return true
+//}
+
+func UserMakeVideoComment(videoId uint, userId uint, content string, quoteComment model.VideoCommentRoot) (int64, bool) {
+	var res sql.Result
+	var err error
+	var commentId int64
+	if quoteComment.Id == 0 { // 1: make root comment
+		res, err = db.Exec("INSERT INTO video_comment (video_id, user_id, content, comment_time) VALUES (?, ?, ?, NOW())", videoId, userId, content)
+	} else {
+		if quoteComment.QuoteRootCommentId == 0 { // 2: make child comment (quote root comment)
+			res, err = db.Exec("INSERT INTO video_comment (video_id, user_id, content, quote_root_comment_id, quote_user_id, comment_time) VALUES (?, ?, ?, ?, ?, NOW())", videoId, userId, content, quoteComment.Id, quoteComment.UserId)
+		} else { // 3: grandchild comment (quote child comment)
+			res, err = db.Exec("INSERT INTO video_comment (video_id, user_id, content, quote_root_comment_id, quote_user_id, quote_child_comment_id, comment_time) VALUES (?, ?, ?, ?, ?, ?, NOW())", videoId, userId, content, quoteComment.QuoteRootCommentId, quoteComment.UserId, quoteComment.Id)
+		}
+	}
+
+	if err != nil {
+		if config.ShowLog {
+			funcName, _, _, _ := runtime.Caller(0)
+			log.Println(runtime.FuncForPC(funcName).Name(), "err: ", err, "videoId:", videoId, "userId:", userId, "content:", content, "quoteComment:", quoteComment)
+		}
+		return commentId, false
+	}
+
+	// get comment id
+	commentId, err = res.LastInsertId()
+	if err != nil {
+		if config.ShowLog {
+			funcName, _, _, _ := runtime.Caller(0)
+			log.Println(runtime.FuncForPC(funcName).Name(), err, "videoId:", videoId, "userId:", userId, "content:", content, "quoteComment:", quoteComment)
+		}
+		return commentId, false
+	}
+
+	return commentId, true
+}
+
+func GetVideoComment(videoCommentId uint, currentUserId uint) model.VideoCommentRoot {
+	var videoComment model.VideoCommentRoot
+	err := db.QueryRow("SELECT id, user_id, content, quote_root_comment_id, quote_user_id, quote_child_comment_id, comment_time FROM video_comment WHERE id=? AND delete_time IS NULL LIMIT 1", videoCommentId).
+		Scan(&videoComment.Id, &videoComment.UserId, &videoComment.Content, &videoComment.QuoteRootCommentId,
+			&videoComment.QuoteUserId, &videoComment.QuoteChildCommentId, &videoComment.CommentTime)
 	if err != nil {
 		return videoComment
 	}
@@ -716,7 +806,7 @@ func SearchVideo(keyword string, limit int, start int, currentUserId uint) []mod
 	// setup ngram before using search
 	// `CREATE FULLTEXT INDEX ngram_content ON video (content) WITH PARSER ngram;`
 	// `CREATE FULLTEXT INDEX ngram_keyword ON video (keyword) WITH PARSER ngram;`
-	rows, err := db.Query("SELECT id, user_id, video_uid, type, content, keyword, upload_time, be_liked_count, be_favorite_count, be_commented_count, be_forwarded_count, be_watched_count, screenshot, hls FROM video WHERE deleted=0 AND hls=1 AND (MATCH(content) AGAINST(? IN NATURAL LANGUAGE MODE) OR MATCH(keyword) AGAINST(? IN NATURAL LANGUAGE MODE)) ORDER BY id DESC LIMIT ?, ?", keyword, keyword, start, limit)
+	rows, err := db.Query("SELECT id, user_id, video_uid, type, content, keyword, upload_time, be_liked_count, be_favorite_count, be_commented_count, be_forwarded_count, be_watched_count, screenshot, hls FROM video WHERE deleted=0 AND content IS NOT NULL AND hls=1 AND (MATCH(content) AGAINST(? IN NATURAL LANGUAGE MODE) OR MATCH(keyword) AGAINST(? IN NATURAL LANGUAGE MODE)) ORDER BY id DESC LIMIT ?, ?", keyword, keyword, start, limit)
 	if err != nil {
 		if config.ShowLog {
 			funcName, _, _, _ := runtime.Caller(0)
@@ -817,7 +907,8 @@ func SearchUser(keyword string, limit int, start int, currentUserId uint) []mode
 			}
 		}
 		if currentUserId != 0 {
-			user.BeFollowed = GetUserIsFollowed(currentUserId, user.Id)
+			user.BeFollowed = CheckUserFollowed(user.Id, currentUserId)
+			user.IsSelf = user.Id == currentUserId
 		}
 		user = common.MakeUserSupInfo(user)
 		userList = append(userList, user)
