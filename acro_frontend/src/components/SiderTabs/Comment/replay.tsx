@@ -8,20 +8,12 @@ import GetUserInfo from "@/utils/getuserinfo";
 import cs from 'classnames';
 import { VideoOne } from '@icon-park/react';
 import baxios from "@/utils/getaxios";
+import { useSelector, useDispatch } from 'react-redux';
+import store, { GlobalState } from '@/store';
+
+
 const TextArea = Input.TextArea;
 const TabPane = Tabs.TabPane;
-
-
-
-function getNowFormatDate() {
-    let date = new Date(),
-    year = date.getFullYear(), //获取完整的年份(4位)
-    month = date.getMonth() + 1, //获取当前月份(0-11,0代表1月)
-    strDate = date.getDate() // 获取当前日(1-31)
-    if (month < 10) month = `0${month}` // 如果月份是个位数，在前面补0
-    if (strDate < 10) strDate = `0${strDate}` // 如果日是个位数，在前面补0
-    return `${year}-${month}-${strDate}T`
-}
 
 const JudgeStatus = (data: any) => {
     if (data.status != 200) {
@@ -31,7 +23,8 @@ const JudgeStatus = (data: any) => {
     return true;
 }
 const actions = (props)=> {
-const t = useLocale(locale);
+  const { isLogin } = useSelector((state: GlobalState) => state);
+  const t = useLocale(locale);
   const {time, comment_id, video_uid, addC, quote_comment, setP} = props;
   const replyInputRef = useRef(null);
   const [showReply, setShowReply] = useState(false);
@@ -114,7 +107,7 @@ const t = useLocale(locale);
       {showReply && (
         <div ref={replyInputRef}>
             <Tooltip position='tr' trigger='hover' content={t['comment.input.enter']}>
-                <TextArea value={value} className={styles['replay-input']} onChange={(e)=>{ setValue(e)}} onKeyDown={(e)=>{handleKeyDownBottom(e, video_uid, comment_id, addC, setP)}}  placeholder="写下你的回复..." />
+                <TextArea value={value} className={styles['replay-input']} disabled={!isLogin} onChange={(e)=>{ setValue(e)}} onKeyDown={(e)=>{handleKeyDownBottom(e, video_uid, comment_id, addC, setP)}}  placeholder={isLogin ? t['comment.input.placeholder'] :   t['comment.input.placeholder.plslog']} />
              </Tooltip>
         </div>
       )}

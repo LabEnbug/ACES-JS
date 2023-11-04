@@ -6,6 +6,8 @@ import styles from './style/index.module.less';
 import GetUserInfo from "@/utils/getuserinfo";
 import Replay from './replay';
 import baxios from "@/utils/getaxios";
+import { useSelector, useDispatch } from 'react-redux';
+import store, { GlobalState } from '@/store';
 
 const TextArea = Input.TextArea;
 
@@ -16,7 +18,7 @@ function CommentDrawer(props) {
     const [displaynomore, setDisplayNoMore] = useState(true);
     const [ comment, SetComment ] = useState([]);
     const [ commentS, SetCommentS ] = useState({});  
-    const [ log, setLog ] = useState(false);
+    const { isLogin } = useSelector((state: GlobalState) => state);
     // const [  ]
 
     const handleScroll = (e) => {
@@ -181,9 +183,6 @@ function CommentDrawer(props) {
       }
     };
 
-    useEffect(()=> {
-      setLog(GetUserInfo() ? true : false);
-    }, [log]);
 
     useEffect(()=> {
       const param = new FormData();
@@ -222,26 +221,24 @@ function CommentDrawer(props) {
             <div className={styles['comment-main-div']} onScroll={handleScroll} >
               {comment.map((item, index)=> generateParentC(item))}
               {displaynomore ? <div className={styles['divider']}>没有更多评论</div> : <></>}
-            </div>
-            {
-              log ?           
-              <Tooltip position='top' trigger='hover' content={ t['comment.input.enter'] }>
-                <TextArea
-                  className={styles['comment-input']}
-                  placeholder={t['comment.input.placeholder']}
-                  // autoSize={{ minRows: 1, maxRows: 3 }}
-                  // searchButton='Search'
-                  // maxLength={120}
-                  // showWordLimit
-                  value = {valuebottom}
-                  onChange={(e)=>{
-                    setValueBottom(e)
-                  }}
-                  onKeyDown={(e) => (handleKeyDownBottom(e, videoinfo['video_uid']))}
-                />
-              </Tooltip> : <></> 
+            </div>       
+            <Tooltip position='top' trigger='hover' content={ t['comment.input.enter'] }>
+              <TextArea
+                className={styles['comment-input']}
+                placeholder={ isLogin ? t['comment.input.placeholder'] :   t['comment.input.placeholder.plslog']}
+                // autoSize={{ minRows: 1, maxRows: 3 }}
+                // searchButton='Search'
+                // maxLength={120}
+                // showWordLimit
+                value = {valuebottom}
+                onChange={(e)=>{
+                  setValueBottom(e)
+                }}
+                disabled={!isLogin}
+                onKeyDown={(e) => (handleKeyDownBottom(e, videoinfo['video_uid']))}
+              />
+            </Tooltip>
             
-            }
           </div>
       );
   }
