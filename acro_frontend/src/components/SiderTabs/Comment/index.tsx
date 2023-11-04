@@ -2,19 +2,13 @@ import { useEffect, useState, useRef } from 'react';
 import {  Tabs, Typography, Comment, Avatar, Input, Tooltip, Message, Button } from '@arco-design/web-react';
 import useLocale from '@/utils/useLocale';
 import locale from './locale';
-import { IconHeart, IconMessage, IconStar } from '@arco-design/web-react/icon';
 import styles from './style/index.module.less';
 import GetAxios from '@/utils/getaxios';
 import GetUserInfo from "@/utils/getuserinfo";
-import cs from 'classnames';
-import { VideoOne } from '@icon-park/react';
-import { prepareCommonToken } from 'antd/es/tag/style';
 import GetDataTime from '@/utils/getdatadate'
 import Replay from './replay';
 
 const TextArea = Input.TextArea;
-const TabPane = Tabs.TabPane;
-
 
 function CommentDrawer(props) {
     const {videoinfo} = props;
@@ -223,8 +217,7 @@ function CommentDrawer(props) {
     }, [videoinfo.video_uid])
 
     return (
-        <Tabs defaultActiveTab='1'>
-          <TabPane key='1' title={t['comment']} style={{'color': '#ffffff'}} >
+          <>
             <div className={styles['comment-main-div']} onScroll={handleScroll} >
               {comment.map((item, index)=> generateParentC(item))}
               {displaynomore ? <div className={styles['divider']}>没有更多评论</div> : <></>}
@@ -248,8 +241,7 @@ function CommentDrawer(props) {
               </Tooltip> : <></> 
             
             }
-          </TabPane>
-        </Tabs>
+          </>
       );
   }
   

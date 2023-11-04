@@ -11,7 +11,7 @@ import { Message } from '@arco-design/web-react';
 import locale from './locale';
 import useLocale from '@/utils/useLocale';
 import cs from 'classnames';
-import CommentPop from '@/components/Comment'
+import SiderTabs from '@/components/SiderTabs'
 function VideoPlayer({
   hlsPlayList,
   playIndex,
@@ -441,7 +441,7 @@ function VideoPlayer({
         <BriefIntri videoinfo={videoinfo} />
       </div>
       <div className={commentvis ? cs(styles['comment-container-vis']) : styles['comment-container-dis']} style={commentvis ? {backgroundImage: backgroundimage} : {}}>
-        <CommentPop videoinfo={videoinfo} />
+        <SiderTabs videoinfo={videoinfo} />
       </div>
     </div>
   );
