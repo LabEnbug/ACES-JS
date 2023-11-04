@@ -1,7 +1,160 @@
 .comment-input {
-    position:fixed;
-    bottom:0px;
     background-color: transparent;
-    height: 60px;
+    height: 70px;
     border: 1px solid rgb(255, 255, 255, 0.8);
+    border-bottom: none;
+    border-left: none;
+    border-right: none;
+    resize: none;
+}
+.comment-div {
+    background: hsla(0,0%,100%,.2);
+    content: "";
+    height: 1px;
+    left: 0;
+    position: absolute;
+    top: 50%;
+    width: 26px;
+    line-height: 20px;
+}
+
+.comment-div-text {
+    color: hsla(0,0%,100%,.5);
+    margin-left: 26px;
+    text-shadow: 0 1px 1px rgba(0,0,0,.2);
+    font-size: 12px;
+    font-weight: 400;
+}
+
+.comment-tabs-content {
+    height: 100%;
+    overflow-y: auto;
+}
+
+.comment-main-div {
+    height: calc(100vh - 240px);
+    overflow-y: auto;
+}
+
+  
+/* 定义滚动条轨道的样式（Firefox不支持） */
+.comment-main-div::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+/* 定义滚动条的样式 */
+.comment-main-div::-webkit-scrollbar {
+width: 8px; /* 滚动条的宽度 */
+}
+
+/* 定义滚动条上滑块的样式 */
+.comment-main-div::-webkit-scrollbar-thumb {
+    background: transparent; /* 滑块的颜色 */
+    border: 1px solid hsla(0,0%,100%,.4);
+    border-radius: 30px;
+}
+
+/* 当鼠标悬停在滑块上时的样式 */
+.comment-main-div::-webkit-scrollbar-thumb:hover {
+background: #555; /* 滑块在悬停时的颜色变化 */
+}
+
+
+
+.comment-input::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+/* 定义滚动条的样式 */
+.comment-input::-webkit-scrollbar {
+width: 8px; /* 滚动条的宽度 */
+}
+
+/* 定义滚动条上滑块的样式 */
+.comment-input::-webkit-scrollbar-thumb {
+    background: transparent; /* 滑块的颜色 */
+    border: 1px solid hsla(0,0%,100%,.4);
+    border-radius: 30px;
+}
+
+/* 当鼠标悬停在滑块上时的样式 */
+.comment-input::-webkit-scrollbar-thumb:hover {
+background: #555; /* 滑块在悬停时的颜色变化 */
+}
+
+.divider {
+  text-align: center;
+  position: relative;
+  line-height: 20px;
+  margin-top: 20px;
+  margin-bottom: 20px;
+}
+
+.divider:before,
+.divider:after {
+  content: "";
+  background: hsla(0,0%,100%,.2);
+  height: 1px;
+  position: absolute;
+  top: 50%;
+  width: 20%;
+  transform: translateY(-50%);
+}
+
+.divider:before {
+  left: 10%;
+}
+
+.divider:after {
+  right: 10%;
+}
+
+.divider {
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.divider:before,
+.divider:after {
+  content: "";
+  display: inline-block;
+  width: 20%;
+  height: 1px;
+  vertical-align: middle;
+  background-color: hsla(0,0%,100%,.2);
+}
+
+.divider:before {
+  margin-right: 10px; /* or the width of your "没有更多" */
+}
+
+.divider:after {
+  margin-left: 10px; /* or the width of your "没有更多" */
+}
+
+.comment-time-text {
+  margin-left: 5px;
+  font-size: 12px;
+  color: hsla(0,0%,100%,.4);
+}
+
+.right-arrow {
+  border-top-width: 4px;
+  border-bottom-width: 4px;
+  border-left-width: 5px;
+  border-left-color: rgba(255, 255, 255, 0.6);
+  border: 5px solid transparent;
+  border-left: 5px solid hsla(0,0%,100%,.4);
+  border-right: none;
+  display: inline-block;
+  height: 0;
+  vertical-align: middle;
+  width: 0;
+  margin: 0 8px;
+  text-shadow: 0 1px 1px rgba(0,0,0,.2);
+}
+
+.replay-input {
+  background: transparent !important;
+  border-color: hsla(0,0%,100%,.6) !important;
 }

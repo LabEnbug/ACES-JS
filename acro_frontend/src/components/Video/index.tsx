@@ -123,11 +123,11 @@ function VideoPlayer({
     const param = new FormData();
     const baxios = GetAxios();
     param.append('action',  action);
-    param.append('user_id', videoinfo['user_id']);
+    param.append('user_id', (videoinfo['user_id']).toString());
 
     baxios.post('v1-api/v1/user/follow', param).then(res=> {
       if (JudgeStatus(res.data)) {
-        window.localStorage.setItem(`follow`, !status);
+        window.localStorage.setItem(`follow`, (!status).toString());
         SetFollow(!status);
       } else {
         Message.error(t['message.notlog'])
@@ -154,7 +154,7 @@ function VideoPlayer({
           setC((pre)=>(pre+1)) ;
         }
         setS(!status);
-        window.localStorage.setItem(`is_user_${a_type}`, !status);
+        window.localStorage.setItem(`is_user_${a_type}`, (!status).toString());
       } else {
         Message.error(t['message.notlog']);
       }
@@ -173,7 +173,7 @@ function VideoPlayer({
     baxios.post('v1-api/v1/video/action', param).then(res=> {
       if (JudgeStatus(res.data)) {
         SetUserLike(true);
-        window.localStorage.setItem(item_name, true);
+        window.localStorage.setItem(item_name, (true).toString());
         status ? true :  SetLikeCount((pre)=> pre+1)
       } else {
         Message.error(t['message.notlog']);
@@ -353,6 +353,7 @@ function VideoPlayer({
 
     return () => {
       if (player && !player.isDisposed()) {
+        console.log(123)
         player.dispose();
         playerRef.current = null;
       }

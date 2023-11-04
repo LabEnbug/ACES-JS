@@ -12,7 +12,7 @@ function IconButton(props) {
 
   return (
     <Tooltip position='lt' trigger='hover' content={tooltip}>
-        <Button
+      <Button
         icon={icon}
         shape="square"
         type="secondary"
