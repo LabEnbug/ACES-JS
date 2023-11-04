@@ -4,7 +4,6 @@ import useLocale from '@/utils/useLocale';
 import locale from './locale';
 import styles from './style/index.module.less';
 import GetUserInfo from "@/utils/getuserinfo";
-import GetDataTime from '@/utils/getdatadate'
 import Replay from './replay';
 import baxios from "@/utils/getaxios";
 
