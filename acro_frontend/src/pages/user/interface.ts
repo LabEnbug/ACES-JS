@@ -1,4 +1,3 @@
-
 export interface UserCard {
   user_id?: number;
   username?: string;
@@ -14,6 +13,8 @@ export interface UserCard {
   be_commented_count?: number;
   be_forwarded_count?: number;
   be_watched_count?: number;
+
+  avatar_url?: string;
 }
 
 export interface VideoCard {
@@ -37,4 +38,6 @@ export interface VideoCard {
   is_user_last_play: boolean;
   cover_url?: string;
   play_url?: string;
+
+  is_deleted?: boolean;
 }

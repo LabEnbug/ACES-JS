@@ -6,8 +6,9 @@ const withTM = require('next-transpile-modules')([
   '@arco-design/web-react',
   '@arco-themes/react-arco-pro',
 ]);
+const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer');
 
-const setting = require("./src/settings.json");
+const setting = require('./src/settings.json');
 
 module.exports = withLess(
   withTM({
@@ -18,7 +19,18 @@ module.exports = withLess(
         },
       },
     },
-    webpack: (config) => {
+    webpack: (config, { isServer }) => {
+      if (process.env.ANALYZE) {
+        config.plugins.push(
+          new BundleAnalyzerPlugin({
+            analyzerMode: 'static',
+            reportFilename: isServer
+              ? '../analyze/server.html'
+              : './analyze/client.html',
+            openAnalyzer: true,
+          })
+        );
+      }
       config.module.rules.push({
         test: /\.svg$/,
         use: ['@svgr/webpack'],
@@ -47,12 +59,15 @@ module.exports = withLess(
       ];
     },
     pageExtensions: ['tsx'],
-    async rewrites() { 
-      return [ 
-       //接口请求 前缀带上/api-text/
-        { source: '/v1-api/:path*', destination: `http://101.133.129.34:8051/:path*` }, 
-        // { source: '/video/:path*', destination: `http://s348vstvo.bkt.clouddn.com/:path*` }, 
-      ]
+    async rewrites() {
+      return [
+        //接口请求 前缀带上/api-text/
+        {
+          source: '/v1-api/:path*',
+          destination: `http://101.133.129.34:8051/:path*`,
+        },
+        // { source: '/video/:path*', destination: `http://s348vstvo.bkt.clouddn.com/:path*` },
+      ];
     },
   })
 );

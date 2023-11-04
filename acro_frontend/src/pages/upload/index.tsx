@@ -1,5 +1,6 @@
-import React, {useState, useRef, useEffect} from 'react';
-import styles from "./style/index.module.less";
+import React, { useState, useRef, useEffect } from 'react';
+import styles from './style/index.module.less';
+import { GlobalState } from '@/store';
 import {
   Button,
   Card,
@@ -7,17 +8,21 @@ import {
   Descriptions,
   Form,
   Input,
-  InputTag, Message, Result,
+  InputTag,
+  Message,
+  Result,
   Select,
-  Space, Tag,
+  Space,
+  Tag,
   Typography,
-  Upload
-} from "@arco-design/web-react";
-import GetAxios from "@/utils/getaxios";
-import axios, { Canceler } from "axios";
-import {IconCheck} from "@arco-design/web-react/icon";
+  Upload,
+} from '@arco-design/web-react';
+import GetAxios from '@/utils/getaxios';
+import axios, { Canceler } from 'axios';
+import { IconCheck } from '@arco-design/web-react/icon';
 import { useRouter } from 'next/router';
 import MessageBox from '@/components/MessageBox';
+import { useSelector } from 'react-redux';
 
 const { Title, Paragraph } = Typography;
 
@@ -30,69 +35,97 @@ function UploadShortVideo() {
   const [form] = Form.useForm();
   const [cancelTokenSource, setCancelTokenSource] = useState(null);
 
+  const { userInfo } = useSelector((state: GlobalState) => state);
+
   const router = useRouter();
+
+  useEffect(() => {
+    // todo, if not logged in, jump out
+    console.log(userInfo);
+    if (!userInfo) {
+      console.log(1111);
+      // router.push({
+      //   pathname: '/',
+      // });
+      // return;
+    }
+  }, []);
 
   const onUploadChange = (files) => {
     setVideoUid('');
     setUploading(true);
     form.setFieldValue('video_uid', '');
 
-    const newFiles = files.map(item => ({
+    const newFiles = files.map((item) => ({
       ...item,
       percent: 0,
-      status: 'uploading'
+      status: 'uploading',
     }));
     setFileList(newFiles);
 
     // console.log(files);
     // refuse upload if file size is larger than 200MB
-    if (files.length>0 && files[0].originFile.size > 200 * 1024 * 1024) {
-      console.log("file too big");
+    if (files.length > 0 && files[0].originFile.size > 200 * 1024 * 1024) {
+      console.log('file too big');
       // make file status to error
-      setFileList(currentFileList => currentFileList.map(file => {
-        if (file.name === files[0].name) {
-          return { ...file, percent: 0, status: 'error', response: '请选择小于200MB的短视频进行上传', };
-        }
-        return file;
-      }));
+      setFileList((currentFileList) =>
+        currentFileList.map((file) => {
+          if (file.name === files[0].name) {
+            return {
+              ...file,
+              percent: 0,
+              status: 'error',
+              response: '请选择小于200MB的短视频进行上传',
+            };
+          }
+          return file;
+        })
+      );
       return;
     }
 
-    if (files.length===0) {
+    if (files.length === 0) {
       return;
     }
 
-    let formData = new FormData();
+    const formData = new FormData();
     formData.append('file', files[0].originFile);
 
     const baxios = GetAxios();
     const source = axios.CancelToken.source();
     setCancelTokenSource(source);
-    baxios.post('/v1-api/v1/video/upload/file', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data'
-      },
-      cancelToken: source.token,
-      onUploadProgress: (progressEvent) => {
-        const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-        setFileList(currentFileList => currentFileList.map(file => {
-          if (file.name === files[0].name) {
-            return { ...file, percent: percentCompleted };
-          }
-          return file;
-        }));
-      },
-    })
-      .then(response => {
-        const data = response.data
+    baxios
+      .post('/v1-api/v1/video/upload/file', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+        cancelToken: source.token,
+        onUploadProgress: (progressEvent) => {
+          const percentCompleted = Math.round(
+            (progressEvent.loaded * 100) / progressEvent.total
+          );
+          setFileList((currentFileList) =>
+            currentFileList.map((file) => {
+              if (file.name === files[0].name) {
+                return { ...file, percent: percentCompleted };
+              }
+              return file;
+            })
+          );
+        },
+      })
+      .then((response) => {
+        const data = response.data;
         console.log(data);
         if (data.status !== 200) {
-          setFileList(currentFileList => currentFileList.map(file => {
-            if (file.name === files[0].name) {
-              return { ...file, percent: 0, status: 'error' };
-            }
-            return file;
-          }));
+          setFileList((currentFileList) =>
+            currentFileList.map((file) => {
+              if (file.name === files[0].name) {
+                return { ...file, percent: 0, status: 'error' };
+              }
+              return file;
+            })
+          );
           console.error(data.err_msg);
           return;
         }
@@ -106,19 +139,23 @@ function UploadShortVideo() {
         // let's first extract keyword
         let keyword = [];
         let content = '';
-        let filenameSplit = files[0].name.split('.');
-        let contentAndKeyword = filenameSplit.slice(0, -1).join('.');
+        const filenameSplit = files[0].name.split('.');
+        const contentAndKeyword = filenameSplit.slice(0, -1).join('.');
         // get all keyword after #
-        let keywordSplit = contentAndKeyword.split('#');
+        const keywordSplit = contentAndKeyword.split('#');
         // get keywordSplit[1:] and remove empty string, and remove duplicated, and remove word after space
         // (keyword must be not split by space)
-        keyword = keywordSplit.slice(1).map((keyword) => {
-          return keyword.trim().split(' ')[0];
-        }).filter((keyword) => {
-          return keyword !== '';
-        }).filter((keyword, index, self) => {
-          return self.indexOf(keyword) === index;
-        });
+        keyword = keywordSplit
+          .slice(1)
+          .map((keyword) => {
+            return keyword.trim().split(' ')[0];
+          })
+          .filter((keyword) => {
+            return keyword !== '';
+          })
+          .filter((keyword, index, self) => {
+            return self.indexOf(keyword) === index;
+          });
         // remove keyword in contentAndKeyword to get content
         content = contentAndKeyword;
         keyword.forEach((keyword) => {
@@ -136,33 +173,41 @@ function UploadShortVideo() {
         // console.log(content, keyword);
 
         // put content in filename to content if content is empty
-        if (form.getFieldValue('content') === undefined || form.getFieldValue('content') === '') {
+        if (
+          form.getFieldValue('content') === undefined ||
+          form.getFieldValue('content') === ''
+        ) {
           form.setFieldValue('content', content);
         }
         // put keyword in filename to keyword if keyword is empty
-        if (form.getFieldValue('keyword') === undefined || form.getFieldValue('keyword').length === 0) {
+        if (
+          form.getFieldValue('keyword') === undefined ||
+          form.getFieldValue('keyword').length === 0
+        ) {
           form.setFieldValue('keyword', keyword);
         }
 
-
-        setFileList(currentFileList => currentFileList.map(file => {
-          if (file.name === files[0].name) {
-            return { ...file, percent: 100, status: 'done' };
-          }
-          return file;
-        }));
+        setFileList((currentFileList) =>
+          currentFileList.map((file) => {
+            if (file.name === files[0].name) {
+              return { ...file, percent: 100, status: 'done' };
+            }
+            return file;
+          })
+        );
       })
-      .catch(error => {
-        setFileList(currentFileList => currentFileList.map(file => {
-          if (file.name === files[0].name) {
-            return { ...file, percent: 0, status: 'error' };
-          }
-          return file;
-        }));
-        console.error("Upload failed: ", error);
+      .catch((error) => {
+        setFileList((currentFileList) =>
+          currentFileList.map((file) => {
+            if (file.name === files[0].name) {
+              return { ...file, percent: 0, status: 'error' };
+            }
+            return file;
+          })
+        );
+        console.error('Upload failed: ', error);
       })
       .finally(() => setUploading(false));
-
   };
 
   function submit() {
@@ -171,14 +216,15 @@ function UploadShortVideo() {
     setLoading(true);
 
     const baxios = GetAxios();
-    let param = new FormData();
+    const param = new FormData();
     param.append('video_uid', videoUid);
     param.append('video_type', form.getFieldValue('type'));
     param.append('video_content', form.getFieldValue('content'));
     param.append('video_keyword', form.getFieldValue('keyword').join(' '));
-    baxios.post('/v1-api/v1/video/upload/confirm', param)
-      .then(response => {
-        const data = response.data
+    baxios
+      .post('/v1-api/v1/video/upload/confirm', param)
+      .then((response) => {
+        const data = response.data;
         if (data.status !== 200) {
           console.error(data.err_msg);
           Message.error(data.err_msg);
@@ -187,7 +233,7 @@ function UploadShortVideo() {
 
         setCurrent(3);
       })
-      .catch(error => {
+      .catch((error) => {
         console.error(error);
       })
       .finally(() => setLoading(false));
@@ -207,38 +253,39 @@ function UploadShortVideo() {
     4: '娱乐',
     5: '二次元',
     6: '音乐',
-    7: '食物',
+    7: '美食',
     8: '体育',
     9: '时尚',
-  }
+  };
 
   const isAcceptFile = (file, accept) => {
     if (accept && file) {
       const accepts = Array.isArray(accept)
         ? accept
         : accept
-          .split(',')
-          .map((x) => x.trim())
-          .filter((x) => x);
-      const fileExtension = file.name.indexOf('.') > -1 ? file.name.split('.').pop() : '';
+            .split(',')
+            .map((x) => x.trim())
+            .filter((x) => x);
+      const fileExtension =
+        file.name.indexOf('.') > -1 ? file.name.split('.').pop() : '';
       return accepts.some((type) => {
         const text = type && type.toLowerCase();
         const fileType = (file.type || '').toLowerCase();
         if (text === fileType) {
           return true;
         }
-        if (new RegExp('\/\*').test(text)) {
-          const regExp = new RegExp('\/.*$')
+        if (new RegExp('/*').test(text)) {
+          const regExp = new RegExp('/.*$');
           return fileType.replace(regExp, '') === text.replace(regExp, '');
         }
-        if (new RegExp('\..*').test(text)) {
+        if (new RegExp('..*').test(text)) {
           return text === `.${fileExtension && fileExtension.toLowerCase()}`;
         }
         return false;
       });
     }
     return !!file;
-  }
+  };
 
   const toNext = async () => {
     try {
@@ -249,7 +296,7 @@ function UploadShortVideo() {
 
   const toConfirm = () => {
     submit();
-  }
+  };
 
   return (
     <div className={styles.container}>
@@ -258,7 +305,9 @@ function UploadShortVideo() {
           <Form form={form} className={styles.form}>
             {current === 1 && (
               <Form.Item noStyle>
-                <Title heading={4} style={{ marginBottom: "48px" }}>{"填写信息上传短视频"}</Title>
+                <Title heading={4} style={{ marginBottom: '48px' }}>
+                  {'填写信息上传短视频'}
+                </Title>
                 <Form.Item
                   label={'短视频文件'}
                   required
@@ -277,50 +326,60 @@ function UploadShortVideo() {
                           callback();
                         }
                       },
-                    }
+                    },
                   ]}
-                  extra={'文件名中带有#的会被识别为关键词，除此外的其他内容会被识别为视频简介'}
+                  extra={
+                    '文件名中带有#的会被识别为关键词，除此外的其他内容会被识别为视频简介'
+                  }
                 >
                   <div className={styles.customUpload}>
                     <Upload
                       limit={1}
                       drag
-                      accept='video/*'
+                      accept="video/*"
                       showUploadList={{
                         startIcon: (
-                          <Button size='mini' type='text'>
+                          <Button size="mini" type="text">
                             开始上传
                           </Button>
                         ),
                         cancelIcon: (
-                          <Button size='mini' type='text' onClick={() => {
-                            if (cancelTokenSource) {
-                              cancelTokenSource.cancel('Upload canceled.');
-                            }
-                            setFileList([]);
-                            setVideoUid('');
-                            form.setFieldValue('video_uid', '');
-                          }}>
+                          <Button
+                            size="mini"
+                            type="text"
+                            onClick={() => {
+                              if (cancelTokenSource) {
+                                cancelTokenSource.cancel('Upload canceled.');
+                              }
+                              setFileList([]);
+                              setVideoUid('');
+                              form.setFieldValue('video_uid', '');
+                            }}
+                          >
                             取消上传
                           </Button>
                         ),
                         reuploadIcon: (
-                          <Button size='mini' type='text'>
+                          <Button size="mini" type="text">
                             点击重试
                           </Button>
                         ),
                         successIcon: (
                           <div>
                             <IconCheck />
-                            <Button size='mini' type='text' onClick={() => {
-                              setFileList([]);
-                              setVideoUid('');
-                              form.setFieldValue('video_uid', '');
-                            }}>
+                            <Button
+                              size="mini"
+                              type="text"
+                              onClick={() => {
+                                setFileList([]);
+                                setVideoUid('');
+                                form.setFieldValue('video_uid', '');
+                              }}
+                            >
                               删除文件
                             </Button>
                           </div>
-                        )
+                        ),
                       }}
                       progressProps={{
                         size: 'default',
@@ -328,14 +387,14 @@ function UploadShortVideo() {
                         showText: true,
                         width: '100%',
                       }}
-                      onDrop={(e) => {
-                        let uploadFile = e.dataTransfer.files[0]
-                        if (isAcceptFile(uploadFile, 'video/*')) {
-                          return
-                        } else {
-                          // show error message
-                        }
-                      }}
+                      // onDrop={(e) => {
+                      //   let uploadFile = e.dataTransfer.files[0]
+                      //   if (isAcceptFile(uploadFile, 'video/*')) {
+                      //     return
+                      //   } else {
+                      //     // show error message
+                      //   }
+                      // }}
                       autoUpload={false}
                       onChange={onUploadChange}
                       fileList={fileList}
@@ -373,7 +432,7 @@ function UploadShortVideo() {
                     {
                       maxLength: 120,
                       message: '请将视频简介限制在120字内',
-                    }
+                    },
                   ]}
                 >
                   <Input.TextArea
@@ -389,36 +448,41 @@ function UploadShortVideo() {
                   extra={'输入后回车生成'}
                   // add # before each keyword, but do not duplicate
                   normalize={(value) => {
-                    return value.map((keyword) => {
-                      keyword = keyword.trim();
-                      //delete multiple # at the beginning
-                      while (keyword.startsWith('#')) {
-                        keyword = keyword.slice(1);
-                      }
-                      return '#' + keyword;
-                    }).filter((keyword, index, self) => {
-                      return self.indexOf(keyword) === index;
-                    });
+                    return value
+                      .map((keyword) => {
+                        keyword = keyword.trim();
+                        //delete multiple # at the beginning
+                        while (keyword.startsWith('#')) {
+                          keyword = keyword.slice(1);
+                        }
+                        return '#' + keyword;
+                      })
+                      .filter((keyword, index, self) => {
+                        return self.indexOf(keyword) === index;
+                      });
                   }}
                 >
-                  <InputTag
-                    allowClear
-                    dragToSort
-                  />
+                  <InputTag allowClear dragToSort />
                 </Form.Item>
               </Form.Item>
             )}
             {/* current === 2, confirm form items type, content, keyword on current === 1 */}
             {current === 2 && (
               <Form.Item noStyle>
-                <Title heading={4} style={{ marginBottom: "48px" }}>{"确认短视频及信息"}</Title>
+                <Title heading={4} style={{ marginBottom: '48px' }}>
+                  {'确认短视频及信息'}
+                </Title>
                 <Form.Item label={'视频预览'}>
                   <video
                     src={URL.createObjectURL(fileList[0].originFile)}
                     autoPlay={true}
                     muted={true}
                     controls={true}
-                    style={{ width: '100%', maxWidth: '494px', maxHeight: '400px' }}
+                    style={{
+                      width: '100%',
+                      maxWidth: '494px',
+                      maxHeight: '400px',
+                    }}
                     onLoadedMetadata={(e) => {
                       const time = e.currentTarget.duration;
                       form.setFieldValue('time', time);
@@ -426,14 +490,18 @@ function UploadShortVideo() {
                   />
                 </Form.Item>
                 <Form.Item label={'视频类型'}>
-                  <Typography.Text>{typeMap[form.getFieldValue('type')]}</Typography.Text>
+                  <Typography.Text>
+                    {typeMap[form.getFieldValue('type')]}
+                  </Typography.Text>
                 </Form.Item>
                 <Form.Item label={'视频简介'}>
-                  <Typography.Text>{form.getFieldValue('content')}</Typography.Text>
+                  <Typography.Text>
+                    {form.getFieldValue('content')}
+                  </Typography.Text>
                 </Form.Item>
                 <Form.Item label={'关键词'}>
-                  <Typography.Text>{
-                    form.getFieldValue('keyword').map((keyword, index) => (
+                  <Typography.Text>
+                    {form.getFieldValue('keyword').map((keyword, index) => (
                       <Tag
                         key={index.toString()}
                         style={{
@@ -445,8 +513,8 @@ function UploadShortVideo() {
                       >
                         {keyword}
                       </Tag>
-                    ))
-                  }</Typography.Text>
+                    ))}
+                  </Typography.Text>
                 </Form.Item>
               </Form.Item>
             )}
@@ -468,8 +536,13 @@ function UploadShortVideo() {
                     </Button>
                   )}
                   {current === 2 && (
-                    <Button type="primary" size="large" loading={loading} onClick={toConfirm}>
-                      {loading?"发布中":"确认发布"}
+                    <Button
+                      type="primary"
+                      size="large"
+                      loading={loading}
+                      onClick={toConfirm}
+                    >
+                      {loading ? '发布中' : '确认发布'}
                     </Button>
                   )}
                 </Space>
@@ -478,11 +551,11 @@ function UploadShortVideo() {
               <Form.Item noStyle>
                 <Result
                   status="success"
-                  title={"提交成功"}
-                  subTitle={"短视频上传成功！请等待3-5分钟转码"}
+                  title={'提交成功'}
+                  subTitle={'短视频上传成功！请等待3-5分钟转码'}
                   extra={[
                     <Button
-                      key="reset"
+                      key="watch"
                       style={{ marginRight: 16 }}
                       onClick={() => {
                         router.push({
@@ -493,10 +566,10 @@ function UploadShortVideo() {
                         });
                       }}
                     >
-                      {"前往观看该短视频"}
+                      {'前往观看该短视频'}
                     </Button>,
                     <Button
-                      key="reset"
+                      key="watchPage"
                       style={{ marginRight: 16 }}
                       onClick={() => {
                         router.push({
@@ -504,10 +577,10 @@ function UploadShortVideo() {
                         });
                       }}
                     >
-                      {"查看已上传的短视频"}
+                      {'查看已上传的短视频'}
                     </Button>,
                     <Button key="again" type="primary" onClick={reCreateForm}>
-                      {"再上传一个"}
+                      {'再上传一个'}
                     </Button>,
                   ]}
                 />
@@ -517,9 +590,11 @@ function UploadShortVideo() {
         </div>
         {current === 3 && (
           <div className={styles['form-extra']}>
-            <Title heading={6}>{"视频上传说明"}</Title>
+            <Title heading={6}>{'视频上传说明'}</Title>
             <Paragraph type="secondary">
-              {"视频在上传成功后，将会在服务器进行转码以适应短视频播放，请在3-5分钟后再查看发布的视频。"}
+              {
+                '视频在上传成功后，将会在服务器进行转码以适应短视频播放，请在3-5分钟后再查看发布的视频。'
+              }
             </Paragraph>
           </div>
         )}

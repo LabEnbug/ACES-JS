@@ -3,9 +3,11 @@ import axios from 'axios';
 
 export interface GlobalState {
   settings?: typeof defaultSettings;
+  isLogin?: boolean;
   userInfo?: {
     username?: string;
     nickname?: string;
+    avatar_url?: string;
 
     permissions: Record<string, string[]>;
   };
@@ -15,10 +17,11 @@ export interface GlobalState {
 
 const initialState: GlobalState = {
   settings: defaultSettings,
+  isLogin: false,
   userInfo: {
     permissions: {},
   },
-  baxios: null
+  baxios: null,
 };
 
 export default function store(state = initialState, action) {

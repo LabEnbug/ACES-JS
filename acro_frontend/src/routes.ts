@@ -47,7 +47,8 @@ export const routes: IRoute[] = [
   {
     name: 'menu.video.sport',
     key: 'video?type=sport',
-  },  {
+  },
+  {
     name: 'menu.video.fashion',
     key: 'video?type=fashion',
   },
@@ -67,114 +68,14 @@ export const routes: IRoute[] = [
     ignore: true,
   },
   {
-    name: 'menu.dashboard',
-    key: 'dashboard',
-    children: [
-      {
-        name: 'menu.dashboard.workplace',
-        key: 'dashboard/workplace',
-      },
-      {
-        name: 'menu.dashboard.monitor',
-        key: 'dashboard/monitor',
-        requiredPermissions: [
-          { resource: 'menu.dashboard.monitor', actions: ['write'] },
-        ],
-      },
-    ],
-  },
-  {
-    name: 'menu.visualization',
-    key: 'visualization',
-    children: [
-      {
-        name: 'menu.visualization.dataAnalysis',
-        key: 'visualization/data-analysis',
-        requiredPermissions: [
-          { resource: 'menu.visualization.dataAnalysis', actions: ['read'] },
-        ],
-      },
-      {
-        name: 'menu.visualization.multiDimensionDataAnalysis',
-        key: 'visualization/multi-dimension-data-analysis',
-        requiredPermissions: [
-          {
-            resource: 'menu.visualization.dataAnalysis',
-            actions: ['read', 'write'],
-          },
-          {
-            resource: 'menu.visualization.multiDimensionDataAnalysis',
-            actions: ['write'],
-          },
-        ],
-        oneOfPerm: true,
-      },
-    ],
-  },
-  {
-    name: 'menu.list',
-    key: 'list',
-    children: [
-      {
-        name: 'menu.list.searchTable',
-        key: 'list/search-table',
-      },
-      {
-        name: 'menu.list.cardList',
-        key: 'list/card',
-      },
-    ],
-  },
-  {
-    name: 'menu.form',
-    key: 'form',
-    children: [
-      {
-        name: 'menu.form.group',
-        key: 'form/group',
-        requiredPermissions: [
-          { resource: 'menu.form.group', actions: ['read', 'write'] },
-        ],
-      },
-      {
-        name: 'menu.form.step',
-        key: 'form/step',
-        requiredPermissions: [
-          { resource: 'menu.form.step', actions: ['read'] },
-        ],
-      },
-    ],
-  },
-  {
-    name: 'menu.profile',
-    key: 'profile',
-    children: [
-      {
-        name: 'menu.profile.basic',
-        key: 'profile/basic',
-      },
-    ],
-  },
-
-  {
-    name: 'menu.result',
-    key: 'result',
-    children: [
-      {
-        name: 'menu.result.success',
-        key: 'result/success',
-        breadcrumb: false,
-      },
-      {
-        name: 'menu.result.error',
-        key: 'result/error',
-        breadcrumb: false,
-      },
-    ],
+    name: 'menu.edit',
+    key: 'edit',
+    ignore: true,
   },
   {
     name: 'menu.exception',
     key: 'exception',
+    ignore: true,
     children: [
       {
         name: 'menu.exception.403',

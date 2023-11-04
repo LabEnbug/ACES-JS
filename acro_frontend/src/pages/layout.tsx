@@ -2,17 +2,20 @@ import React, { useState, ReactNode, useRef, useEffect } from 'react';
 import { Layout, Menu, Breadcrumb, Spin } from '@arco-design/web-react';
 import cs from 'classnames';
 import {
-  IconDashboard,
-  IconList,
-  IconSettings,
-  IconFile,
-  IconApps,
-  IconCheckCircle,
-  IconExclamationCircle,
   IconUser,
   IconMenuFold,
   IconMenuUnfold,
+  IconMusic,
+  IconHome,
 } from '@arco-design/web-react/icon';
+import IconGame from '@/assets/game.svg';
+import IconKnowledge from '@/assets/knowledge.svg';
+import IconHot from '@/assets/hot.svg';
+import IconEntertainment from '@/assets/entertainment.svg';
+import IconFantasy from '@/assets/fantasy.svg';
+import IconFood from '@/assets/food.svg';
+import IconSport from '@/assets/sport.svg';
+import IconFashion from '@/assets/fashion.svg';
 import { useSelector } from 'react-redux';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
@@ -35,22 +38,26 @@ const Content = Layout.Content;
 
 function getIconFromKey(key) {
   switch (key) {
-    case 'comprehensive':
-      return <IconDashboard className={styles.icon} />;
-    case 'dashboard':
-      return <IconDashboard className={styles.icon} />;
-    case 'list':
-      return <IconList className={styles.icon} />;
-    case 'form':
-      return <IconSettings className={styles.icon} />;
-    case 'profile':
-      return <IconFile className={styles.icon} />;
-    case 'visualization':
-      return <IconApps className={styles.icon} />;
-    case 'result':
-      return <IconCheckCircle className={styles.icon} />;
-    case 'exception':
-      return <IconExclamationCircle className={styles.icon} />;
+    case 'video':
+      return <IconHome className={styles.icon} />;
+    case 'video?type=knowledge':
+      return <IconKnowledge className={styles.icon} />;
+    case 'video?type=hotpot':
+      return <IconHot className={styles.icon} />;
+    case 'video?type=game':
+      return <IconGame className={styles.icon} />;
+    case 'video?type=entertainment':
+      return <IconEntertainment className={styles.icon} />;
+    case 'video?type=fantasy':
+      return <IconFantasy className={styles.icon} />;
+    case 'video?type=music':
+      return <IconMusic className={styles.icon} />;
+    case 'video?type=food':
+      return <IconFood className={styles.icon} />;
+    case 'video?type=sport':
+      return <IconSport className={styles.icon} />;
+    case 'video?type=fashion':
+      return <IconFashion className={styles.icon} />;
     case 'user':
       return <IconUser className={styles.icon} />;
     default:
@@ -149,7 +156,7 @@ function PageLayout({ children }: { children: ReactNode }) {
         return (
           <MenuItem key={route.key}>
             <Link href={`/${route.key}`}>
-              <a>{titleDom}</a>
+              <a style={{ textDecoration: 'none' }}>{titleDom}</a>
             </Link>
           </MenuItem>
         );
@@ -181,8 +188,9 @@ function PageLayout({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const routeConfig = routeMap.current.get(pathname);
-    setBreadCrumb(routeConfig || []);
+    // setBreadCrumb(routeConfig || []);
     updateMenuStatus();
+    console.log(pathname);
   }, [pathname]);
 
   return (
@@ -222,13 +230,22 @@ function PageLayout({ children }: { children: ReactNode }) {
                   {renderRoutes(locale)(routes, 1)}
                 </Menu>
               </div>
+              <div className={styles['info-up-of-collapse-btn']}>
+                <div>2023</div>
+                <div>@</div>
+                <div>ACES</div>
+              </div>
               <div className={styles['collapse-btn']} onClick={toggleCollapse}>
                 {collapsed ? <IconMenuUnfold /> : <IconMenuFold />}
               </div>
             </Sider>
           )}
           <Layout className={styles['layout-content']} style={paddingStyle}>
-            <div className={styles['layout-content-wrapper']}>
+            <div
+              className={
+                pathname !== '/video' && styles['layout-content-wrapper']
+              }
+            >
               {!!breadcrumb.length && (
                 <div className={styles['layout-breadcrumb']}>
                   <Breadcrumb>

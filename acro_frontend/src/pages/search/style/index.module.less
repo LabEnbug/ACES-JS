@@ -1,48 +1,65 @@
 .container {
-  :global(.arco-list-content) {
-    overflow-x: hidden;
+  min-width: 680px;
+  //:global(.arco-list-content) {
+  //  overflow-x: hidden;
+  //}
+
+  //:global(.arco-card-meta-title) {
+  //  font-size: 14px;
+  //}
+
+  h4 {
+    //font-size: 14px;
+    margin-top: 12px;
+    margin-left: 8px;
+    margin-bottom: 24px;
+    margin-right: 24px;
   }
 
-  :global(.arco-card-meta-title) {
-    font-size: 14px;
-  }
+  //.card-content {
+  //  min-height: 180px;
+  //  width: 100%;
+  //}
+}
 
-  h6 {
-    font-size: 14px;
-    margin-top: 16px;
-    margin-bottom: 12px;
-  }
-
-  .card-content {
-    min-height: 180px;
-    width: 100%;
-  }
-
-  .single-content {
-    margin-top: 30px;
+.card-list {
+  :global(.arco-list-footer) {
+    border: none;
   }
 }
 
 .card-block {
   cursor: pointer;
-  //margin-bottom: 16px;
   margin: 8px;
 
   :global(.arco-card-body) {
-    padding-top: 0;
-    padding-left: 0;
-    padding-right: 0;
-    padding-bottom: 0;
+    padding: 0;
   }
 
   :global(.arco-card-header) {
     border-bottom: none;
     height: auto;
-    padding: 16px;
-    padding-bottom: 0;
+    padding: 16px 16px 0;
   }
 
-  .card-block-mask {
+  .video-card-extra-like {
+    position: absolute;
+    right: 16px;
+    bottom: 212px;
+
+    .video-card-extra-like-count {
+      text-align: center;
+      line-height: 1;
+      font-size: 14px;
+      font-weight: 500;
+    }
+  }
+
+  .video-card-extra-seen {
+    margin-left: 16px;
+  }
+
+  .video-card-bottom-mask {
     border-bottom-left-radius: 6px;
     border-bottom-right-radius: 6px;
     position: absolute;
@@ -51,33 +68,17 @@
     background: rgba(0, 0, 0, 0.7);
   }
 
-  .card-extra-like {
-    position: absolute;
-    right: 16px;
-    bottom: 200px;
-    //display: inline-block;
-    .card-extra-like-count {
-      text-align: center;
-      line-height: 1;
-      font-size: 14px;
-      font-weight: 500;
-    }
-  }
-
-  .card-extra-seen {
-    margin-left: 16px;
-  }
-
-  .title {
-    //margin-top: 260px;
-    padding: 10px 10px 10px 10px;
-    //display: flex;
+  .video-card-bottom {
+    padding: 10px;
     line-height: 24px;
     align-items: center;
     font-size: 14px;
     font-weight: 500;
-    // vertical align
-    display: inline-block;
+
+    .video-user-card-block {
+      align-items: center;
+      display: flex;
+    }
 
     .content {
       padding-top: 4px;
@@ -187,7 +188,6 @@
       margin-bottom: 8px;
     }
   }
-
 }
 
 .card-block:hover {
@@ -200,33 +200,6 @@
   }
 }
 
-
-.usercard {
-  margin-top: 12px;
-  margin-left: 12px;
-  margin-bottom: 12px;
-
-  .nickname {
-    margin-left: 8px;
-    color: var(--color-text-1);
-
-    display: -webkit-inline-box;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 1;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    line-height: 1.6em;
-    max-height: 1.2em;
-    min-height: 1.2em;
-    word-wrap: break-word;
-  }
-
-  .username {
-    margin-left: 8px;
-    color: var(--color-text-3);
-  }
-}
-
 .zoom {
   transition: transform 0.3s ease;
 }
@@ -235,71 +208,103 @@
   transform: scale(1.02);
 }
 
-.addon-info {
-  display: flex;
+.user-card-block {
+  margin-top: 12px;
+  margin-left: 16px;
+  margin-bottom: 12px;
   align-items: center;
-  margin-left: 12px;
+  display: flex;
 }
 
-.user-addon-count-info {
+.user-card-left {
+}
+
+.user-card-right {
+  flex-grow: 1;
+}
+
+.user-card-right-top {
   display: flex;
-  flex-direction: row;
-  justify-content: center;
-  align-items: center;
+  justify-content: space-between;
 
-  //margin-left: 4px;
-  //margin-right: 4px;
-
-  .user-addon-count-type {
-
-  }
-  .user-addon-count-data {
-    margin-left: 4px;
-    color: var(--color-text-2)
+  .user-follow {
+    margin: auto 16px;
   }
 }
 
-.add-card {
-  text-align: center;
-  cursor: pointer;
+.user-name-info {
+  margin-left: 4px;
+  display: flex;
+  flex-direction: column;
 
-  .add-icon {
-    font-size: 22px;
+  .nickname {
+    margin-left: 8px;
+    color: var(--color-text-1);
+
+    font-size: medium;
+
+    display: -webkit-inline-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 2.2em;
+    max-height: 2.2em;
+    min-height: 2.2em;
+    word-wrap: break-word;
   }
 
-  .description {
-    margin-top: 16px;
+  .username {
+    margin-left: 8px;
     color: var(--color-text-3);
-    font-weight: 400;
+
+    font-size: small;
+
+    display: -webkit-inline-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.6em;
+    max-height: 1.6em;
+    min-height: 1.6em;
+    //break characters
+    word-break: break-all;
+  }
+}
+
+.user-addon-info {
+  display: flex;
+  align-items: center;
+  margin-left: 8px;
+  margin-right: 16px;
+  height: 48px;
+  font-size: small;
+
+  .user-addon-count-info {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+
+    //margin-left: 4px;
+    //margin-right: 4px;
+
+    .user-addon-count-type {
+    }
+
+    .user-addon-count-data {
+      margin-left: 4px;
+      color: var(--color-text-2);
+    }
   }
 
-  :global(.arco-card-body) {
-    padding-top: 52px;
-    padding-bottom: 64px;
+  .user-addon-info-divider {
+    margin: 0 8px;
   }
 }
 
 .video-card {
   height: 480px;
-}
-
-.service-card {
-  :global(.arco-card-body) {
-    padding: 12px 16px 16px 48px;
-  }
-
-  .content {
-    margin-bottom: 10px;
-    height: 60px;
-  }
-}
-
-.rules-card {
-  :global(.arco-card-body) {
-    padding: 12px 16px 16px;
-  }
-
-  .content {
-    margin-bottom: 14px;
-  }
 }

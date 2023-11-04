@@ -1,4 +1,4 @@
-import React, {useEffect, useRef, useState} from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import cs from 'classnames';
 import {
   Button,
@@ -9,34 +9,50 @@ import {
   Typography,
   Dropdown,
   Menu,
-  Skeleton, Avatar,
+  Skeleton,
+  Avatar,
+  Select,
+  Popconfirm,
+  Message,
 } from '@arco-design/web-react';
 import useLocale from '@/utils/useLocale';
 import locale from './locale';
-import {VideoCard, UserCard} from './interface';
+import { VideoCard } from './interface';
 import styles from './style/index.module.less';
-import {useRouter} from "next/router";
-import videojs from "video.js";
-import {Like} from "@icon-park/react";
-import IconButton from "@/components/NavBar/IconButton";
-import {IconClockCircle, IconHeartFill, IconShake} from "@arco-design/web-react/icon";
+import { useRouter } from 'next/router';
+import videojs from 'video.js';
+import { Like } from '@icon-park/react';
+import IconButton from '@/components/NavBar/IconButton';
+import {
+  IconClockCircle,
+  IconDelete,
+  IconEdit,
+  IconEye,
+  IconHeartFill,
+  IconLiveBroadcast,
+  IconMore,
+  IconShake,
+} from '@arco-design/web-react/icon';
+import GetAxios from '@/utils/getaxios';
 
 interface CardBlockType {
-  type: 'uploaded' | 'like' | 'favorite' | 'watched' ;
+  type: string;
   card: VideoCard;
   watching_username: string;
   loading?: boolean;
+  onDelete: () => void;
 }
 
 function CardBlock(props: CardBlockType) {
-  const { type, card = {}, watching_username } = props;
+  const { type, card, watching_username, onDelete } = props;
   const [visible, setVisible] = useState(false);
   const [loading, setLoading] = useState(props.loading);
+  const [isVideoCardPopup, setIsVideoCardPopup] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   const t = useLocale(locale);
 
   const router = useRouter();
-
 
   function makeNewSearch(keyword: string) {
     // change search input in navbar
@@ -64,7 +80,6 @@ function CardBlock(props: CardBlockType) {
   useEffect(() => {
     setLoading(props.loading);
   }, [props.loading]);
-
 
   // parse time "2023-10-27T16:43:57+08:00" string to some like "3 days ago"
   const parseTime = (time: string) => {
@@ -97,36 +112,35 @@ function CardBlock(props: CardBlockType) {
     }
     const keywords = keyword.split(' ');
     // do not split them to multiple div element
-    return (
-      keywords.map((keyword, index) => (
-        <Tag
-          key={index.toString()}
-          onClick={(event) => {
-            makeNewSearch(keyword);
-            event.stopPropagation();
-          }}
-          style={{
-            cursor: 'pointer',
-            marginRight: '4px',
-            marginBottom: '4px',
-            backgroundColor: 'rgba(var(--gray-6), 0.4)',
-          }}
-        >
-          {keyword}
-        </Tag>
-      ))
-    );
+    return keywords.map((keyword, index) => (
+      <Tag
+        key={index.toString()}
+        onClick={(event) => {
+          makeNewSearch(keyword);
+          event.stopPropagation();
+        }}
+        style={{
+          cursor: 'pointer',
+          marginRight: '4px',
+          marginBottom: '4px',
+          backgroundColor: 'rgba(var(--gray-6), 0.4)',
+        }}
+      >
+        {keyword}
+      </Tag>
+    ));
   };
-
-  const className = cs(styles['card-block'], styles[`video-card`], styles[`zoom`]);
-
 
   return (
     <Card
       bordered={true}
-      className={className}
+      className={cs(styles['card-block'], styles[`video-card`], styles[`zoom`])}
       size="small"
-      onClick={() => {goToVideoPage(card.video_uid)}}
+      onClick={() => {
+        if (!isVideoCardPopup) {
+          goToVideoPage(card.video_uid);
+        }
+      }}
       // cover_url as background image, width 100% and height 100%
       style={{
         backgroundImage: `url(${card.cover_url})`,
@@ -136,67 +150,186 @@ function CardBlock(props: CardBlockType) {
         borderRadius: '8px',
       }}
     >
-      <div className={styles['card-extra-like']}>
-        <IconButton
-          icon={<Like theme="filled" size="24" fill={card.is_user_liked?"red":"#ffffff"} onClick={(event)=> {
+      <div className={styles['video-card-extra-like']}>
+        <Like
+          theme="filled"
+          size="24"
+          fill={card.is_user_liked ? 'red' : '#ffffff'}
+          onClick={(event) => {
             console.log(card);
             event.stopPropagation();
-          }}/>}
+          }}
         />
-        { /* if liked, show red count text */ }
-        <div className={styles['card-extra-like-count']} style={{ color: card.is_user_liked?'red':'#ffffff' }}>{card.be_liked_count}</div>
+        <div
+          className={styles['video-card-extra-like-count']}
+          style={{ color: card.is_user_liked ? 'red' : '#ffffff' }}
+        >
+          {card.be_liked_count}
+        </div>
       </div>
       {/* if saw before, show tag */}
-      <div style={{ display: 'flex', marginBottom: '8px' }}>
-        {card.is_user_liked ? (
-          <div className={styles['card-extra-seen']}>
-            <Tag
-              icon={<IconHeartFill />}
-              style={{
-                backgroundColor: 'rgba(var(--gray-8), 0.5)',
-              }}
-            >点赞过</Tag>
+      <div style={{ marginTop: '12px' }}>
+        {(card.is_user_liked || card.is_user_watched) && (
+          <div style={{ display: 'flex', marginBottom: '8px' }}>
+            {card.is_user_liked && (
+              <div className={styles['video-card-extra-seen']}>
+                <Tag
+                  icon={<IconHeartFill />}
+                  style={{
+                    backgroundColor: 'rgba(var(--gray-8), 0.5)',
+                  }}
+                >
+                  点赞过
+                </Tag>
+              </div>
+            )}
+            {card.is_user_watched && type !== 'watched' && (
+              <div className={styles['video-card-extra-seen']}>
+                <Tag
+                  icon={<IconEye />}
+                  style={{
+                    backgroundColor: 'rgba(var(--gray-8), 0.5)',
+                  }}
+                >
+                  观看过
+                </Tag>
+              </div>
+            )}
           </div>
-        ) : null}
-        {card.is_user_watched && type !== 'watched' ? (
-          <div className={styles['card-extra-seen']}>
+        )}
+      </div>
+      <div className={styles['video-card-uploaded-control']}>
+        {card.is_user_uploaded && (
+          <Dropdown
+            popupVisible={isVideoCardPopup}
+            onVisibleChange={setIsVideoCardPopup}
+            droplist={
+              <Menu
+                onClickMenuItem={(key) => {
+                  return false;
+                }}
+              >
+                <Menu.Item
+                  key="edit"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    router.push({
+                      pathname: `/edit`,
+                      query: {
+                        video_uid: card.video_uid,
+                      },
+                    });
+                  }}
+                >
+                  <IconEdit className={styles['video-dropdown-icon']} />
+                  编辑视频信息
+                </Menu.Item>
+                <Menu.Item key="promote">
+                  <IconLiveBroadcast
+                    className={styles['video-dropdown-icon']}
+                  />
+                  开启推广
+                </Menu.Item>
+                <Menu.Item key="delete">
+                  <Popconfirm
+                    focusLock
+                    title="确定要删除该视频吗？该操作不可撤销"
+                    position="bottom"
+                    cancelButtonProps={{
+                      style: { marginRight: '8px' },
+                      disabled: deleteLoading,
+                    }}
+                    okButtonProps={{ loading: deleteLoading }}
+                    onOk={() => {
+                      setDeleteLoading(true);
+                      const baxios = GetAxios();
+                      const params = new FormData();
+                      params.append('video_uid', card.video_uid);
+                      baxios
+                        .post('/v1-api/v1/video/delete', params)
+                        .then((response) => {
+                          const data = response.data;
+                          if (data.status !== 200) {
+                            console.error(data.err_msg);
+                            Message.error({
+                              content: '短视频删除失败！',
+                              duration: 5000,
+                            });
+                            return;
+                          }
+                          Message.success({
+                            content: '短视频删除成功！',
+                            duration: 5000,
+                          });
+                          onDelete();
+                        })
+                        .catch((error) => {
+                          console.error(error);
+                        })
+                        .finally(() => {
+                          setDeleteLoading(false);
+                        });
+                    }}
+                  >
+                    <IconDelete className={styles['video-dropdown-icon']} />
+                    删除视频
+                  </Popconfirm>
+                </Menu.Item>
+              </Menu>
+            }
+            position="bottom"
+          >
             <Tag
-              icon={<IconClockCircle />}
+              size={'large'}
+              icon={<IconMore />}
+              // onClick={(e) => e.stopPropagation()}
               style={{
-                backgroundColor: 'rgba(var(--gray-8), 0.5)',
+                backgroundColor: 'rgba(var(--gray-8), 0.1)',
               }}
-            >观看过</Tag>
-          </div>
-        ) : null}
+            ></Tag>
+          </Dropdown>
+        )}
       </div>
       {/* todo: if uploaded by this user, add video control button */}
 
-      <div className={styles['card-block-mask']}>
-        {/*<div style={{ marginTop: '280px' }}></div>*/}
-        <div
-          className={cs(styles.title, {
-            [styles['title-more']]: visible,
-          })}
-        >
-          <div style={{ display: 'flex' }} onClick={(event) => {
-            card.user.username !== watching_username ? router.push({
-              pathname: '/user/' + card.user.username,
-            }) : null;
-            event.stopPropagation();
-          }}>
-            { /* add avatar to the left */}
-            <Avatar size={40} style={{ marginTop: '4px' }}>
-              {card.user?(card.user.avatar_url?<img src={card.user.avatar_url} />:card.user.nickname):'A'}
-            </Avatar>
-            <div style={{
-              marginLeft: '8px'
-            }}>
-              <div className={styles.nickname}>{card.user?card.user.nickname:''}</div>
-              <div className={styles.username}>@{card.user?card.user.username:''}</div>
+      <div className={styles['video-card-bottom-mask']}>
+        <div className={styles['video-card-bottom']}>
+          <div
+            className={styles['video-user-card-block']}
+            onClick={(event) => {
+              card.user.username !== watching_username &&
+                router.push({
+                  pathname: '/user/' + card.user.username,
+                });
+              event.stopPropagation();
+            }}
+          >
+            {/* add avatar to the left */}
+            <div className={styles['user-card-left']}>
+              <Avatar size={40}>
+                {card.user ? (
+                  card.user.avatar_url ? (
+                    <img src={card.user.avatar_url} />
+                  ) : (
+                    card.user.nickname
+                  )
+                ) : (
+                  'A'
+                )}
+              </Avatar>
+            </div>
+            <div className={styles['user-card-right']}>
+              <div className={styles['user-name-info']}>
+                <div className={styles.nickname}>
+                  {card.user ? card.user.nickname : ''}
+                </div>
+                <div className={styles.username}>
+                  @{card.user ? card.user.username : ''}
+                </div>
+              </div>
             </div>
           </div>
-
-          <div className={styles.content} >{card.content}</div>
+          <div className={styles.content}>{card.content}</div>
           <div className={styles.keyword}>{parseKeyword(card.keyword)}</div>
           <div className={styles.time}>{parseTime(card.upload_time)}</div>
         </div>

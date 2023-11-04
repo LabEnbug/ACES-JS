@@ -1,17 +1,17 @@
-import { useEffect, useRef, useState } from "react";
-import videojs from "video.js";
+import { useEffect, useRef, useState } from 'react';
+import videojs from 'video.js';
 import styles from './style/index.module.less';
 import 'video.js/dist/video-js.css';
-import { createCanvas, loadImage } from 'canvas'; 
+import { createCanvas, loadImage } from 'canvas';
 import SideBar from './sidebar';
 import FootBar from './footbar';
-import BriefIntri from './brief_intro'
+import BriefIntri from './brief_intro';
 import GetAxios from '@/utils/getaxios';
 import { Message } from '@arco-design/web-react';
 import locale from './locale';
 import useLocale from '@/utils/useLocale';
 import cs from 'classnames';
-import SiderTabs from '@/components/SiderTabs'
+import SiderTabs from '@/components/SiderTabs';
 function VideoPlayer({
   hlsPlayList,
   playIndex,
@@ -29,8 +29,8 @@ function VideoPlayer({
   const [footBarVis, setFootBarVis] = useState(false);
   const [playstate, setPlayState] = useState(false);
   const [timestate, setTimeState] = useState({
-    'now': 0,
-    'whole': 0
+    now: 0,
+    whole: 0,
   });
   const [autoNext, setAutoNext] = useState(true);
   const [volume, setVolume] = useState(0);
@@ -45,30 +45,30 @@ function VideoPlayer({
   const [follow, SetFollow] = useState(false);
   const [commentvis, SetCommentVis] = useState(false);
   const [backgroundimage, SetBackGroundImage] = useState('');
-  const [videoinfo, setVideoInfo ] = useState({
+  const [videoinfo, setVideoInfo] = useState({
     nickname: 'default',
     username: 'default',
     content: 'default',
     be_watched_count: 0,
-    time: "2023-10-31T18:43:57.000Z",
-    video_uid:  null,
+    time: '2023-10-31T18:43:57.000Z',
+    video_uid: null,
     keyword: '#default',
-    user_id: -1
+    user_id: -1,
   });
-  let clickTimeout = useRef(null);
+  const clickTimeout = useRef(null);
   const JudgeStatus = (data: any) => {
     if (data.status != 200) {
       // Message.error(t['message.notfind'])
       return false;
     }
     return true;
-  }
+  };
 
   const OpenComments = () => {
     const imag = playerRef.current.el().style.backgroundImage;
-    SetCommentVis((pre)=>(!pre));
+    SetCommentVis((pre) => !pre);
     SetBackGroundImage(imag);
-  }
+  };
 
   const handlePlayerClick = () => {
     // 如果我们已经有一个等待的单击（意味着这可能是一个双击）
@@ -78,17 +78,21 @@ function VideoPlayer({
     } else {
       // 如果还没有等待的单击（意味着这是第一次点击）
       clickTimeout.current = setTimeout(() => {
-        playerRef.current.paused() ? playerRef.current.play() : playerRef.current.pause();
+        playerRef.current.paused()
+          ? playerRef.current.play()
+          : playerRef.current.pause();
         clickTimeout.current = null;
       }, 250); // 300ms的延迟来检测是否有第二次点击（双击）
     }
   };
 
-  const getVideoInfo = (uid)=> {
+  const getVideoInfo = (uid) => {
     const baxios = GetAxios();
     const param1 = new FormData();
-    param1.append('video_uid',  uid);
-    baxios.post('v1-api/v1/video/info', param1).then(res => {
+    param1.append('video_uid', uid);
+    baxios
+      .post('v1-api/v1/video/info', param1)
+      .then((res) => {
         if (JudgeStatus(res.data)) {
           const video = res.data.data.video;
           setVideoInfo({
@@ -96,8 +100,8 @@ function VideoPlayer({
             username: video['user']['username'],
             content: video['content'],
             be_watched_count: video['be_watched_count'],
-            video_uid:  video['video_uid'],
-            time:  video['upload_time'],
+            video_uid: video['video_uid'],
+            time: video['upload_time'],
             keyword: video['keyword'],
             user_id: video['user']['user_id'],
           });
@@ -108,113 +112,141 @@ function VideoPlayer({
           SetForwardedCount(video['be_forwarded_count']);
           SetCommentedCount(video['be_commented_count']);
           SetFollow(video['user']['be_followed']);
-          window.localStorage.setItem('is_user_favorite', video['is_user_favorite']);
+          window.localStorage.setItem(
+            'is_user_favorite',
+            video['is_user_favorite']
+          );
           window.localStorage.setItem('is_user_like', video['is_user_liked']);
-          window.localStorage.setItem('follow',  video['user']['be_followed']);
+          window.localStorage.setItem('follow', video['user']['be_followed']);
         }
-      }).catch(error => {
-        console.error(error)
+      })
+      .catch((error) => {
+        console.error(error);
       });
-  }
+  };
 
-  const changefollow = ()=> {
-    const status = window.localStorage.getItem('follow') == null ? false : JSON.parse(window.localStorage.getItem('follow'));
+  const changefollow = () => {
+    const status =
+      window.localStorage.getItem('follow') == null
+        ? false
+        : JSON.parse(window.localStorage.getItem('follow'));
     const action = status ? `unfollow` : `follow`;
     const param = new FormData();
     const baxios = GetAxios();
-    param.append('action',  action);
-    param.append('user_id', (videoinfo['user_id']).toString());
+    param.append('action', action);
+    param.append('user_id', videoinfo['user_id'].toString());
 
-    baxios.post('v1-api/v1/user/follow', param).then(res=> {
-      if (JudgeStatus(res.data)) {
-        window.localStorage.setItem(`follow`, (!status).toString());
-        SetFollow(!status);
-      } else {
-        Message.error(t['message.notlog'])
-      }
-    }).catch(e => {
-      console.error(e);
-    })
-  }
-  
-  const clickCount = (a_type, setS, setC)=> {
+    baxios
+      .post('v1-api/v1/user/follow', param)
+      .then((res) => {
+        if (JudgeStatus(res.data)) {
+          window.localStorage.setItem(`follow`, (!status).toString());
+          SetFollow(!status);
+        } else {
+          Message.error(t['message.notlog']);
+        }
+      })
+      .catch((e) => {
+        console.error(e);
+      });
+  };
+
+  const clickCount = (a_type, setS, setC) => {
     const item_name = `is_user_${a_type}`;
-    const status = window.localStorage.getItem(item_name) == null ? false : JSON.parse(window.localStorage.getItem(item_name));
+    const status =
+      window.localStorage.getItem(item_name) == null
+        ? false
+        : JSON.parse(window.localStorage.getItem(item_name));
     const action = status ? `un${a_type}` : `${a_type}`;
     const param = new FormData();
     const baxios = GetAxios();
 
-    param.append('action',  action);
+    param.append('action', action);
     param.append('video_uid', videoinfo['video_uid']);
-    baxios.post('v1-api/v1/video/action', param).then(res=> {
-      if (JudgeStatus(res.data)) {
-        if (status) {
-          setC((pre)=>(pre-1)) ;
+    baxios
+      .post('v1-api/v1/video/action', param)
+      .then((res) => {
+        if (JudgeStatus(res.data)) {
+          if (status) {
+            setC((pre) => pre - 1);
+          } else {
+            setC((pre) => pre + 1);
+          }
+          setS(!status);
+          window.localStorage.setItem(
+            `is_user_${a_type}`,
+            (!status).toString()
+          );
         } else {
-          setC((pre)=>(pre+1)) ;
+          Message.error(t['message.notlog']);
         }
-        setS(!status);
-        window.localStorage.setItem(`is_user_${a_type}`, (!status).toString());
-      } else {
-        Message.error(t['message.notlog']);
-      }
-    }).catch(e => {
-      console.error(e);
-    })
+      })
+      .catch((e) => {
+        console.error(e);
+      });
   };
 
   const videoDoubleClick = () => {
     const item_name = 'is_user_like';
     const param = new FormData();
     const baxios = GetAxios();
-    const status = window.localStorage.getItem(item_name) == null ? false : JSON.parse(window.localStorage.getItem(item_name));
-    param.append('action',  'like');
+    const status =
+      window.localStorage.getItem(item_name) == null
+        ? false
+        : JSON.parse(window.localStorage.getItem(item_name));
+    param.append('action', 'like');
     param.append('video_uid', videoinfo['video_uid']);
-    baxios.post('v1-api/v1/video/action', param).then(res=> {
-      if (JudgeStatus(res.data)) {
-        SetUserLike(true);
-        window.localStorage.setItem(item_name, (true).toString());
-        status ? true :  SetLikeCount((pre)=> pre+1)
-      } else {
-        Message.error(t['message.notlog']);
-      }
-    }).catch(e => {
-      console.error(e);
-    })
-  }
+    baxios
+      .post('v1-api/v1/video/action', param)
+      .then((res) => {
+        if (JudgeStatus(res.data)) {
+          SetUserLike(true);
+          window.localStorage.setItem(item_name, true.toString());
+          status ? true : SetLikeCount((pre) => pre + 1);
+        } else {
+          Message.error(t['message.notlog']);
+        }
+      })
+      .catch((e) => {
+        console.error(e);
+      });
+  };
 
-  const clickfoward = ()=> {
+  const clickfoward = () => {
     const param = new FormData();
     const baxios = GetAxios();
-    param.append('video_uid',  videoinfo['video_uid']);
+    param.append('video_uid', videoinfo['video_uid']);
     const currentURL = window.location.href;
-    const textArea = document.createElement("textarea");
+    const textArea = document.createElement('textarea');
     textArea.value = currentURL;
     document.body.appendChild(textArea);
     textArea.focus();
     textArea.select();
     try {
       document.execCommand('copy');
-      baxios.post('v1-api/v1/video/forward', param).then(res=> {}).catch(e => {
-        console.error(e);
-      });
-      SetForwardedCount((pre)=>(pre+1))
+      baxios
+        .post('v1-api/v1/video/forward', param)
+        .then((res) => {})
+        .catch((e) => {
+          console.error(e);
+        });
+      SetForwardedCount((pre) => pre + 1);
       Message.info(t['message.share']);
     } catch (err) {
       // console.error('Unable to copy to clipboard', err);
       Message.error(t['message.share.failed']);
     }
     document.body.removeChild(textArea);
-  }
+  };
 
   const changeFullScreen = () => {
-    setFullScreen(!playerRef.current.isFullscreen())
+    setFullScreen(!playerRef.current.isFullscreen());
     if (playerRef.current.isFullscreen()) {
-        playerRef.current.exitFullscreen();
+      playerRef.current.exitFullscreen();
     } else {
-        playerRef.current.requestFullscreen();
+      playerRef.current.requestFullscreen();
     }
-  }
+  };
 
   const clickPlay = () => {
     if (!playstate) {
@@ -222,33 +254,33 @@ function VideoPlayer({
     } else {
       playerRef.current.play();
     }
-  }
+  };
 
   const setAuto = (e) => {
     setAutoNext(e);
     window.localStorage.setItem('autonext', e);
-  }
+  };
 
   const changeVolume = (e) => {
-    playerRef.current.volume(e/100);
-  }
+    playerRef.current.volume(e / 100);
+  };
 
   const setPlayBackRate = (e) => {
-    playerRef.current.playbackRate(e)
-  }
+    playerRef.current.playbackRate(e);
+  };
 
   useEffect(() => {
-    const upDateBackGround = (playerRef, url)=> {
+    const upDateBackGround = (playerRef, url) => {
       // 创建一个 Image 对象
       const img = new Image();
       // 设置图像的加载完成回调
-      img.setAttribute("crossOrigin",'Anonymous')
+      img.setAttribute('crossOrigin', 'Anonymous');
       img.onload = () => {
-        ctx.filter  = 'blur(50px)'; // 例如，应用灰度滤镜
+        ctx.filter = 'blur(50px)'; // 例如，应用灰度滤镜
         ctx.drawImage(img, 0, 0, 400, 400);
 
-      // 在图像上应用滤镜效果
-      // 将处理后的图像数据作为背景图片
+        // 在图像上应用滤镜效果
+        // 将处理后的图像数据作为背景图片
         const filteredImageData = ctx.canvas.toDataURL('image/jpeg');
         // playerRef.current.el().classList.add(containerStyle);
         // 图像加载完成后，将其设置为背景图像
@@ -265,27 +297,37 @@ function VideoPlayer({
 
       // 开始加载图像
       img.src = url;
-    }
-    console.log(hlsPlayList)
-    const realindex = currentVideoIndex >= 0 ? currentVideoIndex % hlsPlayList.length : currentVideoIndex % hlsPlayList.length + hlsPlayList.length;
+    };
+    console.log(hlsPlayList);
+    const realindex =
+      currentVideoIndex >= 0
+        ? currentVideoIndex % hlsPlayList.length
+        : (currentVideoIndex % hlsPlayList.length) + hlsPlayList.length;
     reflectPlayIndex(Number.isNaN(realindex) ? 0 : realindex);
     if (!playerRef.current && videoRef.current && hlsPlayList.length > 0) {
       playerRef.current = videojs(videoRef.current, {
-        crossOrigin: "Anonymous",
+        crossOrigin: 'Anonymous',
         controls: true,
-        sources: [{ src: hlsPlayList[realindex]['play_url'], type: "application/x-mpegURL" }],
+        sources: [
+          {
+            src: hlsPlayList[realindex]['play_url'],
+            type: 'application/x-mpegURL',
+          },
+        ],
         poster: hlsPlayList[realindex]['cover_url'],
-        preload: "auto",
+        preload: 'auto',
         autoplay: true,
         userActions: {
           doubleClick: false, // 值也可以是一个函数
           click: false,
         },
-        ...options
+        ...options,
       });
 
       playerRef.current.on('ended', () => {
-        const autoNext = window.localStorage.getItem('autonext') ? JSON.parse(window.localStorage.getItem('autonext')) : false;
+        const autoNext = window.localStorage.getItem('autonext')
+          ? JSON.parse(window.localStorage.getItem('autonext'))
+          : false;
         if (autoNext) {
           setCurrentVideoIndex((prevIndex) => prevIndex + 1);
         } else {
@@ -295,55 +337,60 @@ function VideoPlayer({
       });
       playerRef.current.on('ready', () => {
         setFullScreen(playerRef.current.isFullscreen());
-        setVolume(Math.floor(playerRef.current.volume()*100));
+        setVolume(Math.floor(playerRef.current.volume() * 100));
       });
-      playerRef.current.on('play', ()=> {
+      playerRef.current.on('play', () => {
         setFootBarVis(true);
         setPlayState(false);
         recordWatched();
-      })
-      playerRef.current.on('pause', ()=> {
-        setPlayState(true)
-      })
-      playerRef.current.on('timeupdate', function() {
+      });
+      playerRef.current.on('pause', () => {
+        setPlayState(true);
+      });
+      playerRef.current.on('timeupdate', function () {
         const currentPlayTime = playerRef.current.currentTime();
         const totalDuration = playerRef.current.duration();
         setTimeState({
-          'now': currentPlayTime,
-          'whole': totalDuration
-        })
+          now: currentPlayTime,
+          whole: totalDuration,
+        });
       });
-      playerRef.current.on('volumechange', function() {
-        setVolume(Math.floor(playerRef.current.volume() * 100))
+      playerRef.current.on('volumechange', function () {
+        setVolume(Math.floor(playerRef.current.volume() * 100));
       });
 
-      playerRef.current.on('ratechange', function() {
+      playerRef.current.on('ratechange', function () {
         setPlayRate(playerRef.current.playbackRate());
       });
 
-      playerRef.current.on('fullscreenchange', function() {
+      playerRef.current.on('fullscreenchange', function () {
         setFullScreen(playerRef.current.isFullscreen());
       });
 
       // playerRef.current.on('click', handlePlayerClick);
-      
+
       playerRef.current.el().classList.add(styles['video-background']);
       playerRef.current.controlBar.getChild('playToggle').hide();
       playerRef.current.controlBar.getChild('VolumePanel').hide();
       playerRef.current.controlBar.getChild('FullscreenToggle').hide();
       playerRef.current.controlBar.getChild('RemainingTimeDisplay').hide();
       playerRef.current.controlBar.removeChild('pictureInPictureToggle');
-      upDateBackGround(playerRef, hlsPlayList[realindex]['cover_url'])
-    } else if (playerRef.current && videoRef.current && hlsPlayList.length != 0) {
+      upDateBackGround(playerRef, hlsPlayList[realindex]['cover_url']);
+    } else if (
+      playerRef.current &&
+      videoRef.current &&
+      hlsPlayList.length != 0
+    ) {
       playerRef.current.src({
-        src: hlsPlayList[realindex]['play_url'], type: "application/x-mpegURL"
-      })
+        src: hlsPlayList[realindex]['play_url'],
+        type: 'application/x-mpegURL',
+      });
 
-      playerRef.current.poster(hlsPlayList[realindex]['cover_url'])
-      upDateBackGround(playerRef, hlsPlayList[realindex]['cover_url'])
+      playerRef.current.poster(hlsPlayList[realindex]['cover_url']);
+      upDateBackGround(playerRef, hlsPlayList[realindex]['cover_url']);
     }
     if (hlsPlayList.length > 0) {
-      getVideoInfo(hlsPlayList[realindex]['video_uid'])
+      getVideoInfo(hlsPlayList[realindex]['video_uid']);
       console.log(hlsPlayList[realindex]);
     }
   }, [hlsPlayList, options, currentVideoIndex]);
@@ -353,7 +400,7 @@ function VideoPlayer({
 
     return () => {
       if (player && !player.isDisposed()) {
-        console.log(123)
+        console.log(123);
         player.dispose();
         playerRef.current = null;
       }
@@ -365,11 +412,11 @@ function VideoPlayer({
       const specifiedArea = document.getElementById('specified-area');
       if (specifiedArea && specifiedArea.contains(event.target)) {
         if (event.deltaY > 5) {
-          setCurrentVideoIndex((prevIndex) =>
-            prevIndex + 1
-          );
+          setCurrentVideoIndex((prevIndex) => prevIndex + 1);
         } else if (event.deltaY < -5) {
-          setCurrentVideoIndex((prevIndex) => prevIndex > 0 ? (prevIndex - 1) : 0);
+          setCurrentVideoIndex((prevIndex) =>
+            prevIndex > 0 ? prevIndex - 1 : 0
+          );
         }
       }
     };
@@ -392,7 +439,9 @@ function VideoPlayer({
         }
       }
       if (event.key === 'ArrowUp') {
-        setCurrentVideoIndex((prevIndex) => prevIndex > 0 ? prevIndex - 1 : 0);
+        setCurrentVideoIndex((prevIndex) =>
+          prevIndex > 0 ? prevIndex - 1 : 0
+        );
       } else if (event.key === 'ArrowDown') {
         setCurrentVideoIndex((prevIndex) => prevIndex + 1);
       }
@@ -403,48 +452,75 @@ function VideoPlayer({
     };
   }, [playstate, currentVideoIndex, playerRef]);
 
-
-
   return (
-    <div style={{display: 'inline-flex', width: '100%', height: '100%'}}>
-      <div data-vjs-player className={styles['video-container']} >
-        <video ref={videoRef} onClick={handlePlayerClick} onDoubleClick={videoDoubleClick} id="specified-area" className={`vjs-default-skin video-js ${styles['video-pos-js-9-16']}`} controls></video>
-        <SideBar videoinfo={videoinfo} 
-                 userfavorite={userfavorite} 
-                 userlike={userlike} 
-                 ikecount={likecount} 
-                 favoritecount={favoritecount}  
-                 forwardedcount={forwardedcount}
-                 commentedcount={commentedcount}
-                 clickfavorite={{'func': clickCount, 'params': ['favorite', SetUserfavorite, SetFavoriteCount]}}
-                 clicklike={{'func': clickCount, 'params': ['like', SetUserLike, SetLikeCount]}}
-                 clickfoward={clickfoward}
-                 followed={follow}
-                 changefollow={changefollow}
-                 cilckcomment={OpenComments}
+    <div
+      style={{
+        display: 'inline-flex',
+        width: '100%',
+        height: '100%',
+        minWidth: 680,
+      }}
+    >
+      <div data-vjs-player className={styles['video-container']}>
+        <video
+          ref={videoRef}
+          onClick={handlePlayerClick}
+          onDoubleClick={videoDoubleClick}
+          id="specified-area"
+          className={`vjs-default-skin video-js ${styles['video-pos-js-9-16']}`}
+          controls
+        ></video>
+        <SideBar
+          videoinfo={videoinfo}
+          userfavorite={userfavorite}
+          userlike={userlike}
+          ikecount={likecount}
+          favoritecount={favoritecount}
+          forwardedcount={forwardedcount}
+          commentedcount={commentedcount}
+          clickfavorite={{
+            func: clickCount,
+            params: ['favorite', SetUserfavorite, SetFavoriteCount],
+          }}
+          clicklike={{
+            func: clickCount,
+            params: ['like', SetUserLike, SetLikeCount],
+          }}
+          clickfoward={clickfoward}
+          followed={follow}
+          changefollow={changefollow}
+          cilckcomment={OpenComments}
         />
-        <FootBar id='footbar'
-                 ref={playerRef}
-                 visible={footBarVis}
-                 playstate={playstate}
-                 timestate={timestate}
-                 playclick={clickPlay}
-                 volume={volume}
-                 volumechange={changeVolume}
-                 setauto={setAuto}
-                 autostate={autoNext}
-                 playbackrate={playrate}
-                 setplaybackrate={setPlayBackRate}
-                 fullscreen={fullscreen}
-                 fullscreenchange={changeFullScreen}
-               />
+        <FootBar
+          id="footbar"
+          ref={playerRef}
+          visible={footBarVis}
+          playstate={playstate}
+          timestate={timestate}
+          playclick={clickPlay}
+          volume={volume}
+          volumechange={changeVolume}
+          setauto={setAuto}
+          autostate={autoNext}
+          playbackrate={playrate}
+          setplaybackrate={setPlayBackRate}
+          fullscreen={fullscreen}
+          fullscreenchange={changeFullScreen}
+        />
         <BriefIntri videoinfo={videoinfo} />
       </div>
-      <div className={commentvis ? cs(styles['comment-container-vis']) : styles['comment-container-dis']} style={commentvis ? {backgroundImage: backgroundimage} : {}}>
+      <div
+        className={
+          commentvis
+            ? cs(styles['comment-container-vis'])
+            : styles['comment-container-dis']
+        }
+        style={commentvis ? { backgroundImage: backgroundimage } : {}}
+      >
         <SiderTabs videoinfo={videoinfo} />
       </div>
     </div>
   );
-};
+}
 
 export default VideoPlayer;

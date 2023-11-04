@@ -33,7 +33,7 @@ export default function MyApp({
   const { arcoLang, arcoTheme } = renderConfig;
   const [lang, setLang] = useStorage('arco-lang', arcoLang || 'en-US');
   const [theme, setTheme] = useStorage('arco-theme', 'dark');
-  setTheme('dark')
+  // setTheme('dark')
   const router = useRouter();
   const locale = useMemo(() => {
     switch (lang) {
@@ -51,19 +51,19 @@ export default function MyApp({
     //   type: 'update-userInfo',
     //   payload: { userLoading: true },
     // });
-    const userinfo = GetUserInfo()
-    
+    const userinfo = GetUserInfo();
+
     store.dispatch({
       type: 'update-userInfo',
-      payload: { userInfo: userinfo, userLoading: false},
+      payload: { userInfo: userinfo, userLoading: false },
     });
   }
 
   useEffect(() => {
-    fetchUserInfo()
+    // fetchUserInfo()
     // if (checkLogin()) {
     //   fetchUserInfo();
-    // } 
+    // }
     // else if (window.location.pathname.replace(/\//g, '') !== 'login') {
     //   window.location.pathname = '/login';
     // }

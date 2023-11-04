@@ -10,7 +10,9 @@ import {
   Message,
   Button,
   Modal,
-  Form, Trigger, Skeleton,
+  Form,
+  Trigger,
+  Skeleton,
 } from '@arco-design/web-react';
 import {
   IconLanguage,
@@ -25,7 +27,11 @@ import {
   IconInteraction,
   IconTag,
   IconLoading,
-  IconLock, IconShake, IconPlusCircle, IconPlus, IconUpload,
+  IconLock,
+  IconShake,
+  IconPlusCircle,
+  IconPlus,
+  IconUpload,
 } from '@arco-design/web-react/icon';
 import { useSelector, useDispatch } from 'react-redux';
 import store, { GlobalState } from '@/store';
@@ -33,31 +39,22 @@ import { GlobalContext } from '@/context';
 import useLocale from '@/utils/useLocale';
 import Logo from '@/assets/logo.svg';
 import MessageBox from '@/components/MessageBox';
-import SearchPopupBox from "@/components/SearchPopupBox";
+import SearchPopupBox from '@/components/SearchPopupBox';
 import IconButton from './IconButton';
 import Settings from '../Settings';
 import styles from './style/index.module.less';
 import defaultLocale from '@/locale';
 import useStorage from '@/utils/useStorage';
 import { generatePermission } from '@/routes';
-import {useRouter} from "next/router";
+import { useRouter } from 'next/router';
 import GetAxios from '@/utils/getaxios';
-import cs from "classnames";
+import cs from 'classnames';
 
 const FormItem = Form.Item;
 
-function Popup() {
-  return (
-    <div className={styles['search-trigger-popup']} style={{ width: 300 }}>
-
-      <Skeleton />
-    </div>
-  );
-}
-
 function Navbar({ show }: { show: boolean }) {
   const t = useLocale();
-  const { userInfo, userLoading} = useSelector((state: GlobalState) => state);
+  const { userInfo, userLoading } = useSelector((state: GlobalState) => state);
   const dispatch = useDispatch();
   const [_, setUserStatus] = useStorage('userStatus');
   const [role, setRole] = useStorage('userRole', 'admin');
@@ -125,7 +122,6 @@ function Navbar({ show }: { show: boolean }) {
     };
   }, [searchKeyword]);
 
-
   if (!show) {
     return (
       <div className={styles['fixed-settings']}>
@@ -144,19 +140,19 @@ function Navbar({ show }: { show: boolean }) {
   };
 
   const handlelogout = () => {
-    const baxios  = GetAxios()
+    const baxios = GetAxios();
 
-    baxios.get('/v1-api/v1/user/logout')
-    .then(response => {
-      Message.info(t['navbar.menu.logout.message']);
-      localStorage.removeItem("userInfo")
-      window.location.pathname = '/'
-    })
-    .catch(error => {
-      console.error(error);
-    });
-
-  }
+    baxios
+      .get('/v1-api/v1/user/logout')
+      .then((response) => {
+        Message.info(t['navbar.menu.logout.message']);
+        localStorage.removeItem('userInfo');
+        window.location.pathname = '/';
+      })
+      .catch((error) => {
+        console.error(error);
+      });
+  };
 
   const droplist = (
     // <Menu onClickMenuItem={onMenuItemClick}>
@@ -214,9 +210,11 @@ function Navbar({ show }: { show: boolean }) {
   const [confirmLoading, setConfirmLoading] = useState(false);
 
   function onSignInOk() {
-      const baxios  = GetAxios()
-      form.validate().then((res) => {
-        console.log(res)
+    const baxios = GetAxios();
+    form
+      .validate()
+      .then((res) => {
+        console.log(res);
         // const params = {
         //   username: res.username,
         //   password: res.password
@@ -224,42 +222,48 @@ function Navbar({ show }: { show: boolean }) {
         const params = new FormData();
         params.append('username', res.username);
         params.append('password', res.password);
-        baxios.post('/v1-api/v1/user/login', params)
-        .then(response => {
-          const data = response.data
-          localStorage.setItem('userInfo', JSON.stringify(data))
-          window.location.pathname = '/'
-        })
-        .catch(error => {
-          console.error(error);
-        });
-      }).catch (e=> {
-        Message.error(t['navbar.model.signup.message.error'])
+        baxios
+          .post('/v1-api/v1/user/login', params)
+          .then((response) => {
+            const data = response.data;
+            localStorage.setItem('userInfo', JSON.stringify(data));
+            window.location.pathname = '/';
+          })
+          .catch((error) => {
+            console.error(error);
+          });
       })
+      .catch((e) => {
+        Message.error(t['navbar.model.signup.message.error']);
+      });
   }
   function onSignUpOk() {
-      const baxios  = GetAxios()
-      form.validate().then((res) => {
-        console.log(res)
+    const baxios = GetAxios();
+    form
+      .validate()
+      .then((res) => {
+        console.log(res);
         const params = {
           username: res.username,
           password: res.password,
-          nickname: res.nickname
-        }
-        baxios.get('/v1-api/v1/user/signup', { params })
-        .then(response => {
-          const data = response.data
-          console.log(data)
-          localStorage.setItem('userInfo', JSON.stringify(data))
-          window.location.pathname = '/'
-        })
-        .catch(error => {
-          console.log(1234)
-          console.error(error);
-        });
-      }).catch(e=> {
-        Message.error(t['navbar.model.signup.message.error'])
+          nickname: res.nickname,
+        };
+        baxios
+          .get('/v1-api/v1/user/signup', { params })
+          .then((response) => {
+            const data = response.data;
+            console.log(data);
+            localStorage.setItem('userInfo', JSON.stringify(data));
+            window.location.pathname = '/';
+          })
+          .catch((error) => {
+            console.log(1234);
+            console.error(error);
+          });
       })
+      .catch((e) => {
+        Message.error(t['navbar.model.signup.message.error']);
+      });
   }
 
   const handleSearchSubmit = () => {
@@ -272,7 +276,7 @@ function Navbar({ show }: { show: boolean }) {
     });
     // close popup box
     setSearchPopupBoxVisible(false);
-  }
+  };
 
   const formItemLayout = {
     labelCol: {
@@ -293,7 +297,10 @@ function Navbar({ show }: { show: boolean }) {
       </div>
       <ul className={styles.right}>
         <li className={styles['search']}>
-          <SearchPopupBox searchPopupBoxVisible={searchPopupBoxVisible} setSearchPopupBoxVisible={setSearchPopupBoxVisible}>
+          <SearchPopupBox
+            searchPopupBoxVisible={searchPopupBoxVisible}
+            setSearchPopupBoxVisible={setSearchPopupBoxVisible}
+          >
             <Input.Search
               // after enter, popupBox should be closed
               value={searchKeyword}
@@ -303,29 +310,19 @@ function Navbar({ show }: { show: boolean }) {
               onSearch={searchKeyword !== '' && handleSearchSubmit}
             />
           </SearchPopupBox>
-          {/*<Trigger*/}
-          {/*  popup={() => <Popup />}*/}
-          {/*  trigger='focus'*/}
-          {/*  mouseEnterDelay={400}*/}
-          {/*  mouseLeaveDelay={400}*/}
-          {/*  position='top'*/}
-          {/*>*/}
-          {/*  <Input.Search*/}
-          {/*    value={searchKeyword}*/}
-          {/*    onChange={(e) => setSearchKeyword(e)}*/}
-          {/*    className={styles.round + ' ' + styles['search-input']}*/}
-          {/*    placeholder={t['navbar.search.placeholder']}*/}
-          {/*    onSearch={handleSearchSubmit}*/}
-          {/*  />*/}
-          {/*</Trigger>*/}
         </li>
         <li>
           {/* upload video button */}
-          <Button icon={<IconUpload />} type='primary' shape='round' onClick={() => {
-            router.push({
-              pathname: '/upload',
-            });
-          }}>
+          <Button
+            icon={<IconUpload />}
+            type="primary"
+            shape="round"
+            onClick={() => {
+              router.push({
+                pathname: '/upload',
+              });
+            }}
+          >
             上传短视频
           </Button>
         </li>
@@ -370,32 +367,50 @@ function Navbar({ show }: { show: boolean }) {
           </Tooltip>
         </li> */}
         {/* <Settings /> */}
-        {userInfo ?  (
+        {userInfo ? (
           <li>
             <Dropdown droplist={droplist} position="br" disabled={userLoading}>
-              <Avatar size={32} style={{ cursor: 'pointer' }}>
+              <Avatar
+                size={32}
+                style={{ cursor: 'pointer' }}
+                onClick={() => {
+                  router.push({
+                    pathname: `/user/self`,
+                  });
+                }}
+              >
                 {userLoading ? (
                   <IconLoading />
                 ) : (
                   <Avatar size={40}>
-                    {userInfo.avatar_url?<img src={userInfo.avatar_url} />:userInfo.nickname}
+                    {userInfo.avatar_url ? (
+                      <img src={userInfo.avatar_url} />
+                    ) : (
+                      userInfo.nickname
+                    )}
                   </Avatar>
                   // <img alt="avatar" src={userInfo.avatar} />
                 )}
               </Avatar>
             </Dropdown>
           </li>
-        ) :
+        ) : (
           <li>
-            <Button type='text' onClick={showSignInModal}>{t['navbar.button.signin']}</Button>
-            <Button type='text' onClick={showSignUpModal}>{t['navbar.button.signup']}</Button>
+            <Button type="text" onClick={showSignInModal}>
+              {t['navbar.button.signin']}
+            </Button>
+            <Button type="text" onClick={showSignUpModal}>
+              {t['navbar.button.signup']}
+            </Button>
           </li>
-        }
+        )}
       </ul>
       <Modal
-        title= {<div >
-          <h1 className="h1 text-white">{t['navbar.model.signin.title']}</h1>
-        </div>}
+        title={
+          <div>
+            <h1 className="h1 text-white">{t['navbar.model.signin.title']}</h1>
+          </div>
+        }
         className={styles['auth-model']}
         visible={signinmodel}
         onOk={() => onSignInOk()}
@@ -405,30 +420,38 @@ function Navbar({ show }: { show: boolean }) {
         closable={false}
         simple={true}
       >
-       <div>
-       <Form
-          {...formItemLayout}
-          form={form}
-          labelCol={{
-            style: { flexBasis: 90 },
-          }}
-          wrapperCol={{
-            style: { flexBasis: 'calc(100% - 90px)' },
-          }}
-        >
-          <FormItem field='username' rules={[{ required: true }]} >
-            <Input prefix={<IconUser />} placeholder={t['navbar.model.signin.account']} />
-          </FormItem>
-          <FormItem field='password' rules={[{ required: true }]}>
-            <Input.Password prefix={<IconLock />} placeholder={t['navbar.model.signin.passward']} />
-          </FormItem>
-        </Form>
+        <div>
+          <Form
+            {...formItemLayout}
+            form={form}
+            labelCol={{
+              style: { flexBasis: 90 },
+            }}
+            wrapperCol={{
+              style: { flexBasis: 'calc(100% - 90px)' },
+            }}
+          >
+            <FormItem field="username" rules={[{ required: true }]}>
+              <Input
+                prefix={<IconUser />}
+                placeholder={t['navbar.model.signin.account']}
+              />
+            </FormItem>
+            <FormItem field="password" rules={[{ required: true }]}>
+              <Input.Password
+                prefix={<IconLock />}
+                placeholder={t['navbar.model.signin.passward']}
+              />
+            </FormItem>
+          </Form>
         </div>
       </Modal>
       <Modal
-        title= {<div >
-          <h1 className="h1 text-white">{t['navbar.model.signup.title']}</h1>
-        </div>}
+        title={
+          <div>
+            <h1 className="h1 text-white">{t['navbar.model.signup.title']}</h1>
+          </div>
+        }
         className={styles['auth-model']}
         visible={signupmodel}
         onOk={() => onSignUpOk()}
@@ -438,48 +461,62 @@ function Navbar({ show }: { show: boolean }) {
         closable={false}
         simple={true}
       >
-       <div>
-       <Form
-          {...formItemLayout}
-          form={form}
-          labelCol={{
-            style: { flexBasis: 90 },
-          }}
-          wrapperCol={{
-            style: { flexBasis: 'calc(100% - 90px)' },
-          }}
-        >
-          <FormItem field='username' rules={[{ required: true }]} >
-            <Input prefix={<IconUser />} placeholder={t['navbar.model.signin.account']} />
-          </FormItem>
-          <FormItem field='nickname' rules={[{ required: true }]} >
-            <Input prefix={<IconUser />} placeholder={t['navbar.model.signup.nickname']} />
-          </FormItem>
-          <FormItem field='password' rules={[{ required: true }]}>
-            <Input.Password prefix={<IconLock />} placeholder={t['navbar.model.signin.passward']} />
-          </FormItem>
+        <div>
+          <Form
+            {...formItemLayout}
+            form={form}
+            labelCol={{
+              style: { flexBasis: 90 },
+            }}
+            wrapperCol={{
+              style: { flexBasis: 'calc(100% - 90px)' },
+            }}
+          >
+            <FormItem field="username" rules={[{ required: true }]}>
+              <Input
+                prefix={<IconUser />}
+                placeholder={t['navbar.model.signin.account']}
+              />
+            </FormItem>
+            <FormItem field="nickname" rules={[{ required: true }]}>
+              <Input
+                prefix={<IconUser />}
+                placeholder={t['navbar.model.signup.nickname']}
+              />
+            </FormItem>
+            <FormItem field="password" rules={[{ required: true }]}>
+              <Input.Password
+                prefix={<IconLock />}
+                placeholder={t['navbar.model.signin.passward']}
+              />
+            </FormItem>
 
-
-          <FormItem
-            field='confirm_password'
-            dependencies={['password']}
-            rules={[{
-              validator: (v, cb) => {
-                if (!v) {
-                  return cb('confirm_password is required')
-                } else if (form.getFieldValue('password') !== v) {
-                  return cb('confirm_password must be equal with password')
-                }
-                cb(null)
-              }
-            }]}
-         >
-        <Input.Password prefix={<IconLock />} placeholder='please confirm your password' />
-      </FormItem>
-        </Form>
+            <FormItem
+              field="confirm_password"
+              required={true}
+              // dependencies={['password']}
+              rules={[
+                {
+                  validator: (v, cb) => {
+                    if (!v) {
+                      return cb('confirm_password is required');
+                    } else if (form.getFieldValue('password') !== v) {
+                      return cb('confirm_password must be equal with password');
+                    }
+                    cb(null);
+                  },
+                },
+              ]}
+            >
+              <Input.Password
+                prefix={<IconLock />}
+                placeholder="please confirm your password"
+              />
+            </FormItem>
+          </Form>
         </div>
       </Modal>
-      </div>
+    </div>
   );
 }
 
