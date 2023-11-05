@@ -45,20 +45,22 @@ function VideoP() {
         undefined,
         { shallow: true }
       );
-      window.localStorage.setItem('playvideo-id', playlist[index]['video_uid']);
+      window.sessionStorage.setItem('playvideo-id', playlist[index]['video_uid']);
     }
   };
 
   const recordWatched = () => {
-    const pre = window.localStorage.getItem('playvideo-pre-id');
-    const uid = window.localStorage.getItem('playvideo-id');
+    const pre = window.sessionStorage.getItem('playvideo-pre-id');
+    const uid = window.sessionStorage.getItem('playvideo-id');
+    console.log(pre);
+    console.log(pre);
     if (uid && pre != uid) {
       const param = new FormData();
       param.append('video_uid', uid);
       baxios
         .post('/v1-api/v1/video/watch', param)
         .then((response) => {
-          window.localStorage.setItem('playvideo-pre-id', uid);
+          window.sessionStorage.setItem('playvideo-pre-id', uid);
         })
         .catch((error) => {
           console.error(error);
