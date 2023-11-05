@@ -12,13 +12,25 @@ import (
 	"strconv"
 )
 
+func GetUserBalance(userId uint) float64 {
+	var balance float64
+	err := DB.QueryRow("SELECT balance FROM user WHERE id=? LIMIT 1", userId).Scan(&balance)
+	if err != nil {
+		if config.ShowLog {
+			funcName, _, _, _ := runtime.Caller(0)
+			log.Println(runtime.FuncForPC(funcName).Name(), err)
+		}
+	}
+	return balance
+}
+
 func GetUserInfoById(userId uint, currentUserId uint) (model.User, bool, int) {
 	var user model.User
 	ok := true
 	errNo := 0
 
-	err := DB.QueryRow("SELECT id, username, password, nickname, follow_count, be_followed_count, be_liked_count, be_favorite_count, be_commented_count, be_forwarded_count, be_watched_count, reg_time, last_login_time FROM user WHERE id=? LIMIT 1", userId).
-		Scan(&user.Id, &user.Username, &user.Password, &user.Nickname, &user.FollowCount, &user.BeFollowedCount, &user.BeLikedCount, &user.BeFavoriteCount, &user.BeCommentedCount, &user.BeForwardedCount, &user.BeWatchedCount, &user.RegTime, &user.LastLoginTime)
+	err := DB.QueryRow("SELECT id, username, password, nickname, avatar, follow_count, be_followed_count, be_liked_count, be_favorite_count, be_commented_count, be_forwarded_count, be_watched_count, reg_time, last_login_time FROM user WHERE id=? LIMIT 1", userId).
+		Scan(&user.Id, &user.Username, &user.Password, &user.Nickname, &user.Avatar, &user.FollowCount, &user.BeFollowedCount, &user.BeLikedCount, &user.BeFavoriteCount, &user.BeCommentedCount, &user.BeForwardedCount, &user.BeWatchedCount, &user.RegTime, &user.LastLoginTime)
 	if err != nil {
 		if config.ShowLog {
 			funcName, _, _, _ := runtime.Caller(0)
@@ -42,8 +54,8 @@ func GetUserInfoById(userId uint, currentUserId uint) (model.User, bool, int) {
 
 func GetUserInfoByUsername(username string, currentUserId uint) (model.User, bool) {
 	var user model.User
-	err := DB.QueryRow("SELECT id, username, password, nickname, follow_count, be_followed_count, be_liked_count, be_favorite_count, be_commented_count, be_forwarded_count, be_watched_count, reg_time, last_login_time FROM user WHERE username=? LIMIT 1", username).
-		Scan(&user.Id, &user.Username, &user.Password, &user.Nickname, &user.FollowCount, &user.BeFollowedCount, &user.BeLikedCount, &user.BeFavoriteCount, &user.BeCommentedCount, &user.BeForwardedCount, &user.BeWatchedCount, &user.RegTime, &user.LastLoginTime)
+	err := DB.QueryRow("SELECT id, username, password, nickname, avatar, follow_count, be_followed_count, be_liked_count, be_favorite_count, be_commented_count, be_forwarded_count, be_watched_count, reg_time, last_login_time FROM user WHERE username=? LIMIT 1", username).
+		Scan(&user.Id, &user.Username, &user.Password, &user.Nickname, &user.Avatar, &user.FollowCount, &user.BeFollowedCount, &user.BeLikedCount, &user.BeFavoriteCount, &user.BeCommentedCount, &user.BeForwardedCount, &user.BeWatchedCount, &user.RegTime, &user.LastLoginTime)
 	if err != nil {
 		if config.ShowLog {
 			funcName, _, _, _ := runtime.Caller(0)
@@ -176,8 +188,20 @@ func FollowUser(followUserId uint, currentUserId uint, action string) bool {
 	return true
 }
 
-func SetUserInfo(userId uint, nickname string) bool {
+func SetUserInfoNickname(userId uint, nickname string) bool {
 	_, err := DB.Exec("UPDATE user SET nickname=? WHERE id=?", nickname, userId)
+	if err != nil {
+		if config.ShowLog {
+			funcName, _, _, _ := runtime.Caller(0)
+			log.Println(runtime.FuncForPC(funcName).Name(), "ERR: ", err)
+		}
+		return false
+	}
+	return true
+}
+
+func SetUserInfoAvatar(userId uint, avatar string) bool {
+	_, err := DB.Exec("UPDATE user SET avatar=? WHERE id=?", avatar, userId)
 	if err != nil {
 		if config.ShowLog {
 			funcName, _, _, _ := runtime.Caller(0)
@@ -196,6 +220,43 @@ func SetUserRecommendMatrix(userId uint, recommendMatrix []byte) bool {
 			log.Println(runtime.FuncForPC(funcName).Name(), "ERR: ", err)
 		}
 		return false
+	}
+	return true
+}
+
+func GetDepositCard(cardKey string) model.UserDepositCard {
+	var card model.UserDepositCard
+	err := DB.QueryRow("SELECT id, card_key, card_amount, used_user_id, used_time FROM user_deposit_card WHERE card_key=?", cardKey).
+		Scan(&card.Id, &card.CardKey, &card.CardAmount, &card.UsedUserId, &card.UsedTime)
+	if err != nil {
+		if config.ShowLog {
+			funcName, _, _, _ := runtime.Caller(0)
+			log.Println(runtime.FuncForPC(funcName).Name(), err)
+		}
+	}
+	return card
+}
+
+func UserDeposit(userId uint, cardKey string) bool {
+	_, err := DB.Exec("UPDATE user_deposit_card SET used_user_id=?, used_time=NOW() WHERE card_key=?", userId, cardKey)
+	if err != nil {
+		if config.ShowLog {
+			funcName, _, _, _ := runtime.Caller(0)
+			log.Println(runtime.FuncForPC(funcName).Name(), err)
+		}
+		return false
+	}
+
+	// todo: test only
+	if cardKey == "ACES-AAAA-AAAA-AAAA" {
+		_, err := DB.Exec("UPDATE user_deposit_card SET used_user_id=NULL, used_time=NULL WHERE card_key=?", cardKey)
+		if err != nil {
+			if config.ShowLog {
+				funcName, _, _, _ := runtime.Caller(0)
+				log.Println(runtime.FuncForPC(funcName).Name(), err)
+			}
+			return false
+		}
 	}
 	return true
 }

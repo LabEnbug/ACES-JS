@@ -18,7 +18,7 @@ import (
 //	return true
 //}
 
-func MakeVideoComment(videoId uint, userId uint, content string, quoteComment model.VideoCommentRoot) (int64, bool) {
+func MakeVideoComment(videoId uint, userId uint, content string, quoteComment model.VideoCommentChild) (int64, bool) {
 	var res sql.Result
 	var err error
 	var commentId int64
@@ -53,8 +53,8 @@ func MakeVideoComment(videoId uint, userId uint, content string, quoteComment mo
 	return commentId, true
 }
 
-func GetVideoComment(videoCommentId uint, currentUserId uint) model.VideoCommentRoot {
-	var videoComment model.VideoCommentRoot
+func GetVideoComment(videoCommentId uint, currentUserId uint) model.VideoCommentChild {
+	var videoComment model.VideoCommentChild
 	err := DB.QueryRow("SELECT id, user_id, content, quote_root_comment_id, quote_user_id, quote_child_comment_id, comment_time FROM video_comment WHERE id=? AND delete_time IS NULL LIMIT 1", videoCommentId).
 		Scan(&videoComment.Id, &videoComment.UserId, &videoComment.Content, &videoComment.QuoteRootCommentId,
 			&videoComment.QuoteUserId, &videoComment.QuoteChildCommentId, &videoComment.CommentTime)

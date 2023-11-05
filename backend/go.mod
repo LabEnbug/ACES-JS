@@ -12,5 +12,6 @@ require (
 	github.com/google/uuid v1.3.1 // indirect
 	github.com/qiniu/go-sdk/v7 v7.18.2 // indirect
 	github.com/redis/go-redis/v9 v9.2.1 // indirect
+	golang.org/x/image v0.13.0 // indirect
 	golang.org/x/sync v0.0.0-20220722155255-886fb9371eb4 // indirect
 )

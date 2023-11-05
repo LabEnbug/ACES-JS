@@ -40,10 +40,15 @@ var BaseRemoteFileDir string // remote dir
 
 var VideoProcessType int // 1: wait for qiniu transcode callback; 2: transcode by ffmpeg locally
 
-var MaxNormalPostSize int  // MB
-var MaxUploadVideoSize int // MB
+var MaxNormalPostSize int   // MB
+var MaxUploadVideoSize int  // MB
+var MaxUploadAvatarSize int // MB
 var MaxNormalPostSize64 int64
 var MaxUploadVideoSize64 int64
+var MaxUploadAvatarSize64 int64
+
+var PromotePrice float64
+var AdvertisePrice float64
 
 func InitConfig() {
 	Test = true
@@ -82,6 +87,11 @@ func InitConfig() {
 
 	MaxNormalPostSize = 10
 	MaxUploadVideoSize = 200
+	MaxUploadAvatarSize = 2
 	MaxNormalPostSize64 = int64(MaxNormalPostSize * 1024 * 1024)
 	MaxUploadVideoSize64 = int64(MaxUploadVideoSize * 1024 * 1024)
+	MaxUploadAvatarSize64 = int64(MaxUploadAvatarSize * 1024 * 1024)
+
+	PromotePrice = 0.1
+	AdvertisePrice = 0.3
 }

@@ -448,3 +448,33 @@ func GetVideoTypes() []model.VideoType {
 	}
 	return videoTypes
 }
+
+func GetRemainPromoteAndAdvertiseCount(videoId uint) (int, int) {
+	var remainPromoteCount int
+	var remainAdvertiseCount int
+	err := DB.QueryRow("SELECT SUM(remain_count) FROM video_promote WHERE video_id=? AND remain_count>0", videoId).Scan(&remainPromoteCount)
+	if err != nil {
+		remainPromoteCount = 0
+	}
+	err = DB.QueryRow("SELECT SUM(remain_count) FROM video_advertise WHERE video_id=? AND remain_count>0", videoId).Scan(&remainAdvertiseCount)
+	if err != nil {
+		remainAdvertiseCount = 0
+	}
+	return remainPromoteCount, remainAdvertiseCount
+}
+
+func PromoteVideo(videoId uint, userId uint, count int) bool {
+	price := float64(count) * config.PromotePrice
+	if _, err := DB.Exec("INSERT INTO video_promote (video_id, user_id, count, remain_count, price, promote_time) VALUES (?, ?, ?, ?, ?, NOW())", videoId, userId, count, count, price); err != nil {
+		return false
+	}
+	return true
+}
+
+func AdvertiseVideo(videoId uint, userId uint, count int) bool {
+	price := float64(count) * config.AdvertisePrice
+	if _, err := DB.Exec("INSERT INTO video_advertise (video_id, user_id, count, remain_count, price, advertise_time) VALUES (?, ?, ?, ?, ?, NOW())", videoId, userId, count, count, price); err != nil {
+		return false
+	}
+	return true
+}

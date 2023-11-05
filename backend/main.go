@@ -65,6 +65,7 @@ func main() {
 	http.HandleFunc("/v1/user/query", cmd.GetOtherUserInfo)
 	http.HandleFunc("/v1/user/follow", cmd.FollowUser)
 	http.HandleFunc("/v1/user/info/set", cmd.SetUserInfo)
+	http.HandleFunc("/v1/user/deposit", cmd.UserDeposit)
 
 	// video
 	http.HandleFunc("/v1/video/list", cmd.GetVideoList)
@@ -83,10 +84,18 @@ func main() {
 	http.HandleFunc("/v1/video/private", cmd.PrivateVideo)
 	http.HandleFunc("/v1/video/types", cmd.GetVideoTypes)
 
+	http.HandleFunc("/v1/video/promote", cmd.PromoteVideo)
+	http.HandleFunc("/v1/video/advertise", cmd.AdvertiseVideo)
+
 	// video comment
 	http.HandleFunc("/v1/video/comment/list", cmd.GetVideoCommentList)
 	http.HandleFunc("/v1/video/comment/make", cmd.MakeVideoComment)
 	http.HandleFunc("/v1/video/comment/delete", cmd.DeleteVideoComment)
+
+	// video bullet comment
+	http.HandleFunc("/v1/video/bullet_comment/list", cmd.GetVideoBulletCommentList)
+	http.HandleFunc("/v1/video/bullet_comment/make", cmd.MakeVideoBulletComment)
+	http.HandleFunc("/v1/video/bullet_comment/delete", cmd.DeleteVideoBulletComment)
 
 	// search
 	http.HandleFunc("/v1/video/search", cmd.SearchVideo)
