@@ -73,6 +73,21 @@ export const routes: IRoute[] = [
     ignore: true,
   },
   {
+    name: 'menu.deposit',
+    key: 'deposit',
+    ignore: true,
+  },
+  {
+    name: 'menu.promotion',
+    key: 'promote',
+    ignore: true,
+  },
+  {
+    name: 'menu.advertisement',
+    key: 'advertise',
+    ignore: true,
+  },
+  {
     name: 'menu.exception',
     key: 'exception',
     ignore: true,

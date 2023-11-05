@@ -8,6 +8,7 @@ export interface GlobalState {
     username?: string;
     nickname?: string;
     avatar_url?: string;
+    balance?: number;
 
     permissions: Record<string, string[]>;
   };
@@ -19,8 +20,14 @@ const initialState: GlobalState = {
   settings: defaultSettings,
   isLogin: false,
   userInfo: {
+    username: '',
+    nickname: '',
+    avatar_url: '',
+    balance: 0,
+
     permissions: {},
   },
+  userLoading: false,
   baxios: null,
 };
 
@@ -34,7 +41,7 @@ export default function store(state = initialState, action) {
       };
     }
     case 'update-userInfo': {
-      const { userInfo = initialState.userInfo, userLoading, isLogin } = action.payload;
+      const { userInfo = state.userInfo, userLoading = state.userLoading, isLogin = state.isLogin } = action.payload;
       return {
         ...state,
         userInfo,

@@ -40,4 +40,6 @@ export interface VideoCard {
   play_url?: string;
 
   is_deleted?: boolean;
+  is_top?: boolean;
+  is_private?: boolean;
 }

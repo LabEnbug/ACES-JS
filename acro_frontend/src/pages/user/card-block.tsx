@@ -1,17 +1,11 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import cs from 'classnames';
 import {
-  Button,
-  Switch,
   Tag,
   Card,
-  Descriptions,
-  Typography,
   Dropdown,
   Menu,
-  Skeleton,
   Avatar,
-  Select,
   Popconfirm,
   Message,
 } from '@arco-design/web-react';
@@ -20,18 +14,15 @@ import locale from './locale';
 import { VideoCard } from './interface';
 import styles from './style/index.module.less';
 import { useRouter } from 'next/router';
-import videojs from 'video.js';
 import { Like } from '@icon-park/react';
-import IconButton from '@/components/NavBar/IconButton';
 import {
-  IconClockCircle,
   IconDelete,
   IconEdit,
-  IconEye,
+  IconEye, IconFire,
   IconHeartFill,
-  IconLiveBroadcast,
+  IconLiveBroadcast, IconLock,
   IconMore,
-  IconShake,
+  IconToTop, IconUnlock,
 } from '@arco-design/web-react/icon';
 import baxios from "@/utils/getaxios";
 
@@ -45,8 +36,6 @@ interface CardBlockType {
 
 function CardBlock(props: CardBlockType) {
   const { type, card, watching_username, onDelete } = props;
-  const [visible, setVisible] = useState(false);
-  const [loading, setLoading] = useState(props.loading);
   const [isVideoCardPopup, setIsVideoCardPopup] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
@@ -77,9 +66,69 @@ function CardBlock(props: CardBlockType) {
     });
   }
 
-  useEffect(() => {
-    setLoading(props.loading);
-  }, [props.loading]);
+  function topVideo() {
+    const params = new FormData();
+    params.append('video_uid', card.video_uid);
+    params.append('type', card.is_top ? 'untop' : 'top');
+    baxios
+      .post('/v1-api/v1/video/top', params)
+      .then((response) => {
+        const data = response.data;
+        if (data.status !== 200) {
+          console.error(data.err_msg);
+          Message.error({
+            content: '短视频' + (card.is_top ? '取消' : '') + '置顶失败！',
+            duration: 5000,
+          });
+          return;
+        }
+        Message.success({
+          content: '短视频' + (card.is_top ? '取消' : '') + '置顶成功！',
+          duration: 5000,
+        });
+        card.is_top = !card.is_top;
+      })
+      .catch((error) => {
+        console.error(error);
+      })
+      .finally(() => {
+        if (isVideoCardPopup) {
+          setIsVideoCardPopup(false);
+        }
+      });
+  }
+
+  function privateVideo() {
+    const params = new FormData();
+    params.append('video_uid', card.video_uid);
+    params.append('type', card.is_private ? 'unprivate' : 'private');
+    baxios
+      .post('/v1-api/v1/video/private', params)
+      .then((response) => {
+        const data = response.data;
+        if (data.status !== 200) {
+          console.error(data.err_msg);
+          Message.error({
+            content: '短视频' + (card.is_private ? '取消' : '') + '置顶失败！',
+            duration: 5000,
+          });
+          return;
+        }
+        Message.success({
+          content: '短视频' + (card.is_private ? '取消' : '') + '置顶成功！',
+          duration: 5000,
+        });
+        card.is_private = !card.is_private;
+      })
+      .catch((error) => {
+        console.error(error);
+      })
+      .finally(() => {
+        if (isVideoCardPopup) {
+          setIsVideoCardPopup(false);
+        }
+      });
+  }
 
   // parse time "2023-10-27T16:43:57+08:00" string to some like "3 days ago"
   const parseTime = (time: string) => {
@@ -169,6 +218,34 @@ function CardBlock(props: CardBlockType) {
       </div>
       {/* if saw before, show tag */}
       <div style={{ marginTop: '12px' }}>
+        {(card.is_private || card.is_top) && (
+          <div style={{ display: 'flex', marginBottom: '8px' }}>
+            {card.is_top && (
+            <div className={styles['video-card-extra-seen']}>
+              <Tag
+                icon={<IconToTop />}
+                style={{
+                  backgroundColor: 'rgba(var(--gray-8), 0.5)',
+                }}
+              >
+                置顶
+              </Tag>
+            </div>
+            )}
+            {card.is_private && (
+              <div className={styles['video-card-extra-seen']}>
+                <Tag
+                  icon={<IconLock />}
+                  style={{
+                    backgroundColor: 'rgba(var(--gray-8), 0.5)',
+                  }}
+                >
+                  私密
+                </Tag>
+              </div>
+            )}
+          </div>
+        )}
         {(card.is_user_liked || card.is_user_watched) && (
           <div style={{ display: 'flex', marginBottom: '8px' }}>
             {card.is_user_liked && (
@@ -210,6 +287,16 @@ function CardBlock(props: CardBlockType) {
                 }}
               >
                 <Menu.Item
+                  key="makeTop"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    topVideo();
+                  }}
+                >
+                  <IconToTop className={styles['video-dropdown-icon']} />
+                  视频{card.is_top&&'取消'}置顶
+                </Menu.Item>
+                <Menu.Item
                   key="edit"
                   onClick={(event) => {
                     event.stopPropagation();
@@ -224,11 +311,52 @@ function CardBlock(props: CardBlockType) {
                   <IconEdit className={styles['video-dropdown-icon']} />
                   编辑视频信息
                 </Menu.Item>
-                <Menu.Item key="promote">
+                <Menu.Item
+                  key="promote"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    router.push({
+                      pathname: `/promote`,
+                      query: {
+                        video_uid: card.video_uid,
+                      },
+                    });
+                  }}
+                >
+                  <IconFire
+                    className={styles['video-dropdown-icon']}
+                  />
+                  推广流量购买
+                </Menu.Item>
+                <Menu.Item
+                  key="advertise"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    router.push({
+                      pathname: `/advertise`,
+                      query: {
+                        video_uid: card.video_uid,
+                      },
+                    });
+                  }}
+                >
                   <IconLiveBroadcast
                     className={styles['video-dropdown-icon']}
                   />
-                  开启推广
+                  投放广告
+                </Menu.Item>
+                <Menu.Item
+                  key="makeTop"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    privateVideo();
+                  }}
+                >
+                  {card.is_private?(
+                    <IconUnlock className={styles['video-dropdown-icon']} />
+                  ):(
+                    <IconLock className={styles['video-dropdown-icon']} />
+                    )}{card.is_private?'取消':'设为'}私密
                 </Menu.Item>
                 <Menu.Item key="delete">
                   <Popconfirm

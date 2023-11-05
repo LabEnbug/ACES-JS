@@ -190,7 +190,7 @@ function PageLayout({ children }: { children: ReactNode }) {
     const routeConfig = routeMap.current.get(pathname);
     // setBreadCrumb(routeConfig || []);
     updateMenuStatus();
-    console.log(pathname);
+    console.log("layout.tsx", pathname);
   }, [pathname]);
 
   return (
