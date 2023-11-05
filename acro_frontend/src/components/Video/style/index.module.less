@@ -217,3 +217,134 @@
 
 .bullets-text-container-other {
 }
+
+/* 定义淡出和向上移动的动画 */
+@keyframes fadeOutMoveUp {
+0% {
+    opacity: 1;
+    top: 50%;
+}
+100% {
+    opacity: 0;
+    top: 0;
+}
+}
+
+@keyframes jumpAndFade {
+    0% {
+      transform: scale(0);
+      opacity: 0;
+    }
+    30% {
+      transform: scale(1.2);
+      opacity: 1;
+    }
+    50% {
+      transform: scale(0.9);
+    }
+    70% {
+      transform: scale(1.05);
+    }
+    100% {
+      transform: scale(1.5);
+      opacity: 0;
+    }
+}
+
+@keyframes bounceAndFadeOutUp {
+    0%, 20%, 50%, 80%, 100% {
+      transition-timing-function: cubic-bezier(0.215, 0.610, 0.355, 1.000);
+    }
+    0% {
+      opacity: 1;
+      transform: translateX(0) scale(0.95);
+    }
+    20% {
+      transform: translateX(-10px) scale(0.95);
+    }
+    50% {
+      transform: translateX(10px) scale(1.1);
+      opacity: 1;
+    }
+    80% {
+      transform: translateX(-5px) scale(1.05);
+    }
+    100% {
+      transform: translateY(-50px) scale(1.2);
+      opacity: 0;
+    }
+  }
+
+  @keyframes swingAndFadeOutUp {
+    0% {
+      transform: translateX(0);
+      opacity: 1;
+    }
+    20% {
+      transform: translateX(-15px) rotate(-5deg);
+    }
+    40% {
+      transform: translateX(10px) rotate(3deg);
+    }
+    60% {
+      transform: translateX(-5px) rotate(-3deg);
+    }
+    80% {
+      transform: translateX(2px) rotate(1deg);
+    }
+    100% {
+      transform: translateY(-100px) scale(1.2);
+      opacity: 0;
+    }
+  }
+
+
+  @keyframes shakeAndFadeOutUp {
+    0%, 100% {
+      transform: translateX(0) scale(1);
+      opacity: 1;
+    }
+    10%, 30%, 50%, 70%, 90% {
+      transform: translateX(-10px) scale(1);
+    }
+    20%, 40%, 60%, 80% {
+      transform: translateX(10px) scale(1);
+    }
+    100% {
+      transform: translateY(-100px) scale(1.5);
+      opacity: 0;
+    }
+  }
+
+  @keyframes twistAndFadeOutUp {
+    0% {
+      transform: rotate(0);
+      opacity: 1;
+    }
+    10% {
+      transform: rotate(-45deg);
+    }
+    15% {
+      transform: rotate(0);
+    }
+    20% {
+        transform: rotate(45deg);
+    }
+    25% {
+        transform: rotate(0deg);
+    }
+    75% {
+        transform: rotate(0deg)  scale(1.2) translateY(-100px);
+        opacity: 0.8;
+    }
+    100% {
+      transform: rotate(0) translateY(-150px) scale(1.5);
+      opacity: 0;
+    }
+  }
+
+/* 动画应用到.heart元素 */
+.heart-animate {
+    display: inline-block; 
+    animation: twistAndFadeOutUp 1s ease forwards;
+}

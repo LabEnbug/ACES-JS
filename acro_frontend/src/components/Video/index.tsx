@@ -7,6 +7,7 @@ import SideBar from './sidebar';
 import FootBar from './footbar';
 import BriefIntri from './brief_intro';
 import { Message, Tooltip } from '@arco-design/web-react';
+import { Like} from '@icon-park/react'
 import locale from './locale';
 import useLocale from '@/utils/useLocale';
 import cs from 'classnames';
@@ -49,7 +50,8 @@ function VideoPlayer({
   const screen = useRef(null);
   const bullets = useRef({index:0, all:[]});
   const [showbullet, setShowBullet] = useState(false);
-  
+  const [hearts, setHearts] = useState([]);
+
   const getRandomMargin = () => {
     return (bullets.current.index % 4) * 40;
   }
@@ -65,7 +67,7 @@ function VideoPlayer({
     user_id: -1,
   });
   const clickTimeout = useRef(null);
-
+  const clickTimeoutBullet = useRef(null);
   const closeBullet = ()=>{
     console.log(screen.current)
     if (!screen.current) {
@@ -207,7 +209,7 @@ function VideoPlayer({
       });
   };
 
-  const videoDoubleClick = () => {
+  const videoDoubleClick = (e) => {
     const item_name = 'is_user_like';
     const param = new FormData();
     const status =
@@ -230,6 +232,21 @@ function VideoPlayer({
       .catch((e) => {
         console.error(e);
       });
+      console.log(e);
+      const x = e.nativeEvent.layerX;
+      const y = e.nativeEvent.layerY;
+      // 创建一个新的心形并设置位置
+      const id1 = Math.random();
+      const id2 = Math.random();
+      const newHeart = { id:  id1, ele: (<Like id={id1.toString()} theme="filled" size="36" fill="red"/>), style: { left: x, top: y, position: 'absolute' }};
+      // 添加新的心形到数组中，并在一段时间后移除
+      setHearts([...hearts, newHeart]);
+      setTimeout(() => {
+        setHearts(pre=>([...pre, { id:  id2, ele: (<Like id={id2.toString()} theme="filled" size="36" fill="red"/>), style: { left: x, top: y, position: 'absolute' }}]));
+      } , 100);
+      setTimeout(() => {
+        setHearts((currentHearts) => currentHearts.filter(heart => ![id1, id2].includes(heart.id)));
+      }, 1500); // 动画持续时间后移除爱心
   };
 
   const clickfoward = () => {
@@ -482,7 +499,6 @@ function VideoPlayer({
     }
     if (hlsPlayList.length > 0) {
       getVideoInfo(hlsPlayList[realindex]['video_uid']);
-      console.log(hlsPlayList[realindex]);
     }
   }, [hlsPlayList, currentVideoIndex]);
 
@@ -522,20 +538,39 @@ function VideoPlayer({
     screen.current.clear();
     bullets.current.all.length = 0;
     bullets.current.index = 0;
-    const param = new FormData();
-    param.append('video_uid', videoinfo.video_uid);
-    param.append('limit', '50');
-    param.append('start', '0');
-    baxios.post('v1-api/v1/video/bullet_comment/list', param).then(res=> {
-      if (res.data.status == 200) {
-        const data = res.data.data.bullet_comment_list;
-        if (data)
-          bullets.current.all.push(...data);
-      } else Message.error('Can not fetch bullets');
-    }).catch(e=>{
-      console.error(e);
-      Message.error('Can not fetch bullets');
-    });
+
+    if (clickTimeoutBullet.current !== null) {
+      clearTimeout(clickTimeoutBullet.current); // 清除定时器
+      clickTimeoutBullet.current = null;
+    } 
+    const fetchMore= (offset)=>{
+      const param = new FormData();
+      param.append('video_uid', videoinfo.video_uid);
+      param.append('limit', '50');
+      param.append('start', `${offset}`);
+      clearTimeout(clickTimeoutBullet.current); 
+      clickTimeoutBullet.current = null;
+      baxios.post('v1-api/v1/video/bullet_comment/list', param).then(res=> {
+        if (res.data.status == 200) {
+          const data = res.data.data;
+          if (!data.bullet_comment_list || data.bullet_comment_list.length > 0) {
+            clearTimeout(clickTimeout.current); // 清除定时器
+            clickTimeout.current = null;
+            return;
+          }
+          if (data.bullet_comment_list) {
+            bullets.current.all.push(...data.bullet_comment_list);
+          }
+          clickTimeout.current = setTimeout(() => {
+            fetchMore(bullets.current.all.length);
+          }, 500); 
+        } else Message.error('Can not fetch bullets');
+      }).catch(e=>{
+        console.error(e);
+        Message.error('Can not fetch bullets');
+      });
+    }
+    fetchMore(0);
   }, [videoinfo.video_uid, screen.current])
 
   useEffect(() => {
@@ -582,7 +617,13 @@ function VideoPlayer({
           id="specified-area"
           className={`vjs-default-skin video-js ${styles['video-pos-js-9-16']}`}
           controls
-        ></video>
+        >
+        </video>
+        {hearts.map((heart) => (
+            <div key={heart.id} className={styles['heart-animate']} style={heart.style}>
+              {heart.ele}
+            </div>
+          ))}
         <SideBar
           videoinfo={videoinfo}
           userfavorite={userfavorite}

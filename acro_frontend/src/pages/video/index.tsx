@@ -32,7 +32,7 @@ function VideoP() {
 
   const reflectPlayIndex = (index) => {
     SetPlayIndex(index);
-    const pre_type = window.localStorage.getItem('pretype') || 'comprehensive';
+    const pre_type = window.sessionStorage.getItem('pretype') || 'comprehensive';
     if (playlist.length > 0) {
       router.push(
         {
@@ -69,21 +69,21 @@ function VideoP() {
   };
 
   useEffect(() => {
-    const pre_type = window.localStorage.getItem('pretype');
-
+    const pre_type = window.sessionStorage.getItem('pretype');
+    console.log(type, video_uid, playIndex)
     if (type != default_type && GetVideType(type) >= 999) {
       router.push('/video');
     }
     if (playlist.length == 0 || pre_type != type) {
       const param = new FormData();
-      param.append('limit', limit);
+      param.append('limit', limit.toString());
       // param.append('page', page)
       if (type != default_type) param.append('type', GetVideType(type));
       baxios
         .post('/v1-api/v1/video/list', param)
         .then((response) => {
           const data = response.data;
-          window.localStorage.setItem('pretype', type);
+          window.sessionStorage.setItem('pretype', type.toString());
           if (JudgeStatus(data)) {
             if (
               video_uid &&
@@ -91,7 +91,7 @@ function VideoP() {
               video_uid != data.data.video_list[playIndex]['video_uid']
             ) {
               const param1 = new FormData();
-              param1.append('video_uid', video_uid);
+              param1.append('video_uid', video_uid.toString());
               baxios
                 .post('v1-api/v1/video/info', param1)
                 .then((response1) => {
@@ -112,7 +112,7 @@ function VideoP() {
         });
     } else if (playIndex >= playlist.length - 3) {
       const param = new FormData();
-      param.append('limit', limit);
+      param.append('limit', limit.toString());
       if (type != default_type) param.append('type', GetVideType(type));
       param.append('start', playlist.length);
       baxios
@@ -127,7 +127,7 @@ function VideoP() {
           console.error(error);
         });
     }
-  }, [router.isReady, type, video_uid, playIndex]);
+  }, [type, video_uid, playIndex]);
 
   useEffect(() => {
     const lastHistoryState = window.history.state;
