@@ -6,18 +6,19 @@ import { createCanvas, loadImage } from 'canvas';
 import SideBar from './sidebar';
 import FootBar from './footbar';
 import BriefIntri from './brief_intro';
-import { Message } from '@arco-design/web-react';
+import { Message, Tooltip } from '@arco-design/web-react';
 import locale from './locale';
 import useLocale from '@/utils/useLocale';
 import cs from 'classnames';
 import SiderTabs from '@/components/SiderTabs';
 import baxios from "@/utils/getaxios";
+import BulletScreen, { StyledBullet } from 'rc-bullets';
+
 function VideoPlayer({
   hlsPlayList,
   playIndex,
   reflectPlayIndex,
   recordWatched,
-  options,
   ...props
 }) {
   const t = useLocale(locale);
@@ -45,6 +46,14 @@ function VideoPlayer({
   const [follow, SetFollow] = useState(false);
   const [commentvis, SetCommentVis] = useState(false);
   const [backgroundimage, SetBackGroundImage] = useState('');
+  const screen = useRef(null);
+  const bullets = useRef([]);
+  const [showbullet, setShowBullet] = useState(false);
+  
+  const getRandomMargin = () => {
+    return Math.floor(Math.random()*4) * 50;
+  }
+
   const [videoinfo, setVideoInfo] = useState({
     nickname: 'default',
     username: 'default',
@@ -56,6 +65,21 @@ function VideoPlayer({
     user_id: -1,
   });
   const clickTimeout = useRef(null);
+
+  const closeBullet = ()=>{
+    console.log(screen.current)
+    if (!screen.current) {
+      return;
+    } 
+    const state = screen.current.allHide;
+    if (state) {
+      screen.current.show();
+    } else {
+      screen.current.hide();
+    }
+    setShowBullet(screen.current.allHide);
+  };
+
   const JudgeStatus = (data: any) => {
     if (data.status != 200) {
       // Message.error(t['message.notfind'])
@@ -244,10 +268,11 @@ function VideoPlayer({
   };
 
   const clickPlay = () => {
-    if (!playstate) {
-      playerRef.current.pause();
-    } else {
+    const state = playerRef.current.paused();
+    if (state) {
       playerRef.current.play();
+    } else {
+      playerRef.current.pause();
     }
   };
 
@@ -263,6 +288,88 @@ function VideoPlayer({
   const setPlayBackRate = (e) => {
     playerRef.current.playbackRate(e);
   };
+
+  const generateBullet = (content, isSelf, nickname) => {
+    const marginT = getRandomMargin();
+    return (
+      <Tooltip position='top' trigger='hover' content={ isSelf ? t['tooltip.bullets.me'] : nickname }>
+        <div style={{marginTop: `${marginT}px`, background: 'transparent'}} className={isSelf ? styles['bullets-text-container-self'] :  styles['bullets-text-container-other']}>
+          <span className={styles['bullets-text-style']} > {content} </span>
+        </div>
+      </Tooltip>
+    )
+  }
+
+  const sendBullet = (e) => {
+    return new Promise((resolve, reject) => {
+      const bullet = e.target.value;
+
+      const param = new FormData();
+      param.append('video_uid', videoinfo.video_uid);
+      param.append('content', bullet);
+      param.append('comment_at', playerRef.current.currentTime().toString());
+      baxios.post('v1-api/v1/video/bullet_comment/make', param).then(res=> {
+        if (res.data.status == 200) {
+            bullets.current.splice(screen.current.bullets.length, 0, res.data.data.bullet_comment);
+            screen.current.push(
+              generateBullet(bullet, true, '')
+            )
+          resolve('success');
+          return;
+        }
+        Message.error('无法发送弹幕');
+        reject(e);
+      }).catch(e=>{
+        console.error(e);
+        reject(e);
+        Message.error('无法发送弹幕');
+      })
+    });
+  }
+
+  useEffect(()=> {
+    const registerScreen = ()=> {
+      const area = document.getElementById('video-player-container');
+      if (area) {
+        const s = new BulletScreen(area, {duration:10, top: '10px'});
+        screen.current = s;
+        setShowBullet(screen.current.allHide);
+      } else {
+        setTimeout(registerScreen, 50);
+      }
+    };
+    registerScreen();
+  }, []);
+
+  useEffect(()=>{
+    if (playerRef.current && screen.current) {
+      playerRef.current.on('play', () => {
+        screen.current.resume();
+        setFootBarVis(true);
+        setPlayState(false);
+        recordWatched();
+      });
+      playerRef.current.on('pause', () => {
+        screen.current.pause();
+        setPlayState(true);
+      });
+      playerRef.current.on('timeupdate', function () {
+        const currentPlayTime = playerRef.current.currentTime();
+        const totalDuration = playerRef.current.duration();
+        setTimeState({
+          now: currentPlayTime,
+          whole: totalDuration,
+        });
+        if (bullets.current.length <= screen.current.bullets.length) 
+          return;
+        const bull = bullets.current[screen.current.bullets.length];
+        if (bull.comment_at < currentPlayTime) {
+          console.log(bull);
+          screen.current.push(generateBullet(bull['content'], bull['user']['is_self'], bull['user']['nickname']))
+        }
+      });
+    }
+  }, [screen.current, playerRef.current])
 
   useEffect(() => {
     const upDateBackGround = (playerRef, url) => {
@@ -316,9 +423,7 @@ function VideoPlayer({
           doubleClick: false, // 值也可以是一个函数
           click: false,
         },
-        ...options,
       });
-
       playerRef.current.on('ended', () => {
         const autoNext = window.localStorage.getItem('autonext')
           ? JSON.parse(window.localStorage.getItem('autonext'))
@@ -329,26 +434,11 @@ function VideoPlayer({
           playerRef.current.currentTime(0);
           playerRef.current.play();
         }
+        screen.current.clear();
       });
       playerRef.current.on('ready', () => {
         setFullScreen(playerRef.current.isFullscreen());
         setVolume(Math.floor(playerRef.current.volume() * 100));
-      });
-      playerRef.current.on('play', () => {
-        setFootBarVis(true);
-        setPlayState(false);
-        recordWatched();
-      });
-      playerRef.current.on('pause', () => {
-        setPlayState(true);
-      });
-      playerRef.current.on('timeupdate', function () {
-        const currentPlayTime = playerRef.current.currentTime();
-        const totalDuration = playerRef.current.duration();
-        setTimeState({
-          now: currentPlayTime,
-          whole: totalDuration,
-        });
       });
       playerRef.current.on('volumechange', function () {
         setVolume(Math.floor(playerRef.current.volume() * 100));
@@ -388,14 +478,13 @@ function VideoPlayer({
       getVideoInfo(hlsPlayList[realindex]['video_uid']);
       console.log(hlsPlayList[realindex]);
     }
-  }, [hlsPlayList, options, currentVideoIndex]);
+  }, [hlsPlayList, currentVideoIndex]);
 
   useEffect(() => {
     const player = playerRef.current;
 
     return () => {
       if (player && !player.isDisposed()) {
-        console.log(123);
         player.dispose();
         playerRef.current = null;
       }
@@ -419,14 +508,36 @@ function VideoPlayer({
     return () => {
       window.removeEventListener('wheel', handleMouseWheel);
     };
-  }, [hlsPlayList, currentVideoIndex]);
+  }, []);
+
+  useEffect(()=>{
+    if (!videoinfo.video_uid) return;
+    if (!screen.current) return;
+    screen.current.clear();
+    bullets.current.length = 0;
+    const param = new FormData();
+    param.append('video_uid', videoinfo.video_uid);
+    param.append('limit', '50');
+    param.append('start', '0');
+    baxios.post('v1-api/v1/video/bullet_comment/list', param).then(res=> {
+      if (res.data.status == 200) {
+        const data = res.data.data.bullet_comment_list;
+        if (data)
+          bullets.current.push(...data);
+      } else Message.error('Can not fetch bullets');
+    }).catch(e=>{
+      console.error(e);
+      Message.error('Can not fetch bullets');
+    });
+  }, [videoinfo.video_uid, screen.current])
 
   useEffect(() => {
     const handleKeyDown = (event) => {
       const specifiedArea = document.getElementById('specified-area');
       if (specifiedArea && specifiedArea.contains(event.target)) {
         if (event.keyCode == 32) {
-          if (!playstate) {
+          const state = playerRef.current.paused();
+          if (!state) {
             playerRef.current.pause();
           } else {
             playerRef.current.play();
@@ -443,9 +554,10 @@ function VideoPlayer({
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => {
+      console.log('sakdklsadjasjdlaksjd')
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [playstate, currentVideoIndex, playerRef]);
+  }, [ playerRef ]);
 
   return (
     <div
@@ -456,7 +568,7 @@ function VideoPlayer({
         minWidth: 680,
       }}
     >
-      <div data-vjs-player className={styles['video-container']}>
+      <div data-vjs-player id='video-player-container' className={styles['video-container']}>
         <video
           ref={videoRef}
           onClick={handlePlayerClick}
@@ -501,6 +613,10 @@ function VideoPlayer({
           setplaybackrate={setPlayBackRate}
           fullscreen={fullscreen}
           fullscreenchange={changeFullScreen}
+          video_place='specified-area'
+          sendBullet={sendBullet}
+          closeBullet={closeBullet}
+          bulletState={showbullet}
         />
         <BriefIntri videoinfo={videoinfo} />
       </div>

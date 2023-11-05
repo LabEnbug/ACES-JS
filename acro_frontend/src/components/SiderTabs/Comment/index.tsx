@@ -3,7 +3,6 @@ import {  Tabs, Typography, Comment, Avatar, Input, Tooltip, Message, Button } f
 import useLocale from '@/utils/useLocale';
 import locale from './locale';
 import styles from './style/index.module.less';
-import GetUserInfo from "@/utils/getuserinfo";
 import Replay from './replay';
 import baxios from "@/utils/getaxios";
 import { useSelector, useDispatch } from 'react-redux';
@@ -226,10 +225,6 @@ function CommentDrawer(props) {
               <TextArea
                 className={styles['comment-input']}
                 placeholder={ isLogin ? t['comment.input.placeholder'] :   t['comment.input.placeholder.plslog']}
-                // autoSize={{ minRows: 1, maxRows: 3 }}
-                // searchButton='Search'
-                // maxLength={120}
-                // showWordLimit
                 value = {valuebottom}
                 onChange={(e)=>{
                   setValueBottom(e)

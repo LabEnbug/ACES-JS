@@ -1,12 +1,14 @@
-import React, { forwardRef, useState } from 'react';
-import { Button, Tooltip, Space, Slider, Switch, Select, } from '@arco-design/web-react';
+import React, { forwardRef, useState, useEffect } from 'react';
+import { Button, Tooltip, Space, Slider, Switch, Select, Input, Avatar} from '@arco-design/web-react';
 import styles from './style/index.module.less';
 import cs from 'classnames';
-import { IconSound, IconMute } from '@arco-design/web-react/icon';
+import { IconSound, IconMute, IconUser } from '@arco-design/web-react/icon';
 import { FullScreen, OffScreen } from '@icon-park/react'
-import { PlayOne, Pause } from '@icon-park/react'
+import { PlayOne, Pause, Check, CheckOne, MoreTwo } from '@icon-park/react'
 import locale from './locale';
 import useLocale from '@/utils/useLocale';
+import { useSelector } from 'react-redux';
+import { GlobalState } from '@/store';
 
 function secondsToTimeFormat(seconds) {
     const minutes = Math.floor(seconds / 60);
@@ -52,9 +54,25 @@ function IconButton(props) {
 }
 
 function FootBar(props, ref) {
-  const { visible, playstate, timestate, playclick, volume, volumechange, autostate, setauto, playbackrate, setplaybackrate, fullscreen, fullscreenchange } = props;
+  const { visible, 
+          playstate, 
+          timestate, 
+          playclick, 
+          volume, 
+          volumechange, 
+          autostate, 
+          setauto, 
+          playbackrate, 
+          setplaybackrate, 
+          fullscreen, 
+          fullscreenchange,
+          sendBullet,
+          closeBullet,
+          bulletState,
+        } = props;
   const t = useLocale(locale);
-
+  const [bullet, setBullet] = useState('');
+  const { isLogin } = useSelector((state: GlobalState) => state);
   return (
     <div>
         {
@@ -74,6 +92,40 @@ function FootBar(props, ref) {
                         />
                         <p className={styles['foot-time']}>{secondsToTimeFormat(timestate['now'])} {'/'} {secondsToTimeFormat(timestate['whole'])} </p>
                         <VolumeSlider value={volume} onChange={volumechange} />
+                        <div style={{marginLeft: '5px'}}>
+                            <Input
+                                addBefore={(
+                                    <Tooltip position='top' trigger='hover' content={ bulletState ? t['tooltip.bullets.open'] : t['tooltip.bullets.close'] }>
+                                        <Avatar
+                                            size={24}
+                                            shape='square'
+                                            triggerIcon={ bulletState ? <MoreTwo theme="filled" size="8" fill="#000000"/> : <Check theme="filled" size="8" fill="#ff2c55"/> }
+                                            triggerIconStyle={{
+                                                background: 'transparent'
+                                            }}
+                                            autoFixFontSize={true}
+                                            onClick={closeBullet}
+                                            style={{
+                                                backgroundColor: '#ffffff',
+                                            }}>
+                                            <span style={{color:'#000000'}}>弹</span>
+                                        </Avatar>
+                                    </Tooltip>
+                                    )}
+                                placeholder={isLogin ? t['comment.input.placeholder'] :   t['comment.input.placeholder.plslog']}
+                                value={bullet}
+                                onChange={(e)=>{setBullet(e)}}
+                                onPressEnter={(e)=>{
+                                    sendBullet(e).then(res=>{
+                                        setBullet('');
+                                    }).catch((err)=>{
+                                        console.error(err);
+                                    });
+                                }}
+                                disabled={!isLogin}
+                            />
+                        </div>
+                        {/* <Button onClick={handleSend}>发送</Button> */}
                     </div>
                     <div className={styles['foot-group-right']}>
                         <Switch checkedText={t['footbar.auto']} uncheckedText={t['footbar.auto']} onChange={setauto} defaultChecked={autostate} className={autostate ? styles['foot-autoplay-on'] : styles['foot-autoplay-off']}/>

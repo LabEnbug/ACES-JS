@@ -7159,6 +7159,13 @@ rbush@^3.0.1:
   dependencies:
     quickselect "^2.0.0"
 
+rc-bullets@^1.5.16:
+  version "1.5.16"
+  resolved "https://registry.yarnpkg.com/rc-bullets/-/rc-bullets-1.5.16.tgz#a4c983c0bd4aa758836c9d99a556191e843e0b5e"
+  integrity sha512-TJp6n7LEXFcOvWxcZXKzZYhNNaH7LK8DqD6yq+9zxg++6Le5s3CZKojjGCE8Ylofv8l0g7Hq9JR5y/KUzO30RA==
+  dependencies:
+    color-convert "^2.0.1"
+
 react-blur@^1.1.1:
   version "1.1.1"
   resolved "https://registry.yarnpkg.com/react-blur/-/react-blur-1.1.1.tgz#3b1b816a6df4e5416beea936b979379b70fb9d7a"

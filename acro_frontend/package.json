@@ -34,6 +34,7 @@
     "node-vibrant": "^3.2.1-alpha.1",
     "nprogress": "^0.2.0",
     "query-string": "^7.0.1",
+    "rc-bullets": "^1.5.16",
     "react": "17.0.2",
     "react-blur": "^1.1.1",
     "react-color": "^2.19.3",

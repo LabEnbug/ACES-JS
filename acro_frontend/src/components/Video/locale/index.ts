@@ -11,7 +11,12 @@ const i18n = {
     'message.share.failed': 'Share failed!',
     'tooltip.follow': 'follow',
     'tooltip.unfollow': 'unfollow',
-    'message.notlog': 'Please login first!'
+    'message.notlog': 'Please login first!',
+    'tooltip.bullets.me': 'Me',
+    'tooltip.bullets.open': 'Show bullets',
+    'tooltip.bullets.close': 'hide bullets',
+    'comment.input.placeholder.plslog': 'Please login in.',
+    'comment.input.placeholder': 'Express your feeling',
   },
   'zh-CN': {
     'footbar.auto': '连播',
@@ -26,6 +31,11 @@ const i18n = {
     'tooltip.follow': '关注',
     'tooltip.unfollow': '取消关注',
     'message.notlog': '请先登录',
+    'tooltip.bullets.me': '我',
+    'tooltip.bullets.open': '显示弹幕',
+    'tooltip.bullets.close': '关闭弹幕',
+    'comment.input.placeholder.plslog': '请登陆后发表。',
+    'comment.input.placeholder': '畅所欲言',
   },
 };
 
