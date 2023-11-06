@@ -237,7 +237,7 @@ func checkVideoActionHistory(videoId uint, userId uint, actionType string) (mode
 	return videoAction, err
 }
 
-func DoVideoAction(videoId uint, userId uint, actionType string) (bool, int) {
+func GuestLikeOrFavoriteVideo(videoId uint, userId uint, actionType string) (bool, int) {
 	videoAction, err := checkVideoActionHistory(videoId, userId, actionType)
 	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		if config.ShowLog {
@@ -295,15 +295,13 @@ func DoVideoAction(videoId uint, userId uint, actionType string) (bool, int) {
 			}
 			return false, 9999
 		}
-	case "forward":
-
 	default:
 		return false, 9999
 	}
 	return true, 0
 }
 
-func GuestWatchedVideo(videoId uint, userId uint) bool {
+func GuestWatchVideo(videoId uint, userId uint) bool {
 	if _, err := DB.Exec("INSERT INTO video_watch (video_id, user_id, watch_time) VALUES (?, ?, NOW())", videoId, userId); err != nil {
 		if config.ShowLog {
 			funcName, _, _, _ := runtime.Caller(0)
@@ -396,7 +394,7 @@ func DeleteVideo(videoUid string) bool {
 	return true
 }
 
-func TopVideo(videoUid string, actionType string) bool {
+func UserTopOrPrivateVideo(videoUid string, actionType string) bool {
 	if actionType == "top" {
 		if _, err := DB.Exec("UPDATE video SET top=now() WHERE video_uid=?", videoUid); err != nil {
 			return false
@@ -405,12 +403,7 @@ func TopVideo(videoUid string, actionType string) bool {
 		if _, err := DB.Exec("UPDATE video SET top=NULL WHERE video_uid=?", videoUid); err != nil {
 			return false
 		}
-	}
-	return true
-}
-
-func PrivateVideo(videoUid string, actionType string) bool {
-	if actionType == "private" {
+	} else if actionType == "private" {
 		if _, err := DB.Exec("UPDATE video SET private=1 WHERE video_uid=?", videoUid); err != nil {
 			return false
 		}

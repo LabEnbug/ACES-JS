@@ -43,10 +43,9 @@ const actions = (props)=> {
         Message.error(t['comment.input.enter.empty']);
         return;
       }
-      param.append('video_uid', uid);
       param.append('content', e.target.value);
       param.append('quote_comment_id', comment_id.toString());
-      baxios.post('v1-api/v1/video/comment/make', param).then(res=> {
+      baxios.post('v1-api/v1/videos/' + uid + '/comments', param).then(res=> {
         if (JudgeStatus(res.data)) {
           const data = res.data.data;
           Message.info(t['comment.input.post.success']);

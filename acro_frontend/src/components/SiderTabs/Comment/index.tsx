@@ -24,14 +24,13 @@ function CommentDrawer(props) {
       const atBottom = e.target.scrollHeight - e.target.scrollTop === e.target.clientHeight;
       if (atBottom) {
         // div滚动到底部时的逻辑处理
-        const param = new FormData();
 
-        param.append('video_uid', videoinfo['video_uid']);
-        param.append('limit', '10');
-        param.append('start', Object.keys(comment).length.toString());
-        param.append('comment_id', '0');
-
-        baxios.post('v1-api/v1/video/comment/list', param).then(res=>{
+        baxios.get(
+          'v1-api/v1/videos/' + videoinfo['video_uid'] + '/comments' + '?' +
+          'limit=' + '10' + '&' +
+          'start=' + Object.keys(comment).length.toString() + '&' +
+          'comment_id=' + '0'
+        ).then(res=>{
           if (res.data.status === 200) {
             const news = {}
             res.data.data.comment_list.forEach(item => {
@@ -56,13 +55,13 @@ function CommentDrawer(props) {
     };
 
     const fetchMoreComment = (comment_id, offset) => {
-      const param = new FormData();
-      param.append('video_uid', videoinfo['video_uid']);
-      param.append('limit', '5');
-      param.append('start',offset.toString());
-      param.append('comment_id', comment_id.toString());
 
-      baxios.post('v1-api/v1/video/comment/list', param).then(res=>{
+      baxios.get(
+        'v1-api/v1/videos/' + videoinfo['video_uid'] + '/comments' + '?' +
+        'limit=' + '5' + '&' +
+        'start=' + offset.toString() + '&' +
+        'comment_id=' + comment_id.toString()
+      ).then(res=>{
         if (res.data.status === 200) {
           commentS[comment_id] = commentS[comment_id].concat(res.data.data.child_comment_list);
           
@@ -153,10 +152,9 @@ function CommentDrawer(props) {
           Message.error(t['comment.input.enter.empty']);
           return;
         }
-        param.append('video_uid', uid);
         param.append('content', e.target.value);
         param.append('quote_comment_id', '0');
-        baxios.post('v1-api/v1/video/comment/make', param).then(res=> {
+        baxios.post('v1-api/v1/videos/' + uid + '/comments', param).then(res=> {
           if (JudgeStatus(res.data)) {
             const data = res.data.data;
             Message.info(t['comment.input.post.success']);
@@ -184,15 +182,15 @@ function CommentDrawer(props) {
 
 
     useEffect(()=> {
-      const param = new FormData();
       SetCommentS({});
       SetComment([]);
-      param.append('video_uid', videoinfo['video_uid']);
-      param.append('limit', '20');
-      param.append('start', Object.keys(comment).length.toString());
-      param.append('comment_id', '0');
 
-      baxios.post('v1-api/v1/video/comment/list', param).then(res=>{
+      baxios.get(
+        'v1-api/v1/videos/' + videoinfo['video_uid'] + '/comments' + '?' +
+        'limit=' + '20' + '&' +
+        'start=' + Object.keys(comment).length.toString() + '&' +
+        'comment_id=' + '0'
+      ).then(res=>{
         if (res.data.status === 200) {
             const news = {}
             res.data.data.comment_list.forEach(item => {

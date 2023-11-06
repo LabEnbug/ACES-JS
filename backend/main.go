@@ -58,46 +58,41 @@ func main() {
 
 	r := mux.NewRouter()
 
+	r.HandleFunc("/", defaultPage).Methods("GET")
+
 	// user
 	r.HandleFunc("/v1/user/login", cmd.Login).Methods("POST")
-	r.HandleFunc("/v1/user/logout", cmd.Logout).Methods("POST")
+	r.HandleFunc("/v1/user/logout", cmd.Logout).Methods("GET", "POST")
 	r.HandleFunc("/v1/user/signup", cmd.Signup).Methods("POST")
 	r.HandleFunc("/v1/user/info", cmd.GetUserInfo).Methods("GET")
 	r.HandleFunc("/v1/user/info", cmd.SetUserInfo).Methods("PUT")
 	r.HandleFunc("/v1/users/{username}", cmd.GetOtherUserInfo).Methods("GET")
-	r.HandleFunc("/v1/user/follow", cmd.FollowUser).Methods("POST")
+	r.HandleFunc("/v1/users/{username}/follow", cmd.FollowUser).Methods("POST", "DELETE")
 	r.HandleFunc("/v1/user/deposit", cmd.UserDeposit).Methods("POST")
 
 	// video
 	http.HandleFunc("/v1/video/userRecomList", cmd.GetRecommendVideoList)
 	r.HandleFunc("/v1/videos", cmd.GetVideoList).Methods("GET")
-	r.HandleFunc("/v1/video/{videoUid}", cmd.GetVideoInfo).Methods("GET")
-	r.HandleFunc("/v1/video/{videoUid}", cmd.SetVideoInfo).Methods("PUT")
-	r.HandleFunc("/v1/video/{videoUid}", cmd.DeleteVideo).Methods("DELETE")
-	r.HandleFunc("/v1/video/action", cmd.DoVideoAction).Methods("POST")
-	r.HandleFunc("/v1/video/watch", cmd.RecordWatchedVideo).Methods("POST")
-	r.HandleFunc("/v1/video/forward", cmd.GuestForwardVideo).Methods("POST")
+	r.HandleFunc("/v1/videos/{videoUid}", cmd.GetVideoInfo).Methods("GET")
+	r.HandleFunc("/v1/videos/{videoUid}", cmd.SetVideoInfo).Methods("PUT")
+	r.HandleFunc("/v1/videos/{videoUid}", cmd.DeleteVideo).Methods("DELETE")
+	r.HandleFunc("/v1/videos/{videoUid}/actions/{action}", cmd.HandleVideoAction).Methods("POST", "DELETE")
 
-	r.HandleFunc("/v1/video/upload", cmd.UploadVideo).Methods("POST")                // [deprecated] file and info add together
-	r.HandleFunc("/v1/video/uploadRemote", cmd.UploadVideoRemote).Methods("POST")    // add info first, upload to qiniu directly from source, admin usage
-	r.HandleFunc("/v1/video/upload/file", cmd.UploadVideoFile).Methods("POST")       // upload file first, save in server, user usage step 1
-	r.HandleFunc("/v1/video/upload/confirm", cmd.ConfirmVideoUpload).Methods("POST") // confirm publish, upload from server to qiniu, user usage step 2
-	r.HandleFunc("/v1/video/top", cmd.TopVideo).Methods("POST")
-	r.HandleFunc("/v1/video/private", cmd.PrivateVideo).Methods("POST")
-	r.HandleFunc("/v1/video/types", cmd.GetVideoTypes).Methods("POST")
-
-	r.HandleFunc("/v1/video/promote", cmd.PromoteVideo).Methods("POST")
-	r.HandleFunc("/v1/video/advertise", cmd.AdvertiseVideo).Methods("POST")
+	//r.HandleFunc("/v1/video/upload", cmd.UploadVideo).Methods("POST")                // [deprecated] file and info add together
+	//r.HandleFunc("/v1/video/uploadRemote", cmd.UploadVideoRemote).Methods("POST")    // add info first, upload to qiniu directly from source, admin usage
+	r.HandleFunc("/v1/video/upload", cmd.UploadVideoFile).Methods("POST")              // upload file first, save in server, user usage step 1
+	r.HandleFunc("/v1/video/upload/{videoUid}", cmd.ConfirmVideoUpload).Methods("PUT") // confirm publish, upload from server to qiniu, user usage step 2
+	r.HandleFunc("/v1/video/types", cmd.GetVideoTypes).Methods("GET")
 
 	// video comment
-	r.HandleFunc("/v1/video/comment/list", cmd.GetVideoCommentList).Methods("POST")
-	r.HandleFunc("/v1/video/comment/make", cmd.MakeVideoComment).Methods("POST")
-	r.HandleFunc("/v1/video/comment/delete", cmd.DeleteVideoComment).Methods("POST")
+	r.HandleFunc("/v1/videos/{videoUid}/comments", cmd.GetVideoCommentList).Methods("GET")
+	r.HandleFunc("/v1/videos/{videoUid}/comments", cmd.MakeVideoComment).Methods("POST")
+	r.HandleFunc("/v1/videos/{videoUid}/comments/{commentId}", cmd.DeleteVideoComment).Methods("DELETE")
 
 	// video bullet comment
-	r.HandleFunc("/v1/video/bullet_comment/list", cmd.GetVideoBulletCommentList).Methods("POST")
-	r.HandleFunc("/v1/video/bullet_comment/make", cmd.MakeVideoBulletComment).Methods("POST")
-	r.HandleFunc("/v1/video/bullet_comment/delete", cmd.DeleteVideoBulletComment).Methods("POST")
+	r.HandleFunc("/v1/videos/{videoUid}/bullet_comments", cmd.GetVideoBulletCommentList).Methods("GET")
+	r.HandleFunc("/v1/videos/{videoUid}/bullet_comments", cmd.MakeVideoBulletComment).Methods("POST")
+	r.HandleFunc("/v1/videos/{videoUid}/bullet_comments/{bulletCommentId}", cmd.DeleteVideoBulletComment).Methods("DELETE")
 
 	// search
 	r.HandleFunc("/v1/search/video", cmd.SearchVideo).Methods("GET")

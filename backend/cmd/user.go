@@ -18,7 +18,6 @@ import (
 	"os"
 	"path"
 	"runtime"
-	"strconv"
 	"strings"
 )
 
@@ -33,14 +32,6 @@ func Login(w http.ResponseWriter, r *http.Request) {
 	status := 200
 	data := map[string]interface{}{}
 	errorMsg := ""
-
-	// check method, only accept POST
-	if r.Method != "POST" {
-		status = 0
-		errorMsg = "Invalid request method."
-		SendJSONResponse(w, status, data, errorMsg)
-		return
-	}
 
 	// parse form
 	err := r.ParseMultipartForm(config.MaxNormalPostSize64)
@@ -107,14 +98,6 @@ func Logout(w http.ResponseWriter, r *http.Request) {
 	data := map[string]interface{}{}
 	errorMsg := ""
 
-	// check method
-	if r.Method != "GET" && r.Method != "POST" {
-		status = 0
-		errorMsg = "Invalid request method."
-		SendJSONResponse(w, status, data, errorMsg)
-		return
-	}
-
 	// check user
 	tokenValid, _, _, token := FindAndCheckToken(r)
 	if !tokenValid {
@@ -150,14 +133,6 @@ func Signup(w http.ResponseWriter, r *http.Request) {
 	status := 200
 	data := map[string]interface{}{}
 	errorMsg := ""
-
-	// check method, only accept POST
-	if r.Method != "POST" {
-		status = 0
-		errorMsg = "Invalid request method."
-		SendJSONResponse(w, status, data, errorMsg)
-		return
-	}
 
 	// parse form
 	err := r.ParseMultipartForm(config.MaxNormalPostSize64)
@@ -302,23 +277,12 @@ func GetOtherUserInfo(w http.ResponseWriter, r *http.Request) {
 
 func FollowUser(w http.ResponseWriter, r *http.Request) {
 	/*
-	 * @api {post} /v1/user/follow Follow user
+	 * @api {post|delete} /v1/users/{username}/follow Follow user
 	 * @apiName FollowUser
-	 *
-	 * @apiParam {String} username Username.
-	 * @apiParam {String} action Follow or Unfollow.
 	 */
 	status := 200
 	data := map[string]interface{}{}
 	errorMsg := ""
-
-	// check method, only accept POST
-	if r.Method != "POST" {
-		status = 0
-		errorMsg = "Invalid request method."
-		SendJSONResponse(w, status, data, errorMsg)
-		return
-	}
 
 	// check token
 	tokenValid, userId, _, _ := FindAndCheckToken(r)
@@ -329,27 +293,18 @@ func FollowUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// parse form
-	err := r.ParseMultipartForm(config.MaxNormalPostSize64)
-	if err != nil {
-		status = 0
-		errorMsg = "Failed to parse form."
-		SendJSONResponse(w, status, data, errorMsg)
-		return
-	}
-	queryUserIdTmp, _ := strconv.ParseUint(r.PostFormValue("user_id"), 10, 32)
-	queryUserId := uint(queryUserIdTmp)
-	queryAction := r.PostFormValue("action")
+	vars := mux.Vars(r)
+	queryUsername := vars["username"]
 
 	// check user
-	queryUser, userExist, _ := mysql.GetUserInfoById(queryUserId, userId)
+	user, userExist := mysql.GetUserInfoByUsername(queryUsername, userId)
 	if !userExist {
 		status = 0
 		errorMsg = "User not found."
 		SendJSONResponse(w, status, data, errorMsg)
 		return
 	}
-	if queryUser.Id == userId {
+	if user.Id == userId {
 		status = 0
 		errorMsg = "Cannot follow yourself."
 		SendJSONResponse(w, status, data, errorMsg)
@@ -357,13 +312,13 @@ func FollowUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// check if already followed
-	isFollowed := mysql.CheckUserFollowed(queryUserId, userId)
-	if queryAction == "follow" && isFollowed {
+	isFollowed := mysql.CheckUserFollowed(user.Id, userId)
+	if r.Method == "POST" && isFollowed {
 		status = 200
 		errorMsg = "Already followed."
 		SendJSONResponse(w, status, data, errorMsg)
 		return
-	} else if queryAction == "unfollow" && !isFollowed {
+	} else if r.Method == "DELETE" && !isFollowed {
 		status = 200
 		errorMsg = "Already unfollowed."
 		SendJSONResponse(w, status, data, errorMsg)
@@ -371,7 +326,13 @@ func FollowUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// follow or unfollow user
-	ok := mysql.FollowUser(queryUserId, userId, queryAction)
+	var ok bool
+	if r.Method == "POST" {
+		ok = mysql.FollowUser(user.Id, userId, "follow")
+	} else if r.Method == "DELETE" {
+		ok = mysql.FollowUser(user.Id, userId, "unfollow")
+	}
+
 	if !ok {
 		status = 0
 		errorMsg = "Unknown error."
@@ -394,14 +355,6 @@ func SetUserInfo(w http.ResponseWriter, r *http.Request) {
 	status := 200
 	data := map[string]interface{}{}
 	errorMsg := ""
-
-	//// check method, only accept POST
-	//if r.Method != "POST" {
-	//	status = 0
-	//	errorMsg = "Invalid request method."
-	//	SendJSONResponse(w, status, data, errorMsg)
-	//	return
-	//}
 
 	// check token
 	tokenValid, userId, _, _ := FindAndCheckToken(r)

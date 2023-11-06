@@ -56,7 +56,7 @@ function VideoP() {
     console.log(pre);
     if (uid && pre != uid) {
       baxios
-        .post('/v1-api/v1/video/watch', param)
+        .post('/v1-api/v1/videos/' + uid.toString() + '/actions' + 'watch')
         .then((response) => {
           window.sessionStorage.setItem('playvideo-pre-id', uid);
         })
@@ -75,8 +75,8 @@ function VideoP() {
     if (playlist.length == 0 || pre_type != type) {
       // param.append('page', page)
       baxios
-        .get('/v1-api/v1/videos?' + 'limit=' + limit + '&' +
-          (type != default_type ? 'type=' + GetVideType(type) : ''))
+        .get('/v1-api/v1/videos?' + 'limit=' + limit +
+          ('&' + type != default_type ? 'type=' + GetVideType(type) : ''))
         .then((response) => {
           const data = response.data;
           window.sessionStorage.setItem('pretype', type.toString());
@@ -87,7 +87,7 @@ function VideoP() {
               video_uid != data.data.video_list[playIndex]['video_uid']
             ) {
               baxios
-                .get('/v1-api/v1/video/' + video_uid.toString())
+                .get('/v1-api/v1/videos/' + video_uid.toString())
                 .then((response1) => {
                   if (JudgeStatus(response1.data)) {
                     data.data.video_list.unshift(response1.data.data.video);

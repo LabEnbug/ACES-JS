@@ -105,13 +105,10 @@ function CardBlock(props) {
 
   const followUser = (follow) => {
     setFollowLoading(true);
-    const params = new FormData();
-    params.append('user_id', card.user_id);
-    params.append('action', follow ? 'unfollow' : 'follow');
     // sleep 1000ms
     setTimeout(() => {
-      baxios
-        .post('/v1-api/v1/user/follow', params)
+      (follow ? baxios.delete : baxios.post)
+      ('/v1-api/v1/users/' + card.username + '/follow')
         .then((response) => {
           const data = response.data;
           if (data.status !== 200) {

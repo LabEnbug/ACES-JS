@@ -48,6 +48,7 @@ const i18n = {
     'cardBlock.user.cancel': '取消',
     'cardBlock.user.already': '已经',
     'cardBlock.user.followed': '关注',
+    'cardBlock.user.follow': '关注',
     'cardBlock.user.follower': '粉丝',
     'cardBlock.user.liked': '获赞',
     'cardBlock.user.view': '浏览量',

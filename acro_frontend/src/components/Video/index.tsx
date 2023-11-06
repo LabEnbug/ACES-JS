@@ -114,7 +114,7 @@ function VideoPlayer({
 
   const getVideoInfo = (uid) => {
     baxios
-      .get('/v1-api/v1/video/' + uid.toString())
+      .get('/v1-api/v1/videos/' + uid.toString())
       .then((res) => {
         if (JudgeStatus(res.data)) {
           const video = res.data.data.video;
@@ -153,13 +153,9 @@ function VideoPlayer({
       window.localStorage.getItem('follow') == null
         ? false
         : JSON.parse(window.localStorage.getItem('follow'));
-    const action = status ? `unfollow` : `follow`;
-    const param = new FormData();
-    param.append('action', action);
-    param.append('user_id', videoinfo['user_id'].toString());
 
-    baxios
-      .post('v1-api/v1/user/follow', param)
+    (status ? baxios.delete : baxios.post)
+    ('/v1-api/v1/users/' + videoinfo.username + '/follow')
       .then((res) => {
         if (JudgeStatus(res.data)) {
           window.localStorage.setItem(`follow`, (!status).toString());
@@ -179,13 +175,8 @@ function VideoPlayer({
       window.localStorage.getItem(item_name) == null
         ? false
         : JSON.parse(window.localStorage.getItem(item_name));
-    const action = status ? `un${a_type}` : `${a_type}`;
-    const param = new FormData();
-
-    param.append('action', action);
-    param.append('video_uid', videoinfo['video_uid']);
-    baxios
-      .post('v1-api/v1/video/action', param)
+    (status ? baxios.delete : baxios.post)
+    ('v1-api/v1/videos/' + videoinfo['video_uid'] + "/actions/" + a_type)
       .then((res) => {
         if (JudgeStatus(res.data)) {
           if (status) {
@@ -209,15 +200,12 @@ function VideoPlayer({
 
   const videoDoubleClick = (e) => {
     const item_name = 'is_user_like';
-    const param = new FormData();
     const status =
       window.localStorage.getItem(item_name) == null
         ? false
         : JSON.parse(window.localStorage.getItem(item_name));
-    param.append('action', 'like');
-    param.append('video_uid', videoinfo['video_uid']);
     baxios
-      .post('v1-api/v1/video/action', param)
+      .post('v1-api/v1/videos/' + videoinfo['video_uid'] + '/actions/' + 'like')
       .then((res) => {
         if (JudgeStatus(res.data)) {
           SetUserLike(true);
@@ -248,8 +236,6 @@ function VideoPlayer({
   };
 
   const clickfoward = () => {
-    const param = new FormData();
-    param.append('video_uid', videoinfo['video_uid']);
     const currentURL = window.location.href;
     const textArea = document.createElement('textarea');
     textArea.value = currentURL;
@@ -259,7 +245,7 @@ function VideoPlayer({
     try {
       document.execCommand('copy');
       baxios
-        .post('v1-api/v1/video/forward', param)
+        .post('v1-api/v1/videos/' + videoinfo['video_uid'] + '/actions/' + 'forward')
         .then((res) => {})
         .catch((e) => {
           console.error(e);
@@ -320,10 +306,9 @@ function VideoPlayer({
       const bullet = e.target.value;
 
       const param = new FormData();
-      param.append('video_uid', videoinfo.video_uid);
       param.append('content', bullet);
       param.append('comment_at', playerRef.current.currentTime().toString());
-      baxios.post('v1-api/v1/video/bullet_comment/make', param).then(res=> {
+      baxios.post('v1-api/v1/videos/' + videoinfo.video_uid + '/bullet_comments', param).then(res=> {
         if (res.data.status == 200) {
             bullets.current.all.splice(screen.current.bullets.length, 0, res.data.data.bullet_comment);
             screen.current.push(
@@ -542,13 +527,13 @@ function VideoPlayer({
       clickTimeoutBullet.current = null;
     } 
     const fetchMore= (offset)=>{
-      const param = new FormData();
-      param.append('video_uid', videoinfo.video_uid);
-      param.append('limit', '50');
-      param.append('start', `${offset}`);
       clearTimeout(clickTimeoutBullet.current); 
       clickTimeoutBullet.current = null;
-      baxios.post('v1-api/v1/video/bullet_comment/list', param).then(res=> {
+      baxios.get(
+        'v1-api/v1/videos/' + videoinfo.video_uid + '/bullet_comments' + '?' +
+        'limit' + '=' + '50' + '&' +
+        'start' + '=' + `${offset}`
+      ).then(res=> {
         if (res.data.status == 200) {
           const data = res.data.data;
           if (!data.bullet_comment_list || data.bullet_comment_list.length > 0) {

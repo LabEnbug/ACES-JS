@@ -41,7 +41,7 @@ function Promote() {
 
   function GetVideoInfo() {
     baxios
-      .get('/v1-api/v1/video/' + video_uid.toString())
+      .get('/v1-api/v1/videos/' + video_uid.toString())
       .then((response) => {
         const data = response.data;
         if (data.status !== 200) {
@@ -99,10 +99,9 @@ function Promote() {
     setLoading(true);
 
     const param = new FormData();
-    param.append('video_uid', videoUid);
     param.append('count', form.getFieldValue('count'));
     baxios
-      .post('/v1-api/v1/video/advertise', param)
+      .post('/v1-api/v1/videos/' + videoUid + '/actions/' + 'advertise', param)
       .then((response) => {
         const data = response.data;
         if (data.status !== 200) {

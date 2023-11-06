@@ -4,16 +4,16 @@ import (
 	"backend/config"
 	"backend/database/mysql"
 	"fmt"
+	"github.com/gorilla/mux"
 	"net/http"
 	"strconv"
 )
 
 func GetVideoCommentList(w http.ResponseWriter, r *http.Request) {
 	/*
-	 * @api {post} /v1/video/comment/list Get video comment list
+	 * @api {get} /v1/videos/{videoUid}/comments Get video comment list
 	 * @apiName GetVideoCommentList
 	 *
-	 * @apiParam {String} video_uid Video uid.
 	 * @apiParam {Number} limit Max number of comments.
 	 * @apiParam {Number} start Start at.
 	 * @apiParam {Number} comment_id Get child comment.
@@ -22,38 +22,13 @@ func GetVideoCommentList(w http.ResponseWriter, r *http.Request) {
 	data := map[string]interface{}{}
 	errorMsg := ""
 
-	// check method, only accept POST
-	if r.Method != "POST" {
-		status := 0
-		data := map[string]interface{}{}
-		errorMsg := "Invalid request method."
-		SendJSONResponse(w, status, data, errorMsg)
-		return
-	}
+	vars := mux.Vars(r)
+	queryVideoUid := vars["videoUid"]
 
-	// seems no need to check token
-	//tokenValid, _, _, _ := FindAndCheckToken(r)
-	//if !tokenValid {
-	//	status := 0
-	//	data := map[string]interface{}{}
-	//	errorMsg := "Not logged in."
-	//	SendJSONResponse(w, status, data, errorMsg)
-	//	return
-	//}
-
-	// parse form
-	err := r.ParseMultipartForm(config.MaxNormalPostSize64)
-	if err != nil {
-		status := 0
-		data := map[string]interface{}{}
-		errorMsg := "Failed to parse form."
-		SendJSONResponse(w, status, data, errorMsg)
-		return
-	}
-	queryVideoUid := r.PostFormValue("video_uid")
-	queryLimit, _ := strconv.Atoi(r.PostFormValue("limit"))
-	queryStart, _ := strconv.Atoi(r.PostFormValue("start"))
-	queryCommentIdTmp, _ := strconv.Atoi(r.PostFormValue("comment_id"))
+	queryParams := r.URL.Query()
+	queryLimit, _ := strconv.Atoi(queryParams.Get("limit"))
+	queryStart, _ := strconv.Atoi(queryParams.Get("start"))
+	queryCommentIdTmp, _ := strconv.Atoi(queryParams.Get("comment_id"))
 	queryRootCommentId := uint(queryCommentIdTmp)
 
 	// for some bad parameter, strict limit to 20 per page
@@ -113,25 +88,15 @@ func GetVideoCommentList(w http.ResponseWriter, r *http.Request) {
 
 func MakeVideoComment(w http.ResponseWriter, r *http.Request) {
 	/*
-	 * @api {post} /v1/video/comment/make Make video comment
+	 * @api {post} /v1/videos/{videoUid}/comments Make video comment
 	 * @apiName MakeVideoComment
 	 *
-	 * @apiParam {String} video_uid Video uid.
 	 * @apiParam {String} content Comment content.
 	 * @apiParam {Number} quote_comment_id Quote comment id.
 	 */
 	status := 200
 	data := map[string]interface{}{}
 	errorMsg := ""
-
-	// check method, only accept POST
-	if r.Method != "POST" {
-		status := 0
-		data := map[string]interface{}{}
-		errorMsg := "Invalid request method."
-		SendJSONResponse(w, status, data, errorMsg)
-		return
-	}
 
 	// check token
 	tokenValid, userId, _, _ := FindAndCheckToken(r)
@@ -143,6 +108,9 @@ func MakeVideoComment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	vars := mux.Vars(r)
+	queryVideoUid := vars["videoUid"]
+
 	// parse form
 	err := r.ParseMultipartForm(config.MaxNormalPostSize64)
 	if err != nil {
@@ -152,9 +120,8 @@ func MakeVideoComment(w http.ResponseWriter, r *http.Request) {
 		SendJSONResponse(w, status, data, errorMsg)
 		return
 	}
-	queryVideoUid := r.PostFormValue("video_uid")
-	queryContent := r.PostFormValue("content")
-	queryQuoteCommentIdTmp, _ := strconv.Atoi(r.PostFormValue("quote_comment_id"))
+	queryContent := r.FormValue("content")
+	queryQuoteCommentIdTmp, _ := strconv.Atoi(r.FormValue("quote_comment_id"))
 	queryQuoteCommentId := uint(queryQuoteCommentIdTmp)
 
 	// check video (lighter)
@@ -208,7 +175,7 @@ func MakeVideoComment(w http.ResponseWriter, r *http.Request) {
 
 func DeleteVideoComment(w http.ResponseWriter, r *http.Request) {
 	/*
-	 * @api {post} /v1/video/comment/delete Delete video comment
+	 * @api {delete} /v1/videos/{videoUid}/comments/{commentId} Delete video comment
 	 * @apiName DeleteVideoComment
 	 *
 	 * @apiParam {Number} comment_id Comment id.
@@ -216,15 +183,6 @@ func DeleteVideoComment(w http.ResponseWriter, r *http.Request) {
 	status := 200
 	data := map[string]interface{}{}
 	errorMsg := ""
-
-	// check method, only accept POST
-	if r.Method != "POST" {
-		status := 0
-		data := map[string]interface{}{}
-		errorMsg := "Invalid request method."
-		SendJSONResponse(w, status, data, errorMsg)
-		return
-	}
 
 	// check token
 	tokenValid, userId, _, _ := FindAndCheckToken(r)
@@ -236,16 +194,9 @@ func DeleteVideoComment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// parse form
-	err := r.ParseMultipartForm(config.MaxNormalPostSize64)
-	if err != nil {
-		status := 0
-		data := map[string]interface{}{}
-		errorMsg := "Failed to parse form."
-		SendJSONResponse(w, status, data, errorMsg)
-		return
-	}
-	queryCommentIdTmp, _ := strconv.Atoi(r.PostFormValue("comment_id"))
+	vars := mux.Vars(r)
+	//queryVideoUid := vars["videoUid"]
+	queryCommentIdTmp, _ := strconv.Atoi(vars["commentId"])
 	queryCommentId := uint(queryCommentIdTmp)
 
 	// check comment

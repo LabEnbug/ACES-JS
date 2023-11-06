@@ -3,31 +3,22 @@ package cmd
 import (
 	"backend/config"
 	"backend/database/mysql"
+	"github.com/gorilla/mux"
 	"net/http"
 	"strconv"
 )
 
 func MakeVideoBulletComment(w http.ResponseWriter, r *http.Request) {
 	/*
-	 * @api {post} /v1/video/bullet_comment/make Make video bullet comment
+	 * @api {post} /v1/videos/{}/bullet_comments Make video bullet comment
 	 * @apiName MakeVideoBulletComment
 	 *
-	 * @apiParam {String} video_uid Video uid.
 	 * @apiParam {String} content Comment content.
 	 * @apiParam {float64} comment_at Comment at the time inner the video.
 	 */
 	status := 200
 	data := map[string]interface{}{}
 	errorMsg := ""
-
-	// check method, only accept POST
-	if r.Method != "POST" {
-		status := 0
-		data := map[string]interface{}{}
-		errorMsg := "Invalid request method."
-		SendJSONResponse(w, status, data, errorMsg)
-		return
-	}
 
 	// check token
 	tokenValid, userId, _, _ := FindAndCheckToken(r)
@@ -39,6 +30,9 @@ func MakeVideoBulletComment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	vars := mux.Vars(r)
+	queryVideoUid := vars["videoUid"]
+
 	// parse form
 	err := r.ParseMultipartForm(config.MaxNormalPostSize64)
 	if err != nil {
@@ -48,9 +42,8 @@ func MakeVideoBulletComment(w http.ResponseWriter, r *http.Request) {
 		SendJSONResponse(w, status, data, errorMsg)
 		return
 	}
-	queryVideoUid := r.PostFormValue("video_uid")
-	queryContent := r.PostFormValue("content")
-	queryCommentAt, _ := strconv.ParseFloat(r.PostFormValue("comment_at"), 64)
+	queryContent := r.FormValue("content")
+	queryCommentAt, _ := strconv.ParseFloat(r.FormValue("comment_at"), 64)
 
 	// check video (lighter)
 	videoId := mysql.GetVideoIdByVideoUid(queryVideoUid)
@@ -83,10 +76,9 @@ func MakeVideoBulletComment(w http.ResponseWriter, r *http.Request) {
 
 func GetVideoBulletCommentList(w http.ResponseWriter, r *http.Request) {
 	/*
-	 * @api {post} /v1/video/bullet_comment/list Get video bullet comment list
+	 * @api {get} /v1/videos/{videoUid}/bullet_comments Get video bullet comment list
 	 * @apiName GetVideoBulletCommentList
 	 *
-	 * @apiParam {String} video_uid Video uid.
 	 * @apiParam {Number} limit Max number of bullet comments.
 	 * @apiParam {Number} start Start at.
 	 */
@@ -94,27 +86,12 @@ func GetVideoBulletCommentList(w http.ResponseWriter, r *http.Request) {
 	data := map[string]interface{}{}
 	errorMsg := ""
 
-	// check method, only accept POST
-	if r.Method != "POST" {
-		status := 0
-		data := map[string]interface{}{}
-		errorMsg := "Invalid request method."
-		SendJSONResponse(w, status, data, errorMsg)
-		return
-	}
+	vars := mux.Vars(r)
+	queryVideoUid := vars["videoUid"]
 
-	// parse form
-	err := r.ParseMultipartForm(config.MaxNormalPostSize64)
-	if err != nil {
-		status := 0
-		data := map[string]interface{}{}
-		errorMsg := "Failed to parse form."
-		SendJSONResponse(w, status, data, errorMsg)
-		return
-	}
-	queryVideoUid := r.PostFormValue("video_uid")
-	queryLimit, _ := strconv.Atoi(r.PostFormValue("limit"))
-	queryStart, _ := strconv.Atoi(r.PostFormValue("start"))
+	queryParams := r.URL.Query()
+	queryLimit, _ := strconv.Atoi(queryParams.Get("limit"))
+	queryStart, _ := strconv.Atoi(queryParams.Get("start"))
 
 	// for some bad parameter, strict limit to 500 per video
 	if queryLimit > 500 {
@@ -151,7 +128,7 @@ func GetVideoBulletCommentList(w http.ResponseWriter, r *http.Request) {
 
 func DeleteVideoBulletComment(w http.ResponseWriter, r *http.Request) {
 	/*
-	 * @api {post} /v1/video/bullet_comment/delete Delete video bullet comment
+	 * @api {delete} /v1/videos/{videoUid}/bullet_comments/{bulletCommentId} Delete video bullet comment
 	 * @apiName DeleteVideoBulletComment
 	 *
 	 * @apiParam {int} bullet_comment_id Bullet comment id.
@@ -159,15 +136,6 @@ func DeleteVideoBulletComment(w http.ResponseWriter, r *http.Request) {
 	status := 200
 	data := map[string]interface{}{}
 	errorMsg := ""
-
-	// check method, only accept POST
-	if r.Method != "POST" {
-		status := 0
-		data := map[string]interface{}{}
-		errorMsg := "Invalid request method."
-		SendJSONResponse(w, status, data, errorMsg)
-		return
-	}
 
 	// check token
 	tokenValid, userId, _, _ := FindAndCheckToken(r)
@@ -179,16 +147,9 @@ func DeleteVideoBulletComment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// parse form
-	err := r.ParseMultipartForm(config.MaxNormalPostSize64)
-	if err != nil {
-		status := 0
-		data := map[string]interface{}{}
-		errorMsg := "Failed to parse form."
-		SendJSONResponse(w, status, data, errorMsg)
-		return
-	}
-	queryBulletCommentIdTmp, _ := strconv.Atoi(r.PostFormValue("bullet_comment_id"))
+	vars := mux.Vars(r)
+	//queryVideoUid := vars["videoUid"]
+	queryBulletCommentIdTmp, _ := strconv.Atoi(vars["bulletCommentId"])
 	queryBulletCommentId := uint(queryBulletCommentIdTmp)
 
 	// check bullet comment

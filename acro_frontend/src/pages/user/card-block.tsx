@@ -67,11 +67,8 @@ function CardBlock(props: CardBlockType) {
   }
 
   function topVideo() {
-    const params = new FormData();
-    params.append('video_uid', card.video_uid);
-    params.append('type', card.is_top ? 'untop' : 'top');
-    baxios
-      .post('/v1-api/v1/video/top', params)
+    (card.is_top ? baxios.delete : baxios.post)
+    ('/v1-api/v1/videos/' + card.video_uid + '/actions/' + 'top')
       .then((response) => {
         const data = response.data;
         if (data.status !== 200) {
@@ -99,11 +96,8 @@ function CardBlock(props: CardBlockType) {
   }
 
   function privateVideo() {
-    const params = new FormData();
-    params.append('video_uid', card.video_uid);
-    params.append('type', card.is_private ? 'unprivate' : 'private');
-    baxios
-      .post('/v1-api/v1/video/private', params)
+    (card.is_private ? baxios.delete : baxios.post)
+    ('/v1-api/v1/videos/' + card.video_uid + '/actions/' + 'private')
       .then((response) => {
         const data = response.data;
         if (data.status !== 200) {
@@ -370,10 +364,8 @@ function CardBlock(props: CardBlockType) {
                     okButtonProps={{ loading: deleteLoading }}
                     onOk={() => {
                       setDeleteLoading(true);
-                      const params = new FormData();
-                      params.append('video_uid', card.video_uid);
                       baxios
-                        .post('/v1-api/v1/video/delete', params)
+                        .delete('/v1-api/v1/videos/' + card.video_uid)
                         .then((response) => {
                           const data = response.data;
                           if (data.status !== 200) {

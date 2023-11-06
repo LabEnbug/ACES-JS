@@ -90,7 +90,7 @@ function UploadShortVideo() {
     const source = axios.CancelToken.source();
     setCancelTokenSource(source);
     baxios
-      .post('/v1-api/v1/video/upload/file', formData, {
+      .post('/v1-api/v1/video/upload', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -211,12 +211,11 @@ function UploadShortVideo() {
     setLoading(true);
 
     const param = new FormData();
-    param.append('video_uid', videoUid);
     param.append('video_type', form.getFieldValue('type'));
     param.append('video_content', form.getFieldValue('content'));
     param.append('video_keyword', form.getFieldValue('keyword').join(' '));
     baxios
-      .post('/v1-api/v1/video/upload/confirm', param)
+      .put('/v1-api/v1/video/upload/' + videoUid, param)
       .then((response) => {
         const data = response.data;
         if (data.status !== 200) {
