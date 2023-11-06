@@ -187,15 +187,3 @@ func SetUserInfo(userId uint, nickname string) bool {
 	}
 	return true
 }
-
-func SetUserRecommendMatrix(userId uint, recommendMatrix []byte) bool {
-	_, err := DB.Exec("UPDATE user SET recommend_matrix=? WHERE id=?", recommendMatrix, userId)
-	if err != nil {
-		if config.ShowLog {
-			funcName, _, _, _ := runtime.Caller(0)
-			log.Println(runtime.FuncForPC(funcName).Name(), "ERR: ", err)
-		}
-		return false
-	}
-	return true
-}

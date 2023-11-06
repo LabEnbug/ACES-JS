@@ -2,57 +2,61 @@ package algorithm
 
 import (
 	"backend/database/mysql"
+	"backend/model"
 	"encoding/json"
 	"fmt"
 	"sort"
+	"math/rand"
 )
 
-// 定义一个键值对的结构体
-type pair struct {
-	key   uint
-	value int
-}
-
-type recommendMatrix struct {
-	TypeProbability     []float64         `json:"typeProbability"`
-	UpCountMap           map[uint]int      `json:"upCountMap"`
-	PopularProbability  []float64         `json:"popularProbability"`
+// 函数将JSON字符串解析回JsonData结构体
+func jsonStringToJSON(jsonString string) (model.RecommendMatrix, error) {
+    var data model.RecommendMatrix
+    err := json.Unmarshal([]byte(jsonString), &data)
+    if err != nil {
+        return model.RecommendMatrix{}, err
+    }
+    return data, nil
 }
 
 // 将 map[string]int 转换为按值从大到小排序的键值对切片
-func sortMapByValue(myMap map[uint]int) []pair {
+func sortMapByValue(myMap map[uint]int) []model.Pair {
 	// 将 map 转换为切片
-	pairs := make([]pair, 0, len(myMap))
+	pairs := make([]model.Pair, 0, len(myMap))
 	for key, value := range myMap {
-		pairs = append(pairs, pair{key, value})
+		pairs = append(pairs, model.Pair{key, value})
 	}
 
 	// 使用 sort.Slice 方法对切片进行排序
 	sort.Slice(pairs, func(i, j int) bool {
-		return pairs[i].value > pairs[j].value
+		return pairs[i].Value > pairs[j].Value
 	})
 
 	return pairs
 }
 
 func InitRecommendationModel() {
-	userId := uint(1)
-	recommendMatrix := getRecommendMatrixByUserId(userId)
-	fmt.Println(string(recommendMatrix))
+	userNum := 32
+	for i := 2; i <= userNum; i++ {
+		userId := uint(i)
+		recommendMatrix := computeRecommendMatrixByUserId(userId)
+		fmt.Println(string(recommendMatrix))
 
-	ok := mysql.SetUserRecommendMatrix(userId, recommendMatrix)
-	if !ok {
-		errorMsg := "Unknown error."
-		fmt.Println(errorMsg)
-	} else {
-		fmt.Println("Init user id =", userId, ", done")
+		ok := mysql.SetUserRecommendMatrix(userId, recommendMatrix)
+		if !ok {
+			errorMsg := "Unknown error."
+			fmt.Println(errorMsg)
+		} else {
+			fmt.Println("Init user id =", userId, ", done")
+		}
 	}
+	
 }
 
-func getRecommendMatrixByUserId(userId uint) []byte {
+func computeRecommendMatrixByUserId(userId uint) []byte {
 
 	queryType := int(0)
-	queryLimit := int(2)  // get all, no limit
+	queryLimit := int(1000)  // get last 1000 videoes
 	queryStart := int(0)
 
 	// get userId's recently watched video list history, recently means limit 10 (for instance)
@@ -62,16 +66,16 @@ func getRecommendMatrixByUserId(userId uint) []byte {
 	// get userId's recently favorit video list history, recently means limit 10 (for instance)
 	favoriteVideoList := mysql.GetVideoList(queryType, userId, "favorite", queryLimit, queryStart, userId)
 
-	if len(watchedVideoList) == 0 && len(likedVideoList) == 0 && len(favoriteVideoList) == 0 {
+	if len(watchedVideoList) == 0 || len(likedVideoList) == 0 || len(favoriteVideoList) == 0 {
 		fmt.Println("No video found.")
 		
-		errorData := recommendMatrix{
+		nilLData := model.RecommendMatrix{
 			TypeProbability: make([]float64, 1),
 			UpCountMap: make(map[uint]int),
 			PopularProbability: make([]float64, 1),
 		}
-		errorJsonData, _ := json.Marshal(errorData)
-		return errorJsonData
+		nilJsonData, _ := json.Marshal(nilLData)
+		return nilJsonData
 	}
 
 	// get standard data which is required by recommendation matrix
@@ -137,16 +141,11 @@ func getRecommendMatrixByUserId(userId uint) []byte {
 
 	// fmt.Println(upCountMap)
 
-	// upCountSortedPairs := sortMapByValue(upCountMap)
-	// for _, p := range upCountSortedPairs {
-	// 	fmt.Printf("%d:%d ", p.key, p.value)
-	// }
-
 	// watched + liked + favorite + comment + forwarded == 100% . According to the degree of popularity, as part of the Recommendation Matrix
 	popular_probability := []float64{0.1, 0.4, 0.15, 0.2, 0.15}
 	// fmt.Println(popular_probability)
 
-	matrixData := recommendMatrix{
+	matrixData := model.RecommendMatrix{
 		TypeProbability: type_probability,
 		UpCountMap: upCountMap,
 		PopularProbability: popular_probability,
@@ -156,4 +155,109 @@ func getRecommendMatrixByUserId(userId uint) []byte {
 	// fmt.Println(string(jsonData))
 
 	return jsonData
+}
+
+func randIntByProb(p []float64) int {
+    // Generate a random number in the range [0.0, 1.0)
+    r := rand.Float64()
+    
+    // Accumulate the probabilities
+    sum := 0.0
+    for i, prob := range p {
+        sum += prob
+        // Check if the random number is less than the accumulated probability
+        if r < sum {
+            return i + 1 // Return the index + 1, because we want 1 to 5
+        }
+    }
+    
+    // In case of floating point arithmetic issues, return the last index
+    return len(p)
+}
+
+func getRecommendMatrixByUserId(userId uint) model.RecommendMatrix {
+	errorMsg := ""
+	// get user info
+	user, ok, errNo := mysql.GetRecommendMatrixByUserId(userId)
+	if !ok {
+		if errNo == 1 { // user not found
+			errorMsg = "User not found."
+		} else {
+			errorMsg = "Unknown error."
+		}
+		fmt.Println(errorMsg)
+	}
+	matrixData := string(user.RecommendMatrix)
+
+	recommendMatrix, err := jsonStringToJSON(matrixData)
+    if err != nil {
+        fmt.Println("Error parsing JSON: %s", err)
+    }
+    // fmt.Println(recommendMatrix.TypeProbability)
+	// fmt.Println(recommendMatrix.UpCountMap)
+	// fmt.Println(recommendMatrix.PopularProbability)
+	return recommendMatrix
+}
+
+func GetRecommendVideoList(userId uint, requiredVideo int, queryStart int) []model.Video {
+	var videoList []model.Video
+	var oneVideo []model.Video
+	queryLimit := 1
+
+	recommendMatrix := getRecommendMatrixByUserId(userId)
+
+	type_probability := recommendMatrix.TypeProbability
+	upCountMap := recommendMatrix.UpCountMap
+	popular_probability := recommendMatrix.TypeProbability
+	
+	// type of recommendation: base on video type, or up, or popularity, or traffic pool
+	var recomType_probability []float64
+	var upCountSortedPairsCut []model.Pair
+	var up_probability []float64
+	var recomTypeChoice int
+
+	upCountSortedPairs := sortMapByValue(upCountMap)
+
+	if len(upCountSortedPairs) > 5 {
+		recomType_probability = []float64{0.4, 0.1, 0.2, 0.1, 0.2}
+
+		upCountSortedPairsCut = upCountSortedPairs[1: 6]
+		up_probability = make([]float64, len(upCountSortedPairsCut))
+		countSum := 0
+		for i, p := range upCountSortedPairsCut {
+			up_probability[i] = float64(p.Value) 
+			countSum += p.Value
+		}
+		for i := 0; i < len(up_probability); i++ {
+			up_probability[i] = up_probability[i] / float64(countSum)
+		}
+	} else {
+		// history is too short, so ignore video type and up
+		recomType_probability = []float64{0, 0, 0.6, 0.2, 0.2}
+	}
+	
+	for len(videoList) < requiredVideo {
+		recomTypeChoice = randIntByProb(recomType_probability)
+		switch recomTypeChoice {
+		case 1:
+			choice := randIntByProb(type_probability[1:10])
+			oneVideo = mysql.GetOneRecommendVideoByProbabilityMatrix(1, choice, queryLimit, queryStart)
+		case 2:
+			choice := randIntByProb(up_probability)
+			upId := int(upCountSortedPairsCut[choice-1].Key)
+			oneVideo = mysql.GetOneRecommendVideoByProbabilityMatrix(2, upId, queryLimit, queryStart)
+		case 3:
+			choice := randIntByProb(popular_probability)
+			oneVideo = mysql.GetOneRecommendVideoByProbabilityMatrix(3, choice, queryLimit, queryStart)
+		case 4:
+			// traffic pool
+			oneVideo = mysql.GetOneRecommendVideoByProbabilityMatrix(4, 0, queryLimit, queryStart)
+		case 5:
+			oneVideo = mysql.GetOneRecommendVideoByProbabilityMatrix(5, 0, queryLimit, queryStart)
+		}
+		videoList = append(videoList, oneVideo...)
+	}
+
+	// fmt.Println(len(videoList))
+	return videoList
 }

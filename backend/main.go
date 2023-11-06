@@ -72,6 +72,7 @@ func main() {
 	http.HandleFunc("/v1/video/action", cmd.DoVideoAction)
 	http.HandleFunc("/v1/video/watch", cmd.RecordWatchedVideo)
 	http.HandleFunc("/v1/video/forward", cmd.GuestForwardVideo)
+	http.HandleFunc("/v1/video/userRecomList", cmd.GetRecommendVideoList)
 
 	http.HandleFunc("/v1/video/upload", cmd.UploadVideo)                // [deprecated] file and info add together
 	http.HandleFunc("/v1/video/uploadRemote", cmd.UploadVideoRemote)    // add info first, upload to qiniu directly from source, admin usage
