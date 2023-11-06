@@ -237,6 +237,9 @@ function CommentDrawer(props) {
             </div>       
             <Tooltip position='top' trigger='hover' content={ t['comment.input.enter'] }>
               <TextArea
+                autoComplete={'off'}
+                maxLength={150}
+                showWordLimit={true}
                 className={styles['comment-input']}
                 placeholder={ isLogin ? t['comment.input.placeholder'] :   t['comment.input.placeholder.plslog']}
                 value = {valuebottom}

@@ -29,7 +29,7 @@ function EditShortVideo() {
 
   const [videoInfo, setVideoInfo] = useState(null);
 
-  const { isLogin, userLoading } = useSelector((state: GlobalState) => state);
+  const { isLogin, userLoading, init } = useSelector((state: GlobalState) => state);
   const [isUserUploaded, setIsUserUploaded] = useState(false);
 
   const router = useRouter();
@@ -37,7 +37,7 @@ function EditShortVideo() {
 
   useEffect(() => {
     if (router.isReady) {
-      if (userLoading !== undefined && !userLoading && !isLogin) {
+      if (init && userLoading !== undefined && !userLoading && !isLogin) {
         Message.error('请先登录');
         // window.location.href = '/';
         return;

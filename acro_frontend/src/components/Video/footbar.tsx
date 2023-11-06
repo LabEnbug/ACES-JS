@@ -95,6 +95,7 @@ function FootBar(props, ref) {
                         <div style={{marginLeft: '5px'}}>
                             <Input
                                 autoComplete={'off'}
+                                maxLength={20}
                                 addBefore={(
                                     <Tooltip position='top' trigger='hover' content={ bulletState ? t['tooltip.bullets.open'] : t['tooltip.bullets.close'] }>
                                         <Avatar

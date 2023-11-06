@@ -45,6 +45,14 @@ func MakeVideoBulletComment(w http.ResponseWriter, r *http.Request) {
 	queryContent := r.FormValue("content")
 	queryCommentAt, _ := strconv.ParseFloat(r.FormValue("comment_at"), 64)
 
+	if len(queryContent) > 32 {
+		status := 0
+		data := map[string]interface{}{}
+		errorMsg := "Comment too long."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+
 	// check video (lighter)
 	videoId := mysql.GetVideoIdByVideoUid(queryVideoUid)
 	if videoId == 0 {

@@ -103,11 +103,19 @@ const Actions = (props)=> {
       {showReply && (
         <div ref={replyInputRef}>
             <Tooltip position='tr' trigger='hover' content={t['comment.input.enter']}>
-                <TextArea value={value} className={styles['replay-input']} disabled={!isLogin} onChange={(e)=>{ setValue(e)}} onKeyDown={(e)=>{handleKeyDownBottom(e, video_uid, comment_id, addC, setP)}}  placeholder={isLogin ? t['comment.input.placeholder'] :   t['comment.input.placeholder.plslog']} />
+                <TextArea autoComplete={'off'}
+                          maxLength={150}
+                          showWordLimit={true}
+                          value={value}
+                          className={styles['replay-input']}
+                          disabled={!isLogin}
+                          onChange={(e)=>{ setValue(e)}}
+                          onKeyDown={(e)=>{handleKeyDownBottom(e, video_uid, comment_id, addC, setP)}}
+                          placeholder={isLogin ? t['comment.input.placeholder'] :   t['comment.input.placeholder.plslog']} />
              </Tooltip>
         </div>
       )}
     </div>)
 }
-  
+
 export default Actions;

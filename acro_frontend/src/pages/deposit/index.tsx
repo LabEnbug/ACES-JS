@@ -30,14 +30,14 @@ function Deposit() {
   const [form] = Form.useForm();
   const [deposit_amount, setDepositAmount] = useState(0);
 
-  const { isLogin, userLoading, userInfo } = useSelector((state: GlobalState) => state);
+  const { isLogin, userLoading, userInfo, init } = useSelector((state: GlobalState) => state);
 
   const router = useRouter();
   const dispatch = useDispatch();
 
   useEffect(() => {
     if (router.isReady) {
-      if (userLoading!==undefined&&!userLoading&&!isLogin) {
+      if (init && userLoading!==undefined && !userLoading && !isLogin) {
         Message.error('请先登录');
         // window.location.href = '/';
         return;

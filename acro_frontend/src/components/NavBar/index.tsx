@@ -12,7 +12,7 @@ import {
   Modal,
   Form,
   Trigger,
-  Skeleton,
+  Skeleton, Icon,
 } from '@arco-design/web-react';
 import {
   IconLanguage,
@@ -52,6 +52,7 @@ import cs from 'classnames';
 import {getToken, setToken} from "@/utils/authentication";
 import baxios from "@/utils/getaxios";
 import FetchUserInfo from "@/utils/getuserinfo";
+import Link from "next/link";
 
 const FormItem = Form.Item;
 
@@ -59,8 +60,8 @@ function Navbar({ show }: { show: boolean }) {
   const t = useLocale();
   const { userInfo, userLoading, isLogin } = useSelector((state: GlobalState) => state);
   const dispatch = useDispatch();
-  const [_, setUserStatus] = useStorage('userStatus');
-  const [role, setRole] = useStorage('userRole', 'user');
+  // const [_, setUserStatus] = useStorage('userStatus');
+  // const [role, setRole] = useStorage('userRole', 'user');
   const [signInModal, SetSignInModal] = useState(false);
   const [signUpModal, SetSignUpModal] = useState(false);
 
@@ -320,8 +321,11 @@ function Navbar({ show }: { show: boolean }) {
     <div className={styles.navbar}>
       <div className={styles.left}>
         <div className={styles.logo}>
-          <Logo />
-          {/*<div className={styles['logo-name']}>ACES 短视频</div>*/}
+          <Link href={"/"}>
+            <>
+              <Logo />
+            </>
+          </Link>
         </div>
       </div>
       <ul className={styles.right}>

@@ -381,6 +381,14 @@ func SetUserInfo(w http.ResponseWriter, r *http.Request) {
 	queryType := r.FormValue("type")
 	if queryType == "nickname" {
 		queryNickname := r.FormValue("nickname")
+
+		if len(queryNickname) > 20 {
+			status = 0
+			errorMsg = "Nickname too long."
+			SendJSONResponse(w, status, data, errorMsg)
+			return
+		}
+
 		// set Nickname by userId
 		ok := mysql.SetUserInfoNickname(userId, queryNickname)
 		if !ok {

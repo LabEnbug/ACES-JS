@@ -796,6 +796,21 @@ func ConfirmVideoUpload(w http.ResponseWriter, r *http.Request) {
 	queryVideoContent := r.FormValue("video_content")
 	queryVideoKeyword := r.FormValue("video_keyword")
 
+	if len(queryVideoContent) > 120 {
+		status := 0
+		data := map[string]interface{}{}
+		errorMsg := "Content too long."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+	if len(queryVideoKeyword) > 100 {
+		status := 0
+		data := map[string]interface{}{}
+		errorMsg := "Keyword too long."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+
 	// check if user has created this video
 	if !mysql.CheckUserVideoRelation(userId, mysql.GetVideoIdByVideoUid(queryVideoUid), "uploaded") {
 		status = 0
@@ -897,6 +912,21 @@ func SetVideoInfo(w http.ResponseWriter, r *http.Request) {
 	queryVideoKeyword := r.FormValue("video_keyword")
 	queryVideoTypeTmp, _ := strconv.Atoi(r.FormValue("video_type"))
 	queryVideoType := int8(queryVideoTypeTmp)
+
+	if len(queryVideoContent) > 120 {
+		status := 0
+		data := map[string]interface{}{}
+		errorMsg := "Content too long."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+	if len(queryVideoKeyword) > 100 {
+		status := 0
+		data := map[string]interface{}{}
+		errorMsg := "Keyword too long."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
 
 	// check video (lighter)
 	videoId := mysql.GetVideoIdByVideoUid(queryVideoUid)

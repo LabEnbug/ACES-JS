@@ -4,7 +4,7 @@ import cookies from 'next-cookies';
 import Head from 'next/head';
 import type { AppProps } from 'next/app';
 import { createStore } from 'redux';
-import { Provider } from 'react-redux';
+import {Provider, useSelector} from 'react-redux';
 import '../style/global.less';
 import { ConfigProvider } from '@arco-design/web-react';
 import zhCN from '@arco-design/web-react/es/locale/zh-CN';
@@ -88,6 +88,10 @@ export default function MyApp({
     if (token) {
       baxios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
     }
+    store.dispatch({
+      type: 'init',
+      payload: {init: true},
+    });
     FetchUserInfo(store.dispatch);
     // if (checkLogin()) {
     //   fetchUserInfo();

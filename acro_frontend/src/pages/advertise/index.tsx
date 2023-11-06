@@ -32,7 +32,7 @@ function Promote() {
   const [remainPromoteCount, setRemainPromoteCount] = useState(0);
   const [price, setPrice] = useState(0.30);
 
-  const { isLogin, userLoading, userInfo } = useSelector((state: GlobalState) => state);
+  const { isLogin, userLoading, userInfo, init } = useSelector((state: GlobalState) => state);
   const [isUserUploaded, setIsUserUploaded] = useState(false);
 
   const router = useRouter();
@@ -75,8 +75,7 @@ function Promote() {
 
   useEffect(() => {
     if (router.isReady) {
-      console.log(router)
-      if (userLoading!==undefined&&!userLoading&&!isLogin) {
+      if (init && userLoading!==undefined && !userLoading && !isLogin) {
         Message.error('请先登录');
         // window.location.href = '/';
         return;

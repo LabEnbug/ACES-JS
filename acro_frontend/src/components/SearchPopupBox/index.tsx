@@ -13,6 +13,7 @@ import styles from './style/index.module.less';
 import {useRouter} from "next/router";
 import {IconRefresh} from "@arco-design/web-react/icon";
 import {makeNewSearch} from "@/utils/keywordUtils";
+import baxios from "@/utils/getaxios";
 
 function DropContent({setSearchPopupBoxVisible}) {
   const t = useLocale();
@@ -34,7 +35,7 @@ function DropContent({setSearchPopupBoxVisible}) {
   // get hotkeys
   const getHotkeys = () => {
     setLoading(true);
-    axios.get('/search/video/hotkeys?' + 'max_count=' + '10')
+    baxios.get('/search/video/hotkeys?' + 'max_count=' + '10')
       .then(response => {
         const data = response.data
         if (data.status !== 200) {

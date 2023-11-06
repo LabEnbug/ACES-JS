@@ -13,6 +13,7 @@ export interface GlobalState {
     permissions: Record<string, string[]>;
   };
   userLoading?: boolean;
+  init?: boolean;
   baxios?: any;
 }
 
@@ -28,11 +29,19 @@ const initialState: GlobalState = {
     permissions: {},
   },
   userLoading: false,
+  init: false,
   baxios: null,
 };
 
 export default function store(state = initialState, action) {
   switch (action.type) {
+    case 'init': {
+      const { init } = action.payload;
+      return {
+        ...state,
+        init,
+      };
+    }
     case 'update-settings': {
       const { settings } = action.payload;
       return {

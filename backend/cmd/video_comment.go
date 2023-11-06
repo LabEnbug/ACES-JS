@@ -124,6 +124,14 @@ func MakeVideoComment(w http.ResponseWriter, r *http.Request) {
 	queryQuoteCommentIdTmp, _ := strconv.Atoi(r.FormValue("quote_comment_id"))
 	queryQuoteCommentId := uint(queryQuoteCommentIdTmp)
 
+	if len(queryContent) > 150 {
+		status := 0
+		data := map[string]interface{}{}
+		errorMsg := "Comment too long."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+
 	// check video (lighter)
 	videoId := mysql.GetVideoIdByVideoUid(queryVideoUid)
 	if videoId == 0 {

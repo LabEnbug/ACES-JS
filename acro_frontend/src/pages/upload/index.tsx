@@ -17,7 +17,7 @@ import {
 } from '@arco-design/web-react';
 import axios from 'axios';
 import { IconCheck } from '@arco-design/web-react/icon';
-import { useRouter } from 'next/router';
+import {useRouter} from 'next/router';
 import { useSelector } from 'react-redux';
 import baxios from "@/utils/getaxios";
 import Head from "next/head";
@@ -37,13 +37,13 @@ function UploadShortVideo() {
   const [form] = Form.useForm();
   const [cancelTokenSource, setCancelTokenSource] = useState(null);
 
-  const { isLogin, userLoading } = useSelector((state: GlobalState) => state);
+  const { isLogin, userLoading, init } = useSelector((state: GlobalState) => state);
 
   const router = useRouter();
 
   useEffect(() => {
     if (router.isReady) {
-      if (userLoading !== undefined && !userLoading && !isLogin) {
+      if (init && userLoading !== undefined && !userLoading && !isLogin) {
         Message.error('请先登录');
         // window.location.href = '/';
         return;
