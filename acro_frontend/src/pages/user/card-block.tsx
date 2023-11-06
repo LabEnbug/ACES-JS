@@ -71,7 +71,7 @@ function CardBlock(props: CardBlockType) {
 
   function topVideo() {
     (card.is_top ? baxios.delete : baxios.post)
-    ('/v1-api/v1/videos/' + card.video_uid + '/actions/' + 'top')
+    ('/videos/' + card.video_uid + '/actions/' + 'top')
       .then((response) => {
         const data = response.data;
         if (data.status !== 200) {
@@ -100,7 +100,7 @@ function CardBlock(props: CardBlockType) {
 
   function privateVideo() {
     (card.is_private ? baxios.delete : baxios.post)
-    ('/v1-api/v1/videos/' + card.video_uid + '/actions/' + 'private')
+    ('/videos/' + card.video_uid + '/actions/' + 'private')
       .then((response) => {
         const data = response.data;
         if (data.status !== 200) {
@@ -318,7 +318,7 @@ function CardBlock(props: CardBlockType) {
                     onOk={() => {
                       setDeleteLoading(true);
                       baxios
-                        .delete('/v1-api/v1/videos/' + card.video_uid)
+                        .delete('/videos/' + card.video_uid)
                         .then((response) => {
                           const data = response.data;
                           if (data.status !== 200) {

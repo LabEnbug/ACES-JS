@@ -1,9 +1,9 @@
 const i18n = {
   'en-US': {
-    'title': 'Promote Short Video',
+    'title': 'Upload Short Video',
   },
   'zh-CN': {
-    'title': '短视频推广',
+    'title': '短视频上传',
   },
 };
 

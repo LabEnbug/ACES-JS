@@ -48,7 +48,7 @@ function CardBlock(props) {
     // sleep 1000ms
     setTimeout(() => {
       (follow ? baxios.delete : baxios.post)
-      ('/v1-api/v1/users/' + card.username + '/follow')
+      ('/users/' + card.username + '/follow')
         .then((response) => {
           const data = response.data;
           if (data.status !== 200) {
@@ -174,7 +174,7 @@ function CardBlock(props) {
               <Avatar size={40}>
                 {card.user ? (
                   card.user.avatar_url ? (
-                    <img src={card.user.avatar_url} />
+                    <img src={card.user.avatar_url} alt={null} />
                   ) : (
                     card.user.nickname
                   )

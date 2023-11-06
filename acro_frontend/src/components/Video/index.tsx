@@ -1,8 +1,9 @@
+import React from 'react';
 import { useEffect, useRef, useState } from 'react';
 import videojs from 'video.js';
 import styles from './style/index.module.less';
 import 'video.js/dist/video-js.css';
-import { createCanvas, loadImage } from 'canvas';
+import {createCanvas, Image as ImageCanvas} from 'canvas';
 import SideBar from './sidebar';
 import FootBar from './footbar';
 import BriefIntri from './brief_intro';
@@ -13,7 +14,7 @@ import useLocale from '@/utils/useLocale';
 import cs from 'classnames';
 import SiderTabs from '@/components/SiderTabs';
 import baxios from "@/utils/getaxios";
-import BulletScreen, { StyledBullet } from 'rc-bullets';
+import BulletScreen from 'rc-bullets';
 
 function VideoPlayer({
   hlsPlayList,
@@ -115,7 +116,7 @@ function VideoPlayer({
 
   const getVideoInfo = (uid) => {
     baxios
-      .get('/v1-api/v1/videos/' + uid.toString())
+      .get('/videos/' + uid.toString())
       .then((res) => {
         if (JudgeStatus(res.data)) {
           const video = res.data.data.video;
@@ -157,7 +158,7 @@ function VideoPlayer({
         : JSON.parse(window.localStorage.getItem('follow'));
 
     (status ? baxios.delete : baxios.post)
-    ('/v1-api/v1/users/' + videoinfo.username + '/follow')
+    ('/users/' + videoinfo.username + '/follow')
       .then((res) => {
         if (JudgeStatus(res.data)) {
           window.localStorage.setItem(`follow`, (!status).toString());
@@ -178,7 +179,7 @@ function VideoPlayer({
         ? false
         : JSON.parse(window.localStorage.getItem(item_name));
     (status ? baxios.delete : baxios.post)
-    ('v1-api/v1/videos/' + videoinfo['video_uid'] + "/actions/" + a_type)
+    ('/videos/' + videoinfo['video_uid'] + "/actions/" + a_type)
       .then((res) => {
         if (JudgeStatus(res.data)) {
           if (status) {
@@ -207,7 +208,7 @@ function VideoPlayer({
         ? false
         : JSON.parse(window.localStorage.getItem(item_name));
     baxios
-      .post('v1-api/v1/videos/' + videoinfo['video_uid'] + '/actions/' + 'like')
+      .post('/videos/' + videoinfo['video_uid'] + '/actions/' + 'like')
       .then((res) => {
         if (JudgeStatus(res.data)) {
           SetUserLike(true);
@@ -247,8 +248,8 @@ function VideoPlayer({
     try {
       document.execCommand('copy');
       baxios
-        .post('v1-api/v1/videos/' + videoinfo['video_uid'] + '/actions/' + 'forward')
-        .then((res) => {})
+        .post('/videos/' + videoinfo['video_uid'] + '/actions/' + 'forward')
+        .then()
         .catch((e) => {
           console.error(e);
         });
@@ -310,7 +311,7 @@ function VideoPlayer({
       const param = new FormData();
       param.append('content', bullet);
       param.append('comment_at', playerRef.current.currentTime().toString());
-      baxios.post('v1-api/v1/videos/' + videoinfo.video_uid + '/bullet_comments', param).then(res=> {
+      baxios.post('/videos/' + videoinfo.video_uid + '/bullet_comments', param).then(res=> {
         if (res.data.status == 200) {
             bullets.current.all.splice(screen.current.bullets.length, 0, res.data.data.bullet_comment);
             screen.current.push(
@@ -385,8 +386,8 @@ function VideoPlayer({
       // 设置图像的加载完成回调
       img.setAttribute('crossOrigin', 'Anonymous');
       img.onload = () => {
-        ctx.filter = 'blur(50px)'; // 例如，应用灰度滤镜
-        ctx.drawImage(img, 0, 0, 400, 400);
+        ctx["filter"] = 'blur(50px)'; // 例如，应用灰度滤镜
+        ctx.drawImage(img as unknown as ImageCanvas, 0, 0, 400, 400);
 
         // 在图像上应用滤镜效果
         // 将处理后的图像数据作为背景图片
@@ -532,7 +533,7 @@ function VideoPlayer({
       clearTimeout(clickTimeoutBullet.current); 
       clickTimeoutBullet.current = null;
       baxios.get(
-        'v1-api/v1/videos/' + videoinfo.video_uid + '/bullet_comments' + '?' +
+        '/videos/' + videoinfo.video_uid + '/bullet_comments' + '?' +
         'limit' + '=' + '50' + '&' +
         'start' + '=' + `${offset}`
       ).then(res=> {
@@ -591,7 +592,7 @@ function VideoPlayer({
         display: 'inline-flex',
         width: '100%',
         height: '100%',
-        minWidth: 680,
+        minWidth: 1024,
       }}
     >
       <div data-vjs-player id='video-player-container' className={styles['video-container']}>

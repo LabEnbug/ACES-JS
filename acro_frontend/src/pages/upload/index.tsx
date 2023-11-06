@@ -21,10 +21,14 @@ import { useRouter } from 'next/router';
 import { useSelector } from 'react-redux';
 import baxios from "@/utils/getaxios";
 import Head from "next/head";
+import useLocale from "@/utils/useLocale";
+import locale from "./locale";
 
 const { Title, Paragraph } = Typography;
 
 function UploadShortVideo() {
+  const t = useLocale(locale);
+  const tg = useLocale();
   const [loading, setLoading] = useState(false);
   const [current, setCurrent] = useState(1);
   const [fileList, setFileList] = useState([]);
@@ -90,7 +94,7 @@ function UploadShortVideo() {
     const source = axios.CancelToken.source();
     setCancelTokenSource(source);
     baxios
-      .post('/v1-api/v1/video/upload', formData, {
+      .post('/video/upload', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -215,7 +219,7 @@ function UploadShortVideo() {
     param.append('video_content', form.getFieldValue('content'));
     param.append('video_keyword', form.getFieldValue('keyword').join(' '));
     baxios
-      .put('/v1-api/v1/video/upload/' + videoUid, param)
+      .put('/video/upload/' + videoUid, param)
       .then((response) => {
         const data = response.data;
         if (data.status !== 200) {
@@ -294,7 +298,7 @@ function UploadShortVideo() {
   return (
     <>
       <Head>
-        <title>短视频上传 - ACES短视频</title>
+        <title>{t['title']} - {tg['title.global']}</title>
       </Head>
       <div className={styles.container}>
         <Card>
@@ -434,6 +438,7 @@ function UploadShortVideo() {
                     ]}
                   >
                     <Input.TextArea
+                      autoComplete={'off'}
                       disabled={!isLogin}
                       maxLength={{ length: 120, errorOnly: true }}
                       showWordLimit

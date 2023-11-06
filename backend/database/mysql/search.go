@@ -4,9 +4,11 @@ import (
 	"backend/common"
 	"backend/config"
 	"backend/model"
+	"database/sql"
 	"log"
 	"math/rand"
 	"runtime"
+	"strings"
 	"time"
 )
 
@@ -15,7 +17,15 @@ func SearchVideo(keyword string, limit int, start int, currentUserId uint) []mod
 	// setup ngram before using search
 	// `CREATE FULLTEXT INDEX ngram_content ON video (content) WITH PARSER ngram;`
 	// `CREATE FULLTEXT INDEX ngram_keyword ON video (keyword) WITH PARSER ngram;`
-	rows, err := DB.Query("SELECT id, user_id, video_uid, type, content, keyword, upload_time, be_liked_count, be_favorite_count, be_commented_count, be_forwarded_count, be_watched_count, top, private, screenshot, hls FROM video WHERE deleted=0 AND private=0 AND content IS NOT NULL AND hls=1 AND (MATCH(content) AGAINST(? IN NATURAL LANGUAGE MODE) OR MATCH(keyword) AGAINST(? IN NATURAL LANGUAGE MODE)) ORDER BY id DESC LIMIT ?, ?", keyword, keyword, start, limit)
+	// for pure keyword like "#k1", need to add fully keyword contains
+	var rows *sql.Rows
+	var err error
+	if strings.Contains(keyword, "#") && !strings.Contains(keyword, " ") {
+		// for pure keyword
+		rows, err = DB.Query("SELECT id, user_id, video_uid, type, content, keyword, upload_time, be_liked_count, be_favorite_count, be_commented_count, be_forwarded_count, be_watched_count, top, private, screenshot, hls FROM video WHERE deleted=0 AND private=0 AND content IS NOT NULL AND hls=1 AND (MATCH(content) AGAINST(? IN NATURAL LANGUAGE MODE) OR MATCH(keyword) AGAINST(? IN NATURAL LANGUAGE MODE) OR keyword LIKE ?) ORDER BY id DESC LIMIT ?, ?", keyword, keyword, "%"+keyword+"%", start, limit)
+	} else {
+		rows, err = DB.Query("SELECT id, user_id, video_uid, type, content, keyword, upload_time, be_liked_count, be_favorite_count, be_commented_count, be_forwarded_count, be_watched_count, top, private, screenshot, hls FROM video WHERE deleted=0 AND private=0 AND content IS NOT NULL AND hls=1 AND (MATCH(content) AGAINST(? IN NATURAL LANGUAGE MODE) OR MATCH(keyword) AGAINST(? IN NATURAL LANGUAGE MODE)) ORDER BY id DESC LIMIT ?, ?", keyword, keyword, start, limit)
+	}
 	if err != nil {
 		if config.ShowLog {
 			funcName, _, _, _ := runtime.Caller(0)

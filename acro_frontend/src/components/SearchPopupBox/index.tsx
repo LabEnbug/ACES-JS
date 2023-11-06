@@ -34,7 +34,7 @@ function DropContent({setSearchPopupBoxVisible}) {
   // get hotkeys
   const getHotkeys = () => {
     setLoading(true);
-    axios.get('/v1-api/v1/search/video/hotkeys?' + 'max_count=' + '10')
+    axios.get('/search/video/hotkeys?' + 'max_count=' + '10')
       .then(response => {
         const data = response.data
         if (data.status !== 200) {

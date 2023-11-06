@@ -8,10 +8,12 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import GetVideType from '@/utils/getvideotype';
 import baxios from "@/utils/getaxios";
+import Head from "next/head";
 
 function VideoP() {
   const default_type = 'comprehensive';
   const t = useLocale(locale);
+  const tg = useLocale();
   const router = useRouter();
   const type = router.query['type'] || default_type;
   const video_uid = router.query['video_uid'];
@@ -54,7 +56,7 @@ function VideoP() {
     const uid = window.sessionStorage.getItem('playvideo-id');
     if (uid && pre != uid) {
       baxios
-        .post('/v1-api/v1/videos/' + uid.toString() + '/actions/' + 'watch')
+        .post('/videos/' + uid.toString() + '/actions/' + 'watch')
         .then((response) => {
           window.sessionStorage.setItem('playvideo-pre-id', uid);
         })
@@ -73,8 +75,8 @@ function VideoP() {
     if (playlist.length == 0 || pre_type != type) {
       // param.append('page', page)
       baxios
-        .get('/v1-api/v1/videos?' + 'limit=' + limit +
-          ('&' + type != default_type ? 'type=' + GetVideType(type) : ''))
+        .get('/videos?' + 'limit=' + limit +
+          (type != default_type ? '&type=' + GetVideType(type) : ''))
         .then((response) => {
           const data = response.data;
           window.sessionStorage.setItem('pretype', type.toString());
@@ -85,7 +87,7 @@ function VideoP() {
               video_uid != data.data.video_list[playIndex]['video_uid']
             ) {
               baxios
-                .get('/v1-api/v1/videos/' + video_uid.toString())
+                .get('/videos/' + video_uid.toString())
                 .then((response1) => {
                   if (JudgeStatus(response1.data)) {
                     data.data.video_list.unshift(response1.data.data.video);
@@ -104,7 +106,7 @@ function VideoP() {
         });
     } else if (playIndex >= playlist.length - 3) {
       baxios
-        .get('/v1-api/v1/videos?' + 'limit=' + limit + '&' +
+        .get('/videos?' + 'limit=' + limit + '&' +
           (type != default_type ? 'type=' + GetVideType(type) + '&' : '') +
           'start=' + playlist.length.toString())
         .then((res) => {
@@ -139,17 +141,22 @@ function VideoP() {
   }, [router]);
 
   return (
-    <div className={styles.container}>
-      <div className={styles.wrapper}>
-        <VideoPlayer
-          hlsPlayList={playlist}
-          playIndex={playIndex}
-          reflectPlayIndex={reflectPlayIndex}
-          recordWatched={recordWatched}
-          options={undefined}
-        />
+    <>
+      <Head>
+        <title>{tg['title.global']}</title>
+      </Head>
+      <div className={styles.container}>
+        <div className={styles.wrapper}>
+          <VideoPlayer
+            hlsPlayList={playlist}
+            playIndex={playIndex}
+            reflectPlayIndex={reflectPlayIndex}
+            recordWatched={recordWatched}
+            options={undefined}
+          />
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 

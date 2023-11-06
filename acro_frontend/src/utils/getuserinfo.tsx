@@ -10,7 +10,7 @@ export default async function FetchUserInfo(dispatch=null) {
 
   try {
     const response = await baxios
-      .get('/v1-api/v1/user/info');
+      .get('/user/info');
     const data = response.data;
     if (data.status !== 200) {
       console.error(data.err_msg);
@@ -39,7 +39,7 @@ export async function UpdateUserInfoOnly(dispatch=null) {
 
   try {
     const response = await baxios
-      .get('/v1-api/v1/user/info');
+      .get('/user/info');
     const data = response.data;
     if (data.status !== 200) {
       console.error(data.err_msg);

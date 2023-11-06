@@ -69,6 +69,9 @@ function Navbar({ show }: { show: boolean }) {
 
   const [searchPopupBoxVisible, setSearchPopupBoxVisible] = useState(false);
 
+  const [form] = Form.useForm();
+  const [confirmLoading, setConfirmLoading] = useState(false);
+
   const showSignInModal = () => {
     SetSignInModal(true);
   };
@@ -115,7 +118,7 @@ function Navbar({ show }: { show: boolean }) {
 
   const handleLogout = () => {
     baxios
-      .post('/v1-api/v1/user/logout')
+      .post('/user/logout')
       .then((response) => {
         setToken(null);
         Message.info(t['navbar.menu.logout.message']);
@@ -202,9 +205,6 @@ function Navbar({ show }: { show: boolean }) {
     </Menu>
   );
 
-  const [form] = Form.useForm();
-  const [confirmLoading, setConfirmLoading] = useState(false);
-
   function onSignInOk() {
     form
       .validate(['username', 'password'])
@@ -221,7 +221,7 @@ function Navbar({ show }: { show: boolean }) {
           params.append('username', res.username);
           params.append('password', res.password);
           baxios
-            .post('/v1-api/v1/user/login', params)
+            .post('/user/login', params)
             .then((response) => {
               const data = response.data;
               if (data.status !== 200) {
@@ -248,9 +248,7 @@ function Navbar({ show }: { show: boolean }) {
             });
         }, 1000);
       })
-      .catch((e) => {
-
-      });
+      .catch();
   }
   function onSignUpOk() {
     form
@@ -270,7 +268,7 @@ function Navbar({ show }: { show: boolean }) {
           params.append('nickname', res.nickname);
           params.append('password', res.password);
           baxios
-            .post('/v1-api/v1/user/signup', params)
+            .post('/user/signup', params)
             .then((response) => {
               const data = response.data;
               if (data.status !== 200) {
@@ -294,9 +292,7 @@ function Navbar({ show }: { show: boolean }) {
             .finally(() => {setConfirmLoading(false)});
         }, 1000);
       })
-      .catch((e) => {
-
-      });
+      .catch();
   }
 
   const handleSearchSubmit = () => {
@@ -417,7 +413,7 @@ function Navbar({ show }: { show: boolean }) {
                 ) : (
                   <Avatar size={40}>
                     {userInfo.avatar_url ? (
-                      <img src={userInfo.avatar_url} />
+                      <img src={userInfo.avatar_url}  alt={null}/>
                     ) : (
                       userInfo.nickname
                     )}
@@ -468,6 +464,7 @@ function Navbar({ show }: { show: boolean }) {
           >
             <FormItem field="username" rules={[{ required: true, message: t['navbar.model.username.require'] }]}>
               <Input
+                autoComplete={'off'}
                 prefix={<IconUser />}
                 placeholder={t['navbar.model.username']}
               />
@@ -511,12 +508,14 @@ function Navbar({ show }: { show: boolean }) {
           >
             <FormItem field="username" rules={[{ required: true, message: t['navbar.model.username.require'] }]}>
               <Input
+                autoComplete={'off'}
                 prefix={<IconUser />}
                 placeholder={t['navbar.model.username']}
               />
             </FormItem>
             <FormItem field="nickname" rules={[{ required: true, message: t['navbar.model.nickname.require'] }]}>
               <Input
+                autoComplete={'off'}
                 prefix={<IconPen />}
                 placeholder={t['navbar.model.nickname']}
               />

@@ -44,7 +44,7 @@ export default function ListSearchResult() {
     // await new Promise(resolve => setTimeout(resolve, 3000));
     baxios
       .get(
-        '/v1-api/v1/search/' + t + '?' +
+        '/search/' + t + '?' +
         'keyword=' + encodeURIComponent(q) + '&' +
         'limit=' + '12'
       )
@@ -52,14 +52,19 @@ export default function ListSearchResult() {
         const data = response.data;
         if (data.status !== 200) {
           console.error(data.err_msg);
-          t === 'video'
-            ? setVideoData(defaultVideoList)
-            : setUserData(defaultUserList);
+          // 20231106 fixed
+          setVideoData(defaultVideoList);
+          setUserData(defaultUserList);
           return;
         }
-        t === 'video'
-          ? setVideoData(data.data.video_list)
-          : setUserData(data.data.user_list);
+        // 20231106 fixed: old result show when re-turn to the old tab
+        if (t === 'video') {
+          setVideoData(data.data.video_list);
+          setUserData(defaultUserList);
+        } else {
+          setUserData(data.data.user_list);
+          setVideoData(defaultVideoList);
+        }
       })
       .catch((error) => {
         console.error(error);
@@ -71,15 +76,13 @@ export default function ListSearchResult() {
     setLoading(true);
     baxios
       .get(
-        '/v1-api/v1/search/' + t + '?' +
+        '/search/' + t + '?' +
         'keyword=' + encodeURIComponent(q) + '&' +
         'start=' + (t === 'video' ? videoData.length : userData.length).toString() + '&' +
         'limit=' + '12'
       )
       .then((response) => {
         const data = response.data;
-        // sleep 1000ms
-        setTimeout(() => {}, 3000);
         if (data.status !== 200) {
           console.error(data.err_msg);
           setIsEndData(true);
@@ -99,38 +102,38 @@ export default function ListSearchResult() {
 
   useEffect(() => {
     if (router.isReady && q) {
-      activeKey === 'video'
-        ? setVideoData(defaultVideoList)
-        : setUserData(defaultUserList);
       getData(q, activeKey);
-      // add search history to local storage
-      const searchHistory = localStorage.getItem('searchHistory');
-      const maxHistoryNum = 10;
-      q = q.trim();
-      if (searchHistory) {
-        const historyList = JSON.parse(searchHistory);
-        // todo: what if query q contains two # like "#k1 #k2"? or contains such as "#k1 value1", "value1 #k1", should we split it?
-
-        if (historyList.indexOf(q) === -1) {
-          // put to the first
-          historyList.unshift(q);
-        } else {
-          // remove and put to the first
-          const index = historyList.indexOf(q);
-          historyList.splice(index, 1);
-          historyList.unshift(q);
-        }
-        if (historyList.length > maxHistoryNum) {
-          historyList.pop();
-        }
-        localStorage.setItem('searchHistory', JSON.stringify(historyList));
-      } else {
-        localStorage.setItem('searchHistory', JSON.stringify([q]));
-      }
     } else {
       window.location.href = '/';
     }
   }, [router.isReady, q, activeKey]);
+
+  useEffect(() => {
+    // add search history to local storage
+    const searchHistory = localStorage.getItem('searchHistory');
+    const maxHistoryNum = 10;
+    const qTrim = (q as string).trim();
+    if (searchHistory) {
+      const historyList = JSON.parse(searchHistory);
+      // todo: what if query q contains two # like "#k1 #k2"? or contains such as "#k1 value1", "value1 #k1", should we split it?
+
+      if (historyList.indexOf(qTrim) === -1) {
+        // put to the first
+        historyList.unshift(qTrim);
+      } else {
+        // remove and put to the first
+        const index = historyList.indexOf(qTrim);
+        historyList.splice(index, 1);
+        historyList.unshift(qTrim);
+      }
+      if (historyList.length > maxHistoryNum) {
+        historyList.pop();
+      }
+      localStorage.setItem('searchHistory', JSON.stringify(historyList));
+    } else {
+      localStorage.setItem('searchHistory', JSON.stringify([qTrim]));
+    }
+  }, [router.isReady, q]);
 
   const ContentContainer = ({ children }) => (
     <div style={{ textAlign: 'center', marginTop: 4 }}>
@@ -221,7 +224,7 @@ export default function ListSearchResult() {
                         getData(q, activeKey);
                       }}
                     >
-                      {t['search.searchAgain.before']}"{q}"{t['search.searchAgain.after']}
+                      {t['search.searchAgain.before']}&quot;{q}&quot;{t['search.searchAgain.after']}
                     </Button>
                   </ContentContainer>
                 }
@@ -234,7 +237,7 @@ export default function ListSearchResult() {
           onReachBottom={() => {
             getMoreData(q, activeKey);
           }}
-          render={(item, index) => (
+          render={(item, _) => (
             <List.Item style={{ padding: '4px 4px' }}>
               <CardBlock card={item} type={activeKey} loading={loading} />
             </List.Item>
@@ -257,7 +260,7 @@ export default function ListSearchResult() {
                     getData(q, activeKey);
                   }}
                 >
-                  {t['search.reTrySearch']} "{q}"
+                  {t['search.reTrySearch']} &quot;{q}&quot;
                 </Button>
               </ContentContainer>
             ) : (

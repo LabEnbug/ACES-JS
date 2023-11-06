@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import React from "react";
 import {  Tabs, Typography, Comment, Avatar, Input, Tooltip, Message, Button } from '@arco-design/web-react';
 import CommentTab from './Comment';
 import locale from './locale';

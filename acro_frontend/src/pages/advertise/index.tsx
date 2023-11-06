@@ -5,7 +5,7 @@ import {
   Button,
   Card, Divider,
   Form,
-  Input, InputNumber,
+  InputNumber,
   Message,
   Result,
   Space, Tag,
@@ -16,10 +16,14 @@ import {useDispatch, useSelector} from 'react-redux';
 import baxios from "@/utils/getaxios";
 import {UpdateUserInfoOnly} from "@/utils/getuserinfo";
 import Head from "next/head";
+import useLocale from "@/utils/useLocale";
+import locale from "./locale"
 
 const { Title } = Typography;
 
 function Promote() {
+  const t = useLocale(locale);
+  const tg = useLocale();
   const [loading, setLoading] = useState(false);
   const [current, setCurrent] = useState(1);
   const [videoUid, setVideoUid] = useState('');
@@ -41,7 +45,7 @@ function Promote() {
 
   function GetVideoInfo() {
     baxios
-      .get('/v1-api/v1/videos/' + video_uid.toString())
+      .get('/videos/' + video_uid.toString())
       .then((response) => {
         const data = response.data;
         if (data.status !== 200) {
@@ -100,7 +104,7 @@ function Promote() {
     const param = new FormData();
     param.append('count', form.getFieldValue('count'));
     baxios
-      .post('/v1-api/v1/videos/' + videoUid + '/actions/' + 'advertise', param)
+      .post('/videos/' + videoUid + '/actions/' + 'advertise', param)
       .then((response) => {
         const data = response.data;
         if (data.status !== 200) {
@@ -155,7 +159,7 @@ function Promote() {
   return (
     <>
       <Head>
-        <title>广告投放 - ACES短视频</title>
+        <title>{t['title']} - {tg['title.global']}</title>
       </Head>
       <div className={styles.container}>
         <Card>
@@ -239,7 +243,7 @@ function Promote() {
                       }
                     ]}
                   >
-                    <InputNumber max={maxCount} min={1} disabled={!isLogin || !isUserUploaded}/>
+                    <InputNumber autoComplete={'off'} max={maxCount} min={1} disabled={!isLogin || !isUserUploaded}/>
                   </Form.Item>
                   <Form.Item label={'需扣除余额'}>
                     <Typography.Text>

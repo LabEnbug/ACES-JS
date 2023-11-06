@@ -24,7 +24,6 @@ import {
 import UserAddonCountInfo from '@/pages/user/user-addon-count-info';
 import baxios from "@/utils/getaxios";
 import Head from "next/head";
-import active from "@antv/g2/src/interaction/action/element/active";
 import {UpdateUserInfoOnly} from "@/utils/getuserinfo";
 import {useDispatch} from "react-redux";
 
@@ -43,7 +42,7 @@ export default function UserPage() {
   const [watchedNum, setWatchedNum] = useState(0);
 
   const [userData, setUserData] = useState(null);
-
+  const [nicknamePopupVisible, setNicknamePopupVisible] = useState(false);
   const [nicknameForChange, setNicknameForChange] = useState('');
 
   const [activeKey, setActiveKey] = useState('uploaded');
@@ -59,7 +58,7 @@ export default function UserPage() {
 
   const [noSuchUser, setNoSuchUser] = useState(false);
 
-  const [avatarFile, setAvatarFile] = useState();
+  const [avatarFile, setAvatarFile] = useState(null);
 
   const dispatch = useDispatch();
 
@@ -89,7 +88,7 @@ export default function UserPage() {
   const getUserInfoData = async (username) => {
     setLoading(true);
     baxios
-      .get('/v1-api/v1/users/' + username)
+      .get('/users/' + username)
       .then((response) => {
         const data = response.data;
         if (data.status !== 200) {
@@ -110,7 +109,7 @@ export default function UserPage() {
   const getSelfInfoData = async () => {
     setLoading(true);
     baxios
-      .get('/v1-api/v1/user/info')
+      .get('/user/info')
       .then((response) => {
         const data = response.data;
         if (data.status !== 200) {
@@ -146,7 +145,7 @@ export default function UserPage() {
     // sleep
     // await new Promise(resolve => setTimeout(resolve, 3000));
     baxios
-      .get('/v1-api/v1/videos?' +
+      .get('/videos?' +
         'user_id=' + (isSelf ? (relation === 'watched' ? 0 : userid) : userid) + '&' +
         'relation=' + relation + '&' +
         'limit=12')
@@ -172,7 +171,7 @@ export default function UserPage() {
   const getMoreData = (userid, relation) => {
     setLoading(true);
     baxios
-      .get('/v1-api/v1/videos?' +
+      .get('/videos?' +
       'user_id=' + (isSelf ? (relation === 'watched' ? 0 : userid) : userid) + '&' +
         'relation=' + relation + '&' +
         'start=' + videoData.length.toString() + '&' +
@@ -249,7 +248,7 @@ export default function UserPage() {
       params.append('type', 'nickname');
       params.append('nickname', nicknameForChange);
       baxios
-        .put('/v1-api/v1/user/info', params)
+        .put('/user/info', params)
         .then((response) => {
           const data = response.data;
           if (data.status !== 200) {
@@ -261,13 +260,14 @@ export default function UserPage() {
           setUserData(data.data.user);
           Message.success("昵称修改成功！");
           UpdateUserInfoOnly(dispatch);
+          setNicknamePopupVisible(false);
           resolve();
         })
         .catch((error) => {
           console.error(error);
           reject();
         })
-        .finally(() => {});
+        .finally();
     });
   }
 
@@ -276,7 +276,7 @@ export default function UserPage() {
     params.append('type', 'avatar');
     params.append('file', currentFile.originFile);
     baxios
-      .put('/v1-api/v1/user/info', params)
+      .put('/user/info', params)
       .then((response) => {
         const data = response.data;
         if (data.status !== 200) {
@@ -295,7 +295,7 @@ export default function UserPage() {
       .catch((error) => {
         console.error(error);
       })
-      .finally(() => {});
+      .finally();
   }
 
   const followUser = (follow) => {
@@ -303,7 +303,7 @@ export default function UserPage() {
     // sleep 1000ms
     setTimeout(() => {
       (follow ? baxios.delete : baxios.post)
-      ('/v1-api/v1/users/' + userData.username + '/follow')
+      ('/users/' + userData.username + '/follow')
         .then((response) => {
           const data = response.data;
           if (data.status !== 200) {
@@ -370,7 +370,6 @@ export default function UserPage() {
                     size={64}
                     triggerIcon={isSelf?<IconCamera />:null}
                     triggerType='mask'
-                    onClick={() => {}}
                   >
                     {avatarFile && avatarFile.url ? (
                       <img src={avatarFile.url}  alt={null}/>
@@ -393,23 +392,31 @@ export default function UserPage() {
                     <Popconfirm
                       position="bottom"
                       icon={null}
+                      popupVisible={nicknamePopupVisible}
                       title={
                         <Input
+                          autoComplete={'off'}
                           placeholder={t['user.change.nickname.placeholder']}
                           value={nicknameForChange}
                           onChange={(e) => setNicknameForChange(e)}
+                          onKeyPress={(e) => {
+                            if (e.key === 'Enter') {
+                              handleChangeNickname().then(() => {setNicknamePopupVisible(false)});
+                            }
+                          }}
                         />
                       }
                       okText={t['user.change.nickname.ok']}
                       cancelText={t['user.change.nickname.cancel']}
                       onOk={handleChangeNickname}
                       onCancel={() => {
-                        console.log('cancel');
+                        setNicknamePopupVisible(false);
                       }}
                     >
                       <Button
                         type="outline"
                         className={styles['change-nickname']}
+                        onClick={() => setNicknamePopupVisible(true)}
                       >
                         {t['user.change.nickname']}
                       </Button>

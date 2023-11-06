@@ -34,9 +34,19 @@
 .comment-main-div {
     height: calc(100vh - 176px);
     overflow-y: auto;
+  :global(.arco-comment) {
+    //flex-wrap: wrap;
+  }
+  :global(.arco-comment-avatar) {
+    margin-left: 12px;
+    margin-right: 12px;
+  }
+  :global(.arco-comment-inner) {
+    margin-right: 6px;
+  }
 }
 
-  
+
 /* 定义滚动条轨道的样式（Firefox不支持） */
 .comment-main-div::-webkit-scrollbar-track {
     background: transparent;
@@ -44,7 +54,7 @@
 
 /* 定义滚动条的样式 */
 .comment-main-div::-webkit-scrollbar {
-width: 8px; /* 滚动条的宽度 */
+  width: 8px; /* 滚动条的宽度 */
 }
 
 /* 定义滚动条上滑块的样式 */
@@ -58,7 +68,6 @@ width: 8px; /* 滚动条的宽度 */
 .comment-main-div::-webkit-scrollbar-thumb:hover {
 background: #555; /* 滑块在悬停时的颜色变化 */
 }
-
 
 
 .comment-input::-webkit-scrollbar-track {

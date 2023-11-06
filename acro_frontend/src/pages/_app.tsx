@@ -50,7 +50,7 @@ export default function MyApp({
   // async function GetUserInfo() {
   //   try {
   //     const response = await baxios
-  //       .post('/v1-api/v1/user/info');
+  //       .post('/user/info');
   //     const data = response.data;
   //     if (data.status !== 200) {
   //       console.error(data.err_msg);

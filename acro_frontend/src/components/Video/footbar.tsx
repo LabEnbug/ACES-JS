@@ -94,6 +94,7 @@ function FootBar(props, ref) {
                         <VolumeSlider value={volume} onChange={volumechange} />
                         <div style={{marginLeft: '5px'}}>
                             <Input
+                                autoComplete={'off'}
                                 addBefore={(
                                     <Tooltip position='top' trigger='hover' content={ bulletState ? t['tooltip.bullets.open'] : t['tooltip.bullets.close'] }>
                                         <Avatar

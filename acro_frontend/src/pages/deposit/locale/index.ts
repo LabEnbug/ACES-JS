@@ -1,9 +1,9 @@
 const i18n = {
   'en-US': {
-    'title': 'Promote Short Video',
+    'title': 'Account Deposit',
   },
   'zh-CN': {
-    'title': '短视频推广',
+    'title': '账户充值',
   },
 };
 

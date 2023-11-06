@@ -2,7 +2,7 @@ import axios from 'axios';
 import {getToken} from "@/utils/authentication";
 
 const baxios = axios.create();
-baxios.defaults.baseURL = process.env.NEXT_PUBLIC_API_URL;
+baxios.defaults.baseURL = process.env.API_URL;
 
 baxios.interceptors.request.use((config) => {
   const token = getToken();

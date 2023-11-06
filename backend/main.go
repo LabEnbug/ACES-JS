@@ -7,6 +7,7 @@ import (
 	"backend/database"
 	"backend/database/mysql"
 	"fmt"
+	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"log"
 	"net/http"
@@ -106,7 +107,13 @@ func main() {
 
 	http.Handle("/", r)
 
-	err := http.ListenAndServe(":8051", nil)
+	cors := handlers.CORS(
+		handlers.AllowedOrigins([]string{"*"}),
+		handlers.AllowedMethods([]string{"GET", "POST", "PUT", "DELETE", "OPTIONS"}),
+		handlers.AllowedHeaders([]string{"X-Requested-With", "Content-Type", "Authorization"}),
+	)
+
+	err := http.ListenAndServe(":8051", cors(r))
 	if err != nil {
 		log.Fatal("Startup err: ", err)
 	}

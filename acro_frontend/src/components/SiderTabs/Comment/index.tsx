@@ -7,12 +7,14 @@ import Replay from './replay';
 import baxios from "@/utils/getaxios";
 import { useSelector, useDispatch } from 'react-redux';
 import store, { GlobalState } from '@/store';
+import {parseTime} from "@/utils/timeUtils";
 
 const TextArea = Input.TextArea;
 
 function CommentDrawer(props) {
     const {videoinfo} = props;
     const t = useLocale(locale);
+    const tg = useLocale();
     const [valuebottom, setValueBottom] = useState('');
     const [displaynomore, setDisplayNoMore] = useState(true);
     const [ comment, SetComment ] = useState([]);
@@ -26,7 +28,7 @@ function CommentDrawer(props) {
         // div滚动到底部时的逻辑处理
 
         baxios.get(
-          'v1-api/v1/videos/' + videoinfo['video_uid'] + '/comments' + '?' +
+          '/videos/' + videoinfo['video_uid'] + '/comments' + '?' +
           'limit=' + '10' + '&' +
           'start=' + Object.keys(comment).length.toString() + '&' +
           'comment_id=' + '0'
@@ -57,7 +59,7 @@ function CommentDrawer(props) {
     const fetchMoreComment = (comment_id, offset) => {
 
       baxios.get(
-        'v1-api/v1/videos/' + videoinfo['video_uid'] + '/comments' + '?' +
+        '/videos/' + videoinfo['video_uid'] + '/comments' + '?' +
         'limit=' + '5' + '&' +
         'start=' + offset.toString() + '&' +
         'comment_id=' + comment_id.toString()
@@ -79,7 +81,7 @@ function CommentDrawer(props) {
       return (
         <Comment
           key={index}
-          actions={<Replay time = {comment_info['comment_time'].split('T')[0]} 
+          actions={<Replay time = {parseTime(comment_info['comment_time'], tg)}
                            comment_id={comment_info['id']} 
                            video_uid={videoinfo['video_uid']} 
                            addC={SetCommentS} 
@@ -90,10 +92,14 @@ function CommentDrawer(props) {
             <Avatar
               autoFixFontSize={true}
               style={{
-                backgroundColor: '#000000',
+                // backgroundColor: '#000000',
               }}
-            > 
-              {comment_info['user']['nickname']}
+            >
+              {comment_info['user']['avatar_url'] ? (
+                <img src={comment_info['user']['avatar_url']} alt={null}/>
+              ) : (
+                comment_info['user']['nickname']
+              )}
             </Avatar>)}
           content={<div>{comment_info['content']}</div>}
           // datetime={comment_info['comment_time'].split('T')[0]} 
@@ -105,7 +111,7 @@ function CommentDrawer(props) {
       const fetchmore = comment_info['child_comment_count_left'] > commentS[comment_info.id].length && commentS[comment_info.id].length > 0
       return (
           <Comment
-                actions={<Replay time = {comment_info['comment_time'].split('T')[0]} 
+                actions={<Replay time = {parseTime(comment_info['comment_time'], tg)}
                                 comment_id={comment_info['id']} 
                                 video_uid={videoinfo['video_uid']} 
                                 addC={SetCommentS} 
@@ -121,7 +127,7 @@ function CommentDrawer(props) {
                     }}
                   >
                     {comment_info['user']['avatar_url'] ? (
-                      <img src={comment_info['user']['avatar_url']} />
+                      <img src={comment_info['user']['avatar_url']} alt={null} />
                     ) : (
                       comment_info['user']['nickname']
                     )}
@@ -136,7 +142,7 @@ function CommentDrawer(props) {
               ))
             }
             {fetchmore&&
-            <Button type='text' status='success' onClick={ fetchmore  ? (e)=> {fetchMoreComment(comment_info.id, commentS[comment_info.id].length)} : ()=>{}}>
+            <Button type='text' status='success' onClick={ fetchmore  ? (e)=> {fetchMoreComment(comment_info.id, commentS[comment_info.id].length)} : null}>
               <div className = {styles['comment-div']} /> <span className={styles['comment-div-text']}> {fetchmore ? `展开更多(${comment_info['child_comment_count_left'] - commentS[comment_info.id].length})` : '无更多评论'}</span>
             </Button>
             }
@@ -163,7 +169,7 @@ function CommentDrawer(props) {
         }
         param.append('content', e.target.value);
         param.append('quote_comment_id', '0');
-        baxios.post('v1-api/v1/videos/' + uid + '/comments', param).then(res=> {
+        baxios.post('/videos/' + uid + '/comments', param).then(res=> {
           if (JudgeStatus(res.data)) {
             const data = res.data.data;
             Message.info(t['comment.input.post.success']);
@@ -195,7 +201,7 @@ function CommentDrawer(props) {
       SetComment([]);
 
       baxios.get(
-        'v1-api/v1/videos/' + videoinfo['video_uid'] + '/comments' + '?' +
+        '/videos/' + videoinfo['video_uid'] + '/comments' + '?' +
         'limit=' + '20' + '&' +
         'start=' + Object.keys(comment).length.toString() + '&' +
         'comment_id=' + '0'

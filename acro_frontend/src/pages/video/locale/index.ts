@@ -1,9 +1,11 @@
 const i18n = {
   'en-US': {
-    'message.notfind': 'Video List Unavailable'
+    'title': 'Short Video',
+    'message.notfind': 'Video List Unavailable',
   },
   'zh-CN': {
-    'message.notfind': '找不到视频'
+    'title': '短视频',
+    'message.notfind': '找不到视频',
   },
 };
 

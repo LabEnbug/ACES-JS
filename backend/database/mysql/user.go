@@ -1,6 +1,7 @@
 package mysql
 
 import (
+	"backend/auth"
 	"backend/common"
 	"backend/config"
 	"backend/model"
@@ -81,7 +82,7 @@ func CheckUserPassword(username string, password string) (model.User, bool, int)
 	if !userExist {
 		ok = false
 		errNo = 1
-	} else if password != user.Password {
+	} else if !auth.ValidatePassword(password, user.Password) {
 		if config.ShowLog {
 			funcName, _, _, _ := runtime.Caller(0)
 			log.Println(runtime.FuncForPC(funcName).Name(), "ERR:", "wrong password")
@@ -106,8 +107,10 @@ func CreateUser(username string, password string, nickname string) (model.User, 
 		if nickname == "" { // empty nickname
 			nickname = "用户" + strconv.Itoa(rand.Intn(100000)+100000) // random nickname
 		}
+		// encode password
+		encodedPassword := auth.MakePassword(password)
 		res, err := DB.Exec("INSERT INTO user (username, password, nickname, reg_time) VALUES (?, ?, ?, NOW())",
-			username, password, nickname)
+			username, encodedPassword, nickname)
 		if err != nil {
 			if config.ShowLog {
 				funcName, _, _, _ := runtime.Caller(0)

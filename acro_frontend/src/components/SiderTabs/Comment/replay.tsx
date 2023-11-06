@@ -1,12 +1,10 @@
+import React from "react";
 import { useEffect, useState, useRef } from 'react';
 import {  Tabs, Typography, Comment, Avatar, Input, Tooltip, Message, Button } from '@arco-design/web-react';
 import useLocale from '@/utils/useLocale';
 import locale from './locale';
 import { IconHeart, IconMessage, IconStar } from '@arco-design/web-react/icon';
 import styles from './style/index.module.less';
-import GetUserInfo from "@/utils/getuserinfo";
-import cs from 'classnames';
-import { VideoOne } from '@icon-park/react';
 import baxios from "@/utils/getaxios";
 import { useSelector, useDispatch } from 'react-redux';
 import store, { GlobalState } from '@/store';
@@ -22,7 +20,7 @@ const JudgeStatus = (data: any) => {
     }
     return true;
 }
-const actions = (props)=> {
+const Actions = (props)=> {
   const { isLogin } = useSelector((state: GlobalState) => state);
   const t = useLocale(locale);
   const {time, comment_id, video_uid, addC, quote_comment, setP} = props;
@@ -45,7 +43,7 @@ const actions = (props)=> {
       }
       param.append('content', e.target.value);
       param.append('quote_comment_id', comment_id.toString());
-      baxios.post('v1-api/v1/videos/' + uid + '/comments', param).then(res=> {
+      baxios.post('/videos/' + uid + '/comments', param).then(res=> {
         if (JudgeStatus(res.data)) {
           const data = res.data.data;
           Message.info(t['comment.input.post.success']);
@@ -112,4 +110,4 @@ const actions = (props)=> {
     </div>)
 }
   
-export default actions;
+export default Actions;

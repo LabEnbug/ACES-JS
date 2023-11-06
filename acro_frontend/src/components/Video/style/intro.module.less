@@ -35,10 +35,12 @@
   font-weight: 400;
   //color: rgba(255, 255, 255, 0.85) !important;
   margin-left: 10px;
+  margin-right: 8px;
   cursor: pointer;
 }
 
 .title-time {
+  margin-left: 8px;
   font-size: 14px !important;
   font-family: PingFang SC,DFPKingGothicGB-Medium,sans-serif;
   font-weight: 500;
@@ -49,8 +51,19 @@
   font-size: 16px !important;
   font-family: PingFang SC,DFPKingGothicGB-Medium,sans-serif;
   font-weight: 400;
-  word-wrap: break-word;
+  //word-wrap: break-word;
   color: rgba(255, 255, 255, 0.6) !important;
+
+  display: -webkit-inline-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.4em;
+  max-height: 2.8em;
+  min-height: 2.8em;
+  word-wrap: break-word;
+
 }
 
 .keyword {

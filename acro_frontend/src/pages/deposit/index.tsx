@@ -16,10 +16,14 @@ import {useDispatch, useSelector} from 'react-redux';
 import baxios from "@/utils/getaxios";
 import {UpdateUserInfoOnly} from "@/utils/getuserinfo";
 import Head from "next/head";
+import useLocale from "@/utils/useLocale";
+import locale from "./locale"
 
 const { Title } = Typography;
 
 function Deposit() {
+  const t = useLocale(locale);
+  const tg = useLocale();
   const [loading, setLoading] = useState(false);
   const [current, setCurrent] = useState(1);
 
@@ -48,7 +52,7 @@ function Deposit() {
     const param = new FormData();
     param.append('card_key', form.getFieldValue('cardKey'));
     baxios
-      .post('/v1-api/v1/user/deposit', param)
+      .post('/user/deposit', param)
       .then((response) => {
         const data = response.data;
         if (data.status !== 200) {
@@ -108,7 +112,7 @@ function Deposit() {
   return (
     <>
       <Head>
-        <title>账户充值 - ACES短视频</title>
+        <title>{t['title']} - {tg['title.global']}</title>
       </Head>
       <div className={styles.container}>
         <Card>
@@ -147,6 +151,7 @@ function Deposit() {
                     ]}
                   >
                     <Input
+                      autoComplete={'off'}
                       disabled={!isLogin}
                       maxLength={{ length: 19 }}
                       showWordLimit
