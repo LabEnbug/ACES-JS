@@ -75,9 +75,10 @@ function CommentDrawer(props) {
       });
     }
 
-    const generateSonC = (comment_info) => {
+    const generateSonC = (comment_info, index) => {
       return (
         <Comment
+          key={index}
           actions={<Replay time = {comment_info['comment_time'].split('T')[0]} 
                            comment_id={comment_info['id']} 
                            video_uid={videoinfo['video_uid']} 
@@ -100,8 +101,8 @@ function CommentDrawer(props) {
       )
     }
 
-    const generateParentC = (comment_info) => {
-      const fetchmore = comment_info['child_comment_count_left'] + 1 > commentS[comment_info.id].length && commentS[comment_info.id].length > 0
+    const generateParentC = (comment_info, index) => {
+      const fetchmore = comment_info['child_comment_count_left'] > commentS[comment_info.id].length && commentS[comment_info.id].length > 0
       return (
           <Comment
                 actions={<Replay time = {comment_info['comment_time'].split('T')[0]} 
@@ -110,6 +111,7 @@ function CommentDrawer(props) {
                                 addC={SetCommentS} 
                                 quote_comment={comment_info}
                                 setP={SetComment}  />}
+                key={index}
                 author={comment_info['user']['nickname']}
                 avatar= {(
                   <Avatar
@@ -130,12 +132,12 @@ function CommentDrawer(props) {
             { 
               commentS[comment_info.id].map((item, index) => (
                 // 为每个生成的组件分配一个key，这里使用了item的id作为key
-                generateSonC(item)
+                generateSonC(item, index)
               ))
             }
             {fetchmore&&
             <Button type='text' status='success' onClick={ fetchmore  ? (e)=> {fetchMoreComment(comment_info.id, commentS[comment_info.id].length)} : ()=>{}}>
-              <div className = {styles['comment-div']} /> <span className={styles['comment-div-text']}> {fetchmore ? `展开更多(${comment_info['child_comment_count_left'] + 1 - commentS[comment_info.id].length})` : '无更多评论'}</span>
+              <div className = {styles['comment-div']} /> <span className={styles['comment-div-text']}> {fetchmore ? `展开更多(${comment_info['child_comment_count_left'] - commentS[comment_info.id].length})` : '无更多评论'}</span>
             </Button>
             }
           </Comment>
@@ -203,6 +205,7 @@ function CommentDrawer(props) {
             res.data.data.comment_list.forEach(item => {
               if (item.child_comment_list && item.child_comment_list.length > 0) {
                 news[item.id] = [].concat(item.child_comment_list);
+                item.child_comment_count_left += 1;
               } else {
                 news[item.id] = [];
               } 
@@ -223,7 +226,7 @@ function CommentDrawer(props) {
     return (
           <div style={{height: '100%'}}>
             <div className={styles['comment-main-div']} onScroll={handleScroll} >
-              {comment.map((item, index)=> generateParentC(item))}
+              {comment.map((item, index)=> generateParentC(item, index))}
               {displaynomore ? <div className={styles['divider']}>没有更多评论</div> : <></>}
             </div>       
             <Tooltip position='top' trigger='hover' content={ t['comment.input.enter'] }>
