@@ -44,7 +44,7 @@ acro_frontend/.eslintcache
 
 # stylelint
 acro_frontend/.stylelintcache
-
+acro_frontend/out.zip
 
 acro_frontend/.husky/
 **/.DS_Store

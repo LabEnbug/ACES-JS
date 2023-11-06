@@ -49,7 +49,7 @@ function VideoPlayer({
   const [commentvis, SetCommentVis] = useState(false);
   const [backgroundimage, SetBackGroundImage] = useState('');
   const screen = useRef(null);
-  const bullets = useRef({index:0, all:[]});
+  const bullets = useRef({index:0, all:[], sort: false});
   const [showbullet, setShowBullet] = useState(false);
   const [hearts, setHearts] = useState([]);
 
@@ -313,10 +313,10 @@ function VideoPlayer({
       param.append('comment_at', playerRef.current.currentTime().toString());
       baxios.post('/videos/' + videoinfo.video_uid + '/bullet_comments', param).then(res=> {
         if (res.data.status == 200) {
-            bullets.current.all.splice(screen.current.bullets.length, 0, res.data.data.bullet_comment);
-            screen.current.push(
-              generateBullet(bullet, true, '')
-            )
+          bullets.current.all.splice(screen.current.bullets.length, 0, res.data.data.bullet_comment);
+          bullets.current.sort = true;
+          bullets.current.all.sort((a, b)=>a.comment_at - b.comment_at);
+          bullets.current.sort = false;
           resolve('success');
           return;
         }
@@ -363,7 +363,7 @@ function VideoPlayer({
           now: currentPlayTime,
           whole: totalDuration,
         });
-        if (bullets.current.all.length <= bullets.current.index) 
+        if (bullets.current.all.length <= bullets.current.index || bullets.current.sort) 
           return;
         const bull = bullets.current.all[bullets.current.index];
         if (bull.comment_at < currentPlayTime) {
@@ -372,8 +372,8 @@ function VideoPlayer({
           // console.log(screen.current.bullets);
           // console.log(screen.current.bullets.length);
           // console.log(currentPlayTime);
-          screen.current.push(generateBullet(bull['content'], bull['user']['is_self'], bull['user']['nickname']));
           bullets.current.index += 1;
+          screen.current.push(generateBullet(bull['content'], bull['user']['is_self'], bull['user']['nickname']));
         }
       });
     }
@@ -546,6 +546,9 @@ function VideoPlayer({
           }
           if (data.bullet_comment_list) {
             bullets.current.all.push(...data.bullet_comment_list);
+            bullets.current.sort = true;
+            bullets.current.all.sort((a, b)=>a.comment_at - b.comment_at);
+            bullets.current.sort = false;
           }
           clickTimeout.current = setTimeout(() => {
             fetchMore(bullets.current.all.length);
