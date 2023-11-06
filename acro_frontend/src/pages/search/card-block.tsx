@@ -1,11 +1,9 @@
 import React, { useEffect, useRef, useState } from 'react';
 import cs from 'classnames';
 import { Button, Tag, Card, Avatar, Divider } from '@arco-design/web-react';
-import { VideoCard, UserCard } from './interface';
 import styles from './style/index.module.less';
 import { useRouter } from 'next/router';
 import { Like } from '@icon-park/react';
-import IconButton from '@/components/NavBar/IconButton';
 import {
   IconCheck,
   IconEye,
@@ -14,19 +12,12 @@ import {
   IconPlus,
 } from '@arco-design/web-react/icon';
 import baxios from "@/utils/getaxios";
-
-interface CardBlockType {
-  type: 'video' | 'user';
-  card?: VideoCard | UserCard;
-  loading?: boolean;
-}
+import useLocale from '@/utils/useLocale';
+import locale from './locale';
 
 function CardBlock(props) {
+  const t = useLocale(locale);
   const { type, card = {} } = props;
-  const [visible, setVisible] = useState(false);
-
-  const [loading, setLoading] = useState(props.loading);
-
   const [followLoading, setFollowLoading] = useState(false);
   const [followHovering, setFollowHovering] = useState(false);
   const [isFollowed, setIsFollowed] = useState(false);
@@ -72,13 +63,13 @@ function CardBlock(props) {
     const minutes = Math.floor((diff % (3600 * 1000)) / (60 * 1000));
     const seconds = Math.floor((diff % (60 * 1000)) / 1000);
     if (days > 0) {
-      return `${days} 天前`;
+      return `${days} ${t['cardBlock.time.ago.day']}`;
     } else if (hours > 0) {
-      return `${hours} 小时前`;
+      return `${hours} ${t['cardBlock.time.ago.hour']}`;
     } else if (minutes > 0) {
-      return `${minutes} 分钟前`;
+      return `${minutes} ${t['cardBlock.time.ago.minute']}`;
     } else {
-      return `${seconds} 秒前`;
+      return `${seconds} ${t['cardBlock.time.ago.second']}`;
     }
   };
 
@@ -197,7 +188,7 @@ function CardBlock(props) {
                     backgroundColor: 'rgba(var(--gray-8), 0.5)',
                   }}
                 >
-                  点赞过
+                  {t['cardBlock.video.liked']}
                 </Tag>
               </div>
             )}
@@ -209,7 +200,7 @@ function CardBlock(props) {
                     backgroundColor: 'rgba(var(--gray-8), 0.5)',
                   }}
                 >
-                  观看过
+                  {t['cardBlock.video.watched']}
                 </Tag>
               </div>
             )}
@@ -224,7 +215,7 @@ function CardBlock(props) {
                   backgroundColor: 'rgba(var(--gray-8), 0.5)',
                 }}
               >
-                关注的用户
+                {t['cardBlock.video.followed']}
               </Tag>
             </div>
           </div>
@@ -323,15 +314,17 @@ function CardBlock(props) {
                 onMouseEnter={() => setFollowHovering(true)}
                 onMouseLeave={() => setFollowHovering(false)}
               >
-                {isFollowed && (followHovering ? '取消' : '已')}关注
+                {isFollowed ? (
+                  (followHovering ? t['cardBlock.user.cancel'] : t['cardBlock.user.already']) + t['cardBlock.user.followed']
+                ) : (t['cardBlock.user.follow'])}
               </Button>
             )}
           </div>
           <div className={styles['user-addon-info']}>
             <div className={styles['user-addon-count-info']}>
-              <div className={styles['user-addon-count-type']}>粉丝</div>
+              <div className={styles['user-addon-count-type']}>{t['cardBlock.user.follower']}</div>
               <div className={styles['user-addon-count-data']}>
-                {parseData(card ? card.be_followed_count + 532422 : 0)}
+                {parseData(card ? card.be_followed_count : 0)}
               </div>
             </div>
             <Divider
@@ -339,9 +332,9 @@ function CardBlock(props) {
               type="vertical"
             />
             <div className={styles['user-addon-count-info']}>
-              <div className={styles['user-addon-count-type']}>获赞</div>
+              <div className={styles['user-addon-count-type']}>{t['cardBlock.user.liked']}</div>
               <div className={styles['user-addon-count-data']}>
-                {parseData(card ? card.be_liked_count + 11111 : 0)}
+                {parseData(card ? card.be_liked_count : 0)}
               </div>
             </div>
             <Divider
@@ -349,9 +342,9 @@ function CardBlock(props) {
               type="vertical"
             />
             <div className={styles['user-addon-count-info']}>
-              <div className={styles['user-addon-count-type']}>浏览量</div>
+              <div className={styles['user-addon-count-type']}>{t['cardBlock.user.view']}</div>
               <div className={styles['user-addon-count-data']}>
-                {parseData(card ? card.be_watched_count + 12312 : 0)}
+                {parseData(card ? card.be_watched_count : 0)}
               </div>
             </div>
           </div>

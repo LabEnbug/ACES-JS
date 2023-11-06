@@ -1,11 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
-import axios from 'axios';
 import {
   Tabs,
   Card,
-  Input,
-  Typography,
-  Grid,
   Button,
   List,
 } from '@arco-design/web-react';
@@ -13,20 +9,18 @@ import useLocale from '@/utils/useLocale';
 import locale from './locale';
 import styles from './style/index.module.less';
 import CardBlock from './card-block';
-import { VideoCard } from './interface';
 import { useRouter } from 'next/router';
-import { GlobalState } from '@/store';
 import { Empty } from '@arco-design/web-react';
 import { IconLoading } from '@arco-design/web-react/icon';
 import baxios from "@/utils/getaxios";
+import Head from "next/head";
 
-const { Title } = Typography;
-const { Row, Col } = Grid;
 
 const defaultVideoList = new Array(0).fill({});
 const defaultUserList = new Array(0).fill({});
 export default function ListSearchResult() {
   const t = useLocale(locale);
+  const tg = useLocale();
   const [loading, setLoading] = useState(true);
   const [videoData, setVideoData] = useState(defaultVideoList);
   const [userData, setUserData] = useState(defaultUserList);
@@ -46,15 +40,13 @@ export default function ListSearchResult() {
       : setUserData(defaultUserList);
     setIsEndData(false);
     setLoading(true);
-    const param = new FormData();
-    param.append('keyword', q);
-    param.append('limit', '12');
     // sleep
     // await new Promise(resolve => setTimeout(resolve, 3000));
     baxios
-      .post(
-        t === 'video' ? '/v1-api/v1/video/search' : '/v1-api/v1/user/search',
-        param
+      .get(
+        '/v1-api/v1/search/' + t + '?' +
+        'keyword=' + q + '&' +
+        'limit=' + '12'
       )
       .then((response) => {
         const data = response.data;
@@ -77,15 +69,12 @@ export default function ListSearchResult() {
 
   const getMoreData = async (q, t) => {
     setLoading(true);
-    const param = new FormData();
-    param.append('keyword', q);
-    const s = t === 'video' ? videoData.length : userData.length;
-    param.append('start', s.toString());
-    param.append('limit', '12');
     baxios
-      .post(
-        t === 'video' ? '/v1-api/v1/video/search' : '/v1-api/v1/user/search',
-        param
+      .get(
+        '/v1-api/v1/search/' + t + '?' +
+        'keyword=' + q + '&' +
+        'start=' + (t === 'video' ? videoData.length : userData.length).toString() + '&' +
+        'limit=' + '12'
       )
       .then((response) => {
         const data = response.data;
@@ -140,19 +129,6 @@ export default function ListSearchResult() {
     }
   }, [router.isReady, q, activeKey]);
 
-  useEffect(() => {
-    if (!loading && listRef.current) {
-      const listElement = listRef.current;
-      // 检查内容高度是否小于等于容器高度
-      console.log(11);
-      if (listElement.clientHeight >= listElement.scrollHeight) {
-        // 触发到达底部的逻辑
-        console.log('Reached bottom');
-        // 在这里调用onReachBottom或相关逻辑
-      }
-    }
-  }, [loading]);
-
   const ContentContainer = ({ children }) => (
     <div style={{ textAlign: 'center', marginTop: 4 }}>
       <div
@@ -170,131 +146,134 @@ export default function ListSearchResult() {
   const LoadingIndicator = () => (
     <div style={{ textAlign: 'center', marginTop: 36 }}>
       <span style={{ color: 'var(--color-text-3)' }}>
-        {/*<IconLoading style={{marginRight: 8, color: 'rgb(var(--arcoblue-6))'}}/>*/}
-        {/*  加载中*/}
       </span>
     </div>
   );
 
   return (
-    <Card className={styles['container']}>
-      <Tabs
-        activeTab={activeKey}
-        type="rounded"
-        onChange={setActiveKey}
-        extra={
-          loading && (
-            <div style={{ color: 'var(--color-text-2)' }}>
-              <IconLoading
-                style={{ marginRight: 8, color: 'rgb(var(--arcoblue-6))' }}
-              />
-              加载中
-            </div>
-          )
-        }
-      >
-        <Tabs.TabPane key="video" title={t['cardList.tab.title.video']} />
-        <Tabs.TabPane key="user" title={t['cardList.tab.title.user']} />
-      </Tabs>
-      <List
-        ref={listRef}
-        className={styles['card-list']}
-        grid={
-          activeKey === 'video'
-            ? {
-                xs: 12,
-                sm: 12,
-                md: 12,
-                lg: 8,
-                xl: 6,
-                xxl: 4,
-              }
-            : {
-                xs: 12,
-                sm: 12,
-                md: 12,
-                lg: 12,
-                xl: 8,
-                xxl: 6,
-              }
-        }
-        noDataElement={
-          loading ? (
-            <div />
-          ) : (
-            <Empty
-              description={
-                <ContentContainer>
-                  <span
-                    style={{
-                      color: 'var(--color-text-3)',
-                      marginTop: '16px',
-                      marginBottom: '16px',
-                    }}
-                  >
-                    {`找不到相关的${activeKey === 'video' ? '视频' : '用户'}`}
-                  </span>
-                  <Button
-                    type="text"
-                    onClick={() => {
-                      getData(q, activeKey);
-                    }}
-                  >
-                    重新尝试搜索 "{q}"
-                  </Button>
-                </ContentContainer>
-              }
-            ></Empty>
-          )
-        }
-        style={{ overflowY: 'scroll', height: 'calc(100vh - 170px)' }}
-        dataSource={activeKey === 'video' ? videoData : userData}
-        bordered={false}
-        onReachBottom={() => {
-          getMoreData(q, activeKey);
-        }}
-        render={(item, index) => (
-          <List.Item style={{ padding: '4px 4px' }}>
-            <CardBlock card={item} type={activeKey} loading={loading} />
-          </List.Item>
-        )}
-        loading={loading}
-        offsetBottom={300}
-        footer={
-          loading ? (
-            <LoadingIndicator />
-          ) : isEndData ? (
-            <ContentContainer>
-              <span
-                style={{ color: 'var(--color-text-3)', marginBottom: '4px' }}
-              >
-                无更多内容
-              </span>
-              <Button
-                type="text"
-                onClick={() => {
-                  getData(q, activeKey);
-                }}
-              >
-                重新尝试搜索 "{q}"
-              </Button>
-            </ContentContainer>
-          ) : (
-            (activeKey === 'video' ? videoData : userData).length !== 0 && (
+    <>
+      <Head>
+        <title>{t['title']} - {tg['title.global']}</title>
+      </Head>
+      <Card className={styles['container']}>
+        <Tabs
+          activeTab={activeKey}
+          type="rounded"
+          onChange={setActiveKey}
+          extra={
+            loading && (
+              <div style={{ color: 'var(--color-text-2)' }}>
+                <IconLoading
+                  style={{ marginRight: 8, color: 'rgb(var(--arcoblue-6))' }}
+                />
+                {t['search.loading']}
+              </div>
+            )
+          }
+        >
+          <Tabs.TabPane key="video" title={t['cardList.tab.title.video']} />
+          <Tabs.TabPane key="user" title={t['cardList.tab.title.user']} />
+        </Tabs>
+        <List
+          ref={listRef}
+          className={styles['card-list']}
+          grid={
+            activeKey === 'video'
+              ? {
+                  xs: 12,
+                  sm: 12,
+                  md: 12,
+                  lg: 8,
+                  xl: 6,
+                  xxl: 4,
+                }
+              : {
+                  xs: 12,
+                  sm: 12,
+                  md: 12,
+                  lg: 12,
+                  xl: 8,
+                  xxl: 6,
+                }
+          }
+          noDataElement={
+            loading ? (
+              <div />
+            ) : (
+              <Empty
+                description={
+                  <ContentContainer>
+                    <span
+                      style={{
+                        color: 'var(--color-text-3)',
+                        marginTop: '16px',
+                        marginBottom: '16px',
+                      }}
+                    >
+                      {t['search.noResultAbout']}{activeKey === 'video' ? t['search.video'] : t['search.user']}
+                    </span>
+                    <Button
+                      type="text"
+                      onClick={() => {
+                        getData(q, activeKey);
+                      }}
+                    >
+                      {t['search.searchAgain.before']}"{q}"{t['search.searchAgain.after']}
+                    </Button>
+                  </ContentContainer>
+                }
+              ></Empty>
+            )
+          }
+          style={{ overflowY: 'scroll', height: 'calc(100vh - 170px)' }}
+          dataSource={activeKey === 'video' ? videoData : userData}
+          bordered={false}
+          onReachBottom={() => {
+            getMoreData(q, activeKey);
+          }}
+          render={(item, index) => (
+            <List.Item style={{ padding: '4px 4px' }}>
+              <CardBlock card={item} type={activeKey} loading={loading} />
+            </List.Item>
+          )}
+          loading={loading}
+          offsetBottom={300}
+          footer={
+            loading ? (
+              <LoadingIndicator />
+            ) : isEndData ? (
               <ContentContainer>
+                <span
+                  style={{ color: 'var(--color-text-3)', marginBottom: '4px' }}
+                >
+                  {t['search.noMoreContent']}
+                </span>
                 <Button
                   type="text"
                   onClick={() => {
-                    getMoreData(q, activeKey);
+                    getData(q, activeKey);
                   }}
                 >
-                  {`获取更多的${activeKey === 'video' ? '视频' : '用户'}`}
+                  {t['search.reTrySearch']} "{q}"
                 </Button>
               </ContentContainer>
+            ) : (
+              (activeKey === 'video' ? videoData : userData).length !== 0 && (
+                <ContentContainer>
+                  <Button
+                    type="text"
+                    onClick={() => {
+                      getMoreData(q, activeKey);
+                    }}
+                  >
+                    {t['search.getMore']}{activeKey === 'video' ? t['search.video'] : t['search.user']}
+                  </Button>
+                </ContentContainer>
+              )
             )
-          )
-        }
-      />
-    </Card>
+          }
+        />
+      </Card>
+    </>
   );
 }

@@ -32,9 +32,7 @@ function DropContent({setSearchPopupBoxVisible}) {
   // get hotkeys
   const getHotkeys = () => {
     setLoading(true);
-    const params = new FormData();
-    params.append('max_count', '10');
-    axios.post('/v1-api/v1/video/search/hotkeys', params)
+    axios.get('/v1-api/v1/search/video/hotkeys?' + 'max_count=' + '10')
       .then(response => {
         const data = response.data
         if (data.status !== 200) {

@@ -33,6 +33,7 @@ import {
   IconPlus,
   IconUpload, IconPen,
 } from '@arco-design/web-react/icon';
+import IconPaymentCheck from '@/assets/payment-check.svg';
 import { useSelector, useDispatch } from 'react-redux';
 import store, { GlobalState } from '@/store';
 import { GlobalContext } from '@/context';
@@ -158,9 +159,21 @@ function Navbar({ show }: { show: boolean }) {
       {/*  <IconSettings className={styles['dropdown-icon']} />*/}
       {/*  {t['menu.user.setting']}*/}
       {/*</Menu.Item>*/}
-      <Menu.Item key="setting">
+      <Menu.Item key="user" onClick={() => {
+        router.push({
+          pathname: `/user/self`,
+        });
+      }}>
         <IconUser className={styles['dropdown-icon']} />
         {t['menu.user']}
+      </Menu.Item>
+      <Menu.Item key="deposit" onClick={() => {
+        router.push({
+          pathname: `/deposit`,
+        });
+      }}>
+        <IconPaymentCheck className={styles['dropdown-icon']} />
+        {t['menu.deposit']}
       </Menu.Item>
       {/*<Menu.SubMenu*/}
       {/*  key="more"*/}
@@ -194,13 +207,13 @@ function Navbar({ show }: { show: boolean }) {
 
   function onSignInOk() {
     form
-      .validate()
+      .validate(['username', 'password'])
       .then((res) => {
         console.log(res);
         // const params = {
         //   username: res.username,
         //   password: res.password
-        // }
+        //
         setConfirmLoading(true);
         // sleep 1000ms
         setTimeout(() => {

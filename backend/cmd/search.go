@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"backend/config"
 	"backend/database/mysql"
 	"backend/model"
 	"net/http"
@@ -10,7 +9,7 @@ import (
 
 func SearchVideo(w http.ResponseWriter, r *http.Request) {
 	/*
-	 * @api {get|post} /v1/video/search Search video
+	 * @api {get} /v1/video/search Search video
 	 * @apiName SearchVideo
 	 *
 	 * @apiParam {String} keyword Keyword.
@@ -21,25 +20,10 @@ func SearchVideo(w http.ResponseWriter, r *http.Request) {
 	data := map[string]interface{}{}
 	errorMsg := ""
 
-	// check method, only accept POST
-	if r.Method != "POST" {
-		status = 0
-		errorMsg = "Invalid request method."
-		SendJSONResponse(w, status, data, errorMsg)
-		return
-	}
-
-	// parse form
-	err := r.ParseMultipartForm(config.MaxNormalPostSize64)
-	if err != nil {
-		status = 0
-		errorMsg = "Failed to parse form."
-		SendJSONResponse(w, status, data, errorMsg)
-		return
-	}
-	queryKeyword := r.PostFormValue("keyword")
-	queryLimit, _ := strconv.Atoi(r.PostFormValue("limit"))
-	queryStart, _ := strconv.Atoi(r.PostFormValue("start"))
+	queryParams := r.URL.Query()
+	queryKeyword := queryParams.Get("keyword")
+	queryLimit, _ := strconv.Atoi(queryParams.Get("limit"))
+	queryStart, _ := strconv.Atoi(queryParams.Get("start"))
 	if queryKeyword == "" {
 		status = 0
 		errorMsg = "Keyword cannot be empty."
@@ -91,30 +75,19 @@ func SearchVideo(w http.ResponseWriter, r *http.Request) {
 
 func GetSearchVideoHotkeys(w http.ResponseWriter, r *http.Request) {
 	/*
-	 * @api {post} /v1/video/search/hotkeys Get search video hotkeys
+	 * @api {get} /v1/video/search/hotkeys Get search video hotkeys
 	 * @apiName GetSearchVideoHotkeys
+	 *
+	 * @apiParam {Number} max_count Max number of hotkeys.
 	 */
 	status := 200
 	data := map[string]interface{}{}
 	errorMsg := ""
 
-	// check method, only accept POST
-	if r.Method != "POST" {
-		status = 0
-		errorMsg = "Invalid request method."
-		SendJSONResponse(w, status, data, errorMsg)
-		return
-	}
+	queryParams := r.URL.Query()
+	queryMaxCount, _ := strconv.Atoi(queryParams.Get("max_count"))
 
-	// parse form
-	err := r.ParseMultipartForm(config.MaxNormalPostSize64)
-	if err != nil {
-		status = 0
-		errorMsg = "Failed to parse form."
-		SendJSONResponse(w, status, data, errorMsg)
-		return
-	}
-	queryMaxCount, _ := strconv.Atoi(r.PostFormValue("max_count"))
+	// for some bad parameter, strict limit
 	if queryMaxCount < 5 {
 		queryMaxCount = 5
 	}
@@ -143,25 +116,10 @@ func SearchUser(w http.ResponseWriter, r *http.Request) {
 	data := map[string]interface{}{}
 	errorMsg := ""
 
-	// check method, only accept POST
-	if r.Method != "POST" {
-		status = 0
-		errorMsg = "Invalid request method."
-		SendJSONResponse(w, status, data, errorMsg)
-		return
-	}
-
-	// parse form
-	err := r.ParseMultipartForm(config.MaxNormalPostSize64)
-	if err != nil {
-		status = 0
-		errorMsg = "Failed to parse form."
-		SendJSONResponse(w, status, data, errorMsg)
-		return
-	}
-	queryKeyword := r.PostFormValue("keyword")
-	queryLimit, _ := strconv.Atoi(r.PostFormValue("limit"))
-	queryStart, _ := strconv.Atoi(r.PostFormValue("start"))
+	queryParams := r.URL.Query()
+	queryKeyword := queryParams.Get("keyword")
+	queryLimit, _ := strconv.Atoi(queryParams.Get("limit"))
+	queryStart, _ := strconv.Atoi(queryParams.Get("start"))
 	if queryKeyword == "" {
 		status = 0
 		errorMsg = "Keyword cannot be empty."
@@ -208,32 +166,19 @@ func SearchUser(w http.ResponseWriter, r *http.Request) {
 
 func GetSearchUserHotkeys(w http.ResponseWriter, r *http.Request) {
 	/*
-	 * @api {get|post} /v1/user/search/hotkeys Get search user hotkeys
+	 * @api {get} /v1/user/search/hotkeys Get search user hotkeys
 	 * @apiName GetSearchUserHotkeys
+	 *
+	 * @apiParam {Number} max_count Max number of hotkeys.
 	 */
 	status := 200
 	data := map[string]interface{}{}
 	errorMsg := ""
 
-	// check method, only accept POST
-	if r.Method != "POST" {
-		status = 0
-		errorMsg = "Invalid request method."
-		SendJSONResponse(w, status, data, errorMsg)
-		return
-	}
-
-	// parse form
-	err := r.ParseMultipartForm(config.MaxNormalPostSize64)
-	if err != nil {
-		status = 0
-		errorMsg = "Failed to parse form."
-		SendJSONResponse(w, status, data, errorMsg)
-		return
-	}
+	queryParams := r.URL.Query()
+	queryMaxCount, _ := strconv.Atoi(queryParams.Get("max_count"))
 
 	// for some bad parameter, strict limit
-	queryMaxCount, _ := strconv.Atoi(r.PostFormValue("max_count"))
 	if queryMaxCount < 5 {
 		queryMaxCount = 5
 	}

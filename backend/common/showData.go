@@ -8,6 +8,9 @@ import (
 
 func MakeUserSupInfo(user model.User) model.User {
 	user.RegTimeStr = tool.DatabaseTimeToRFC3339(user.RegTime)
+	if user.Avatar.Valid {
+		user.AvatarUrl = fmt.Sprintf("http://s348vstvo.bkt.clouddn.com/avatar/%s.png", user.Avatar.String)
+	}
 	return user
 }
 

@@ -113,10 +113,8 @@ function VideoPlayer({
   };
 
   const getVideoInfo = (uid) => {
-    const param1 = new FormData();
-    param1.append('video_uid', uid);
     baxios
-      .post('v1-api/v1/video/info', param1)
+      .get('/v1-api/v1/video/' + uid.toString())
       .then((res) => {
         if (JudgeStatus(res.data)) {
           const video = res.data.data.video;

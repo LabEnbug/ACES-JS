@@ -1,46 +1,44 @@
 import React, { useEffect, useRef, useState } from 'react';
-import axios from 'axios';
 import {
   Tabs,
   Card,
   Input,
-  Typography,
-  Grid,
   Button,
   List,
   Divider,
-  Avatar, Message,
+  Avatar, Message, Upload,
 } from '@arco-design/web-react';
 import useLocale from '@/utils/useLocale';
 import locale from './locale';
 import styles from './style/index.module.less';
 import CardBlock from './card-block';
-import { UserCard } from './interface';
 import { useRouter } from 'next/router';
-import { GlobalState } from '@/store';
 import { Empty } from '@arco-design/web-react';
 import { Popconfirm } from '@arco-design/web-react';
 import {
+  IconCamera,
   IconCheck,
-  IconLoading,
-  IconMinus,
   IconMinusCircle,
   IconPlus,
 } from '@arco-design/web-react/icon';
 import UserAddonCountInfo from '@/pages/user/user-addon-count-info';
 import baxios from "@/utils/getaxios";
-
-const { Title } = Typography;
-const { Row, Col } = Grid;
+import Head from "next/head";
+import active from "@antv/g2/src/interaction/action/element/active";
 
 const defaultVideoList = new Array(0).fill({});
-export default function ListSearchResult() {
+export default function UserPage() {
   const t = useLocale(locale);
+  const tg = useLocale();
   const [loading, setLoading] = useState(true);
   const [followLoading, setFollowLoading] = useState(false);
   const [followHovering, setFollowHovering] = useState(false);
   const [videoData, setVideoData] = useState(defaultVideoList);
-  const [videoNum, setVideoNum] = useState({});
+  // const [videoNumList, setVideoNumList] = useState({});
+  const [uploadedNum, setUploadedNum] = useState(0);
+  const [likedNum, setLikedNum] = useState(0);
+  const [favoriteNum, setFavoriteNum] = useState(0);
+  const [watchedNum, setWatchedNum] = useState(0);
 
   const [userData, setUserData] = useState(null);
 
@@ -59,12 +57,35 @@ export default function ListSearchResult() {
 
   const [noSuchUser, setNoSuchUser] = useState(false);
 
+  const [avatarFile, setAvatarFile] = useState();
+
+  const setNum = (relation: string, num: number) => {
+    if (relation === 'uploaded') {
+      setUploadedNum(num);
+    } else if (relation === 'liked') {
+      setLikedNum(num);
+    } else if (relation === 'favorite') {
+      setFavoriteNum(num);
+    } else if (relation === 'watched') {
+      setWatchedNum(num);
+    }
+  }
+
+  const getNum = (relation: string) => {
+    if (relation === 'uploaded') {
+      return uploadedNum;
+    } else if (relation === 'liked') {
+      return likedNum;
+    } else if (relation === 'favorite') {
+      return favoriteNum;
+    } else if (relation === 'watched') {
+      return watchedNum;
+    }
+  }
   const getUserInfoData = async (username) => {
     setLoading(true);
-    const params = new FormData();
-    params.append('username', username);
     baxios
-      .post('/v1-api/v1/user/query', params)
+      .get('/v1-api/v1/users/' + username)
       .then((response) => {
         const data = response.data;
         if (data.status !== 200) {
@@ -74,7 +95,7 @@ export default function ListSearchResult() {
         }
         setIsSelf(data.data.user.is_self);
         setUserData(data.data.user);
-        getVideoData(data.data.user.user_id, activeKey);
+        getVideoData(data.data.user.user_id, 'uploaded');
       })
       .catch((error) => {
         console.error(error);
@@ -85,7 +106,7 @@ export default function ListSearchResult() {
   const getSelfInfoData = async () => {
     setLoading(true);
     baxios
-      .post('/v1-api/v1/user/info')
+      .get('/v1-api/v1/user/info')
       .then((response) => {
         const data = response.data;
         if (data.status !== 200) {
@@ -94,7 +115,7 @@ export default function ListSearchResult() {
           return;
         }
         setUserData(data.data.user);
-        getVideoData(data.data.user.user_id, activeKey);
+        getVideoData(data.data.user.user_id, 'uploaded');
       })
       .catch((error) => {
         console.error(error);
@@ -115,32 +136,27 @@ export default function ListSearchResult() {
     return newObj;
   };
 
-  const getVideoData = async (userid, t) => {
+  const getVideoData = (userid, relation) => {
     setIsEndData(false);
     setLoading(true);
-    const param = new FormData();
-    param.append('user_id', isSelf ? (t === 'watched' ? 0 : userid) : userid);
-    param.append('relation', t);
-    param.append('limit', '12');
     // sleep
     // await new Promise(resolve => setTimeout(resolve, 3000));
     baxios
-      .post('/v1-api/v1/video/list', param)
+      .get('/v1-api/v1/videos?' +
+        'user_id=' + (isSelf ? (relation === 'watched' ? 0 : userid) : userid) + '&' +
+        'relation=' + relation + '&' +
+        'limit=12')
       .then((response) => {
         const data = response.data;
         if (data.status !== 200) {
           console.error(data.err_msg);
-          setVideoData(defaultVideoList);
-          const tmp = cloneDeep(videoNum);
-          tmp[activeKey] = 0;
-          setVideoNum(tmp);
+          // setVideoData(defaultVideoList);
+          setNum(relation, 0)
           return;
         }
         setVideoData(data.data.video_list);
         if (data.data.video_num) {
-          const tmp = cloneDeep(videoNum);
-          tmp[activeKey] = data.data.video_num;
-          setVideoNum(tmp);
+          setNum(relation, data.data.video_num)
         }
       })
       .catch((error) => {
@@ -149,16 +165,14 @@ export default function ListSearchResult() {
       .finally(() => setLoading(false));
   };
 
-  const getMoreData = async (userid, t) => {
+  const getMoreData = (userid, relation) => {
     setLoading(true);
-    const param = new FormData();
-    param.append('user_id', isSelf ? (t === 'watched' ? 0 : userid) : userid);
-    param.append('relation', t);
-    const s = videoData.length;
-    param.append('start', s.toString());
-    param.append('limit', '12');
     baxios
-      .post('/v1-api/v1/video/list', param)
+      .get('/v1-api/v1/videos?' +
+      'user_id=' + (isSelf ? (relation === 'watched' ? 0 : userid) : userid) + '&' +
+        'relation=' + relation + '&' +
+        'start=' + videoData.length.toString() + '&' +
+        'limit=12')
       .then((response) => {
         const data = response.data;
         if (data.status !== 200) {
@@ -168,9 +182,7 @@ export default function ListSearchResult() {
         }
         setVideoData(videoData.concat(data.data.video_list));
         if (data.data.video_num) {
-          const tmp = cloneDeep(videoNum);
-          tmp[activeKey] = data.data.video_num;
-          setVideoNum(tmp);
+          setNum(relation, data.data.video_num)
         }
       })
       .catch((error) => {
@@ -179,12 +191,18 @@ export default function ListSearchResult() {
       .finally(() => setLoading(false));
   };
 
-  // todo: need to fix first enter page will not update the videoNum bug
-
   useEffect(() => {
     if (router.isReady && username) {
+      // need to fix when user page to other user page, videoNum would not change
+      // 20231106 fixed
+      setNum('uploaded', 0);
+      setNum('liked', 0);
+      setNum('favorite', 0);
+      setNum('watched', 0);
+
       setUserData(null);
       setVideoData(defaultVideoList);
+      setActiveKey('uploaded');
       username === 'self' ? setIsSelf(true) : setIsSelf(false);
       username === 'self' ? getSelfInfoData() : getUserInfoData(username);
     }
@@ -197,19 +215,6 @@ export default function ListSearchResult() {
       getVideoData(userData.user_id, activeKey);
     }
   }, [activeKey]);
-
-  useEffect(() => {
-    if (!loading && listRef.current) {
-      const listElement = listRef.current;
-      // 检查内容高度是否小于等于容器高度
-      console.log(11);
-      if (listElement.clientHeight >= listElement.scrollHeight) {
-        // 触发到达底部的逻辑
-        console.log('Reached bottom');
-        // 在这里调用onReachBottom或相关逻辑
-      }
-    }
-  }, [loading]);
 
   const ContentContainer = ({ children }) => (
     <div style={{ textAlign: 'center', marginTop: 4 }}>
@@ -229,7 +234,7 @@ export default function ListSearchResult() {
     <div style={{ textAlign: 'center', marginTop: 14 }}>
       <span style={{ color: 'var(--color-text-3)' }}>
         {/*<IconLoading style={{marginRight: 8, color: 'rgb(var(--arcoblue-6))'}}/>*/}
-        加载中
+        {t['card.loading']}
       </span>
     </div>
   );
@@ -237,9 +242,10 @@ export default function ListSearchResult() {
   function handleChangeNickname() {
     return new Promise<void>((resolve, reject) => {
       const params = new FormData();
+      params.append('type', 'nickname');
       params.append('nickname', nicknameForChange);
       baxios
-        .post('/v1-api/v1/user/info/set', params)
+        .put('/v1-api/v1/user/info', params)
         .then((response) => {
           const data = response.data;
           if (data.status !== 200) {
@@ -249,6 +255,7 @@ export default function ListSearchResult() {
             return;
           }
           setUserData(data.data.user);
+          Message.success("昵称修改成功！");
           resolve();
         })
         .catch((error) => {
@@ -257,6 +264,32 @@ export default function ListSearchResult() {
         })
         .finally(() => {});
     });
+  }
+
+  const handleChangeAvatar = (currentFile) => {
+    const params = new FormData();
+    params.append('type', 'avatar');
+    params.append('file', currentFile.originFile);
+    baxios
+      .put('/v1-api/v1/user/info', params)
+      .then((response) => {
+        const data = response.data;
+        if (data.status !== 200) {
+          console.error(data.err_msg);
+          Message.error(data.err_msg);
+          return;
+        }
+        setUserData(data.data.user);
+        Message.success("头像修改成功！");
+        setAvatarFile({
+          ...currentFile,
+          url: URL.createObjectURL(currentFile.originFile),
+        });
+      })
+      .catch((error) => {
+        console.error(error);
+      })
+      .finally(() => {});
   }
 
   const followUser = (follow) => {
@@ -287,277 +320,296 @@ export default function ListSearchResult() {
 
   const handleDelete = (itemToDelete) => {
     setVideoData(videoData.filter((item) => item !== itemToDelete));
-    const tmp = cloneDeep(videoNum);
-    tmp[activeKey] = tmp[activeKey] - 1;
-    setVideoNum(tmp);
+    setNum(activeKey, getNum(activeKey) - 1);
   };
 
   return (
-    <div className={styles['container']}>
-      <Card className={styles['top-user-info-wrapper']}>
-        {noSuchUser ? (
-          <div style={{ textAlign: 'center', marginTop: 16 }}>
-            <div
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-              }}
-            >
-              <span style={{ color: 'var(--color-text-1)' }}>用户不存在</span>
+    <>
+      <Head>
+        <title>{userData?userData.nickname + ' - ':''}{t['title']} - {tg['title.global']}</title>
+      </Head>
+      <div className={styles['container']}>
+        <Card className={styles['top-user-info-wrapper']}>
+          {noSuchUser ? (
+            <div style={{ textAlign: 'center', marginTop: 16 }}>
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                }}
+              >
+                <span style={{ color: 'var(--color-text-1)' }}>{t['user.notExist']}</span>
+              </div>
             </div>
-          </div>
-        ) : (
-          <div className={styles['top-user-info']}>
-            {/* add avatar to the left */}
-            <div className={styles['top-user-card-left']}>
-              <Avatar size={64}>
-                {userData ? (
-                  userData.avatar_url ? (
-                    <img src={userData.avatar_url} />
-                  ) : (
-                    userData.nickname
-                  )
-                ) : (
-                  'A'
-                )}
-              </Avatar>
-            </div>
-            <div className={styles['top-user-card-right']}>
-              <div className={styles.nickname}>
-                {userData && <div>{userData.nickname}</div>}
-                {isSelf ? (
-                  <Popconfirm
-                    position="bottom"
-                    icon={null}
-                    title={
-                      <Input
-                        placeholder="请输入新的昵称"
-                        value={nicknameForChange}
-                        onChange={(e) => setNicknameForChange(e)}
-                      />
+          ) : (
+            <div className={styles['top-user-info']}>
+              {/* add avatar to the left */}
+              <div className={styles['top-user-card-left']}>
+                <Upload
+                  showUploadList={false}
+                  fileList={avatarFile ? [avatarFile] : []}
+                  accept="image/*"
+                  autoUpload={false}
+                  onChange={(_, currentFile) => {
+                    // refuse upload if file size is larger than 200MB
+                    console.log(currentFile);
+                    if (currentFile.originFile.size > 2 * 1024 * 1024) {
+                      console.log('file too big');
+                      Message.error("请选择小于2MB大小的头像图片进行上传");
+                      return;
                     }
-                    okText="修改"
-                    cancelText="取消"
-                    onOk={handleChangeNickname}
-                    onCancel={() => {
-                      console.log('cancel');
-                    }}
+                    handleChangeAvatar(currentFile);
+                  }}
+                >
+                  <Avatar
+                    className={styles['avatar']}
+                    size={64}
+                    triggerIcon={isSelf?<IconCamera />:null}
+                    triggerType='mask'
+                    onClick={() => {}}
                   >
-                    <Button
-                      type="outline"
-                      className={styles['change-nickname']}
-                    >
-                      修改昵称
-                    </Button>
-                  </Popconfirm>
-                ) : (
-                  userData && (
-                    <Button
-                      type={userData.be_followed ? 'secondary' : 'primary'}
-                      className={styles['follow']}
-                      icon={
-                        userData.be_followed ? (
-                          followHovering ? (
-                            <IconMinusCircle />
-                          ) : (
-                            <IconCheck />
-                          )
-                        ) : (
-                          <IconPlus />
-                        )
+                    {avatarFile && avatarFile.url ? (
+                      <img src={avatarFile.url}  alt={null}/>
+                    ) : (
+                      userData ? (
+                      userData.avatar_url ? (
+                        <img src={userData.avatar_url}  alt={null}/>
+                      ) : (
+                        userData.nickname
+                      )
+                    ) : ('A')
+                      )}
+                  </Avatar>
+                </Upload>
+              </div>
+              <div className={styles['top-user-card-right']}>
+                <div className={styles.nickname}>
+                  {userData && <div>{userData.nickname}</div>}
+                  {isSelf ? (
+                    <Popconfirm
+                      position="bottom"
+                      icon={null}
+                      title={
+                        <Input
+                          placeholder={t['user.change.nickname.placeholder']}
+                          value={nicknameForChange}
+                          onChange={(e) => setNicknameForChange(e)}
+                        />
                       }
-                      onClick={() => {
-                        followUser(userData.be_followed);
+                      okText={t['user.change.nickname.ok']}
+                      cancelText={t['user.change.nickname.cancel']}
+                      onOk={handleChangeNickname}
+                      onCancel={() => {
+                        console.log('cancel');
                       }}
-                      loading={followLoading}
-                      onMouseEnter={() => setFollowHovering(true)}
-                      onMouseLeave={() => setFollowHovering(false)}
                     >
-                      {userData.be_followed && (followHovering ? '取消' : '已')}
-                      关注
-                    </Button>
-                  )
-                )}
+                      <Button
+                        type="outline"
+                        className={styles['change-nickname']}
+                      >
+                        {t['user.change.nickname']}
+                      </Button>
+                    </Popconfirm>
+                  ) : (
+                    userData && (
+                      <Button
+                        type={userData.be_followed ? 'secondary' : 'primary'}
+                        className={styles['follow']}
+                        icon={
+                          userData.be_followed ? (
+                            followHovering ? (
+                              <IconMinusCircle />
+                            ) : (
+                              <IconCheck />
+                            )
+                          ) : (
+                            <IconPlus />
+                          )
+                        }
+                        onClick={() => {
+                          followUser(userData.be_followed);
+                        }}
+                        loading={followLoading}
+                        onMouseEnter={() => setFollowHovering(true)}
+                        onMouseLeave={() => setFollowHovering(false)}
+                      >
+                        {userData.be_followed ? (
+                          (followHovering ? t['user.cancel'] : t['user.already']) + t['user.followed']
+                        ) : (t['user.follow'])}
+                      </Button>
+                    )
+                  )}
+                </div>
+                <div className={styles.username}>
+                  @{userData ? userData.username : ''}
+                </div>
               </div>
-              <div className={styles.username}>
-                @{userData ? userData.username : ''}
+              <div className={styles['top-user-addon-info']}>
+                <UserAddonCountInfo
+                  type={t['user.followed']}
+                  data={userData ? userData.follow_count : 0}
+                />
+                <Divider type="vertical" style={{ height: '2em' }} />
+                <UserAddonCountInfo
+                  type={t['user.follower']}
+                  data={userData ? userData.be_followed_count : 0}
+                />
+                <Divider type="vertical" style={{ height: '2em' }} />
+                <UserAddonCountInfo
+                  type={t['user.liked']}
+                  data={userData ? userData.be_liked_count : 0}
+                />
+                <Divider type="vertical" style={{ height: '2em' }} />
+                <UserAddonCountInfo
+                  type={t['user.view']}
+                  data={userData ? userData.be_watched_count : 0}
+                />
               </div>
             </div>
-            <div className={styles['top-user-addon-info']}>
-              <UserAddonCountInfo
-                type={'关注'}
-                data={userData ? userData.follow_count : 0}
-              />
-              <Divider type="vertical" style={{ height: '2em' }} />
-              <UserAddonCountInfo
-                type={'粉丝'}
-                data={userData ? userData.be_followed_count : 0}
-              />
-              <Divider type="vertical" style={{ height: '2em' }} />
-              <UserAddonCountInfo
-                type={'获赞'}
-                data={userData ? userData.be_liked_count : 0}
-              />
-              <Divider type="vertical" style={{ height: '2em' }} />
-              <UserAddonCountInfo
-                type={'浏览量'}
-                data={userData ? userData.be_watched_count : 0}
-              />
-            </div>
-          </div>
-        )}
-      </Card>
-      {!noSuchUser && (
-        <>
-          <Card>
-            {/*<Title heading={6}>{t['menu.list.card']}</Title>*/}
-            <Tabs activeTab={activeKey} type="text" onChange={setActiveKey}>
-              <Tabs.TabPane
-                key="uploaded"
-                title={
-                  t['cardList.tab.title.uploaded'] +
-                  (videoNum &&
-                  videoNum['uploaded'] &&
-                  videoNum['uploaded'] !== 0
-                    ? ' (' + videoNum['uploaded'] + ')'
-                    : '')
-                }
-              />
-              {/*<Tabs.TabPane key="uploaded" title={t['cardList.tab.title.uploaded'] + (videoNumU!==0?" ("+videoNumU+")":"")} />*/}
-              <Tabs.TabPane
-                key="liked"
-                title={
-                  t['cardList.tab.title.liked'] +
-                  (videoNum['liked'] && videoNum['liked'] !== 0
-                    ? ' (' + videoNum['liked'] + ')'
-                    : '')
-                }
-              />
-              <Tabs.TabPane
-                key="favorite"
-                title={
-                  t['cardList.tab.title.favorite'] +
-                  (videoNum['favorite'] && videoNum['favorite'] !== 0
-                    ? ' (' + videoNum['favorite'] + ')'
-                    : '')
-                }
-              />
-              {/* watched is only for self */}
-              {isSelf ? (
+          )}
+        </Card>
+        {!noSuchUser && (
+          <>
+            <Card>
+              {/*<Title heading={6}>{t['menu.list.card']}</Title>*/}
+              <Tabs activeTab={activeKey} type="text" onChange={setActiveKey}>
                 <Tabs.TabPane
-                  key="watched"
+                  key="uploaded"
                   title={
-                    t['cardList.tab.title.watched'] +
-                    (videoNum['watched'] && videoNum['watched'] !== 0
-                      ? ' (' + videoNum['watched'] + ')'
-                      : '')
+                    t['cardList.tab.title.uploaded'] +
+                    (getNum('uploaded') !== 0 ? ' (' + getNum('uploaded') + ')' : '')
                   }
                 />
-              ) : null}
-            </Tabs>
-            <Divider />
-            <List
-              ref={listRef}
-              grid={{
-                xs: 12,
-                sm: 12,
-                md: 12,
-                lg: 8,
-                xl: 8,
-                xxl: 4,
-              }}
-              noDataElement={
-                loading ? (
-                  <div />
-                ) : (
-                  <Empty
-                    description={
-                      <ContentContainer>
-                        <span
-                          style={{
-                            color: 'var(--color-text-3)',
-                            marginTop: '16px',
-                          }}
-                        >
-                          {/* uploaded, liked, favorite, watched info */}
-                          {`${isSelf ? '您' : '该用户'}还没有${
-                            activeKey === 'uploaded'
-                              ? '上传'
-                              : activeKey === 'liked'
-                              ? '点赞'
-                              : activeKey === 'favorite'
-                              ? '收藏'
-                              : '观看'
-                          }过任何视频`}
-                        </span>
-                      </ContentContainer>
-                    }
-                  ></Empty>
-                )
-              }
-              style={{ overflowY: 'scroll', height: 'calc(100vh - 200px)' }}
-              dataSource={videoData}
-              bordered={false}
-              onReachBottom={() => {
-                userData && getMoreData(userData.user_id, activeKey);
-              }}
-              render={(item, index) => (
-                <List.Item style={{ padding: '4px 4px' }}>
-                  {
-                    <CardBlock
-                      card={item}
-                      onDelete={() => handleDelete(item)}
-                      type={activeKey}
-                      watching_username={userData ? userData.username : ''}
-                      loading={loading}
-                    />
+                {/*<Tabs.TabPane key="uploaded" title={t['cardList.tab.title.uploaded'] + (videoNumU!==0?" ("+videoNumU+")":"")} />*/}
+                <Tabs.TabPane
+                  key="liked"
+                  title={
+                    t['cardList.tab.title.liked'] +
+                    (getNum('liked') !== 0 ? ' (' + getNum('liked') + ')' : '')
                   }
-                </List.Item>
-              )}
-              loading={loading}
-              offsetBottom={300}
-              footer={
-                loading ? (
-                  <LoadingIndicator />
-                ) : isEndData ? (
-                  <ContentContainer>
-                    <span
-                      style={{
-                        color: 'var(--color-text-3)',
-                        marginBottom: '4px',
-                      }}
-                    >
-                      无更多内容
-                    </span>
-                  </ContentContainer>
-                ) : (
-                  videoData.length !== 0 && (
+                />
+                <Tabs.TabPane
+                  key="favorite"
+                  title={
+                    t['cardList.tab.title.favorite'] +
+                    (getNum('favorite') !== 0 ? ' (' + getNum('favorite') + ')' : '')
+                  }
+                />
+                {/* watched is only for self */}
+                {isSelf ? (
+                  <Tabs.TabPane
+                    key="watched"
+                    title={
+                      t['cardList.tab.title.watched'] +
+                      (getNum('watched') !== 0 ? ' (' + getNum('watched') + ')' : '')
+                    }
+                  />
+                ) : null}
+              </Tabs>
+              <Divider />
+              <List
+                ref={listRef}
+                grid={{
+                  xs: 12,
+                  sm: 12,
+                  md: 12,
+                  lg: 8,
+                  xl: 8,
+                  xxl: 4,
+                }}
+                noDataElement={
+                  loading ? (
+                    <div />
+                  ) : (
+                    <Empty
+                      description={
+                        <ContentContainer>
+                          <span
+                            style={{
+                              color: 'var(--color-text-3)',
+                              marginTop: '16px',
+                            }}
+                          >
+                            {/* uploaded, liked, favorite, watched info */}
+                            {`${isSelf ? t['card.you'] : t['card.this.user']}${t['card.never']}${
+                              activeKey === 'uploaded'
+                                ? t['card.uploaded']
+                                : activeKey === 'liked'
+                                ? t['card.liked']
+                                : activeKey === 'favorite'
+                                ? t['card.favorite']
+                                : t['card.watched']
+                            }${t['card.any.video']}`}
+                          </span>
+                        </ContentContainer>
+                      }
+                    ></Empty>
+                  )
+                }
+                style={{ overflowY: 'scroll', height: 'calc(100vh - 200px)' }}
+                dataSource={videoData}
+                bordered={false}
+                onReachBottom={() => {
+                  userData && getMoreData(userData.user_id, activeKey);
+                }}
+                render={(item, _) => (
+                  <List.Item style={{ padding: '4px 4px' }}>
+                    {
+                      <CardBlock
+                        card={item}
+                        onDelete={() => handleDelete(item)}
+                        type={activeKey}
+                        watching_username={userData ? userData.username : ''}
+                        loading={loading}
+                      />
+                    }
+                  </List.Item>
+                )}
+                loading={loading}
+                offsetBottom={300}
+                footer={
+                  loading ? (
+                    <LoadingIndicator />
+                  ) : isEndData ? (
                     <ContentContainer>
-                      <Button
-                        type="text"
-                        onClick={() => {
-                          getMoreData(userData.user_id, activeKey);
+                      <span
+                        style={{
+                          color: 'var(--color-text-3)',
+                          marginBottom: '4px',
                         }}
                       >
-                        {`加载更多${
-                          activeKey === 'uploaded'
-                            ? '上传'
-                            : activeKey === 'liked'
-                            ? '点赞'
-                            : activeKey === 'favorite'
-                            ? '收藏'
-                            : '观看过'
-                        }的视频`}
-                      </Button>
+                        {t['card.noMoreContent']}
+                      </span>
                     </ContentContainer>
+                  ) : (
+                    videoData.length !== 0 && (
+                      <ContentContainer>
+                        <Button
+                          type="text"
+                          onClick={() => {
+                            getMoreData(userData.user_id, activeKey);
+                          }}
+                        >
+                          {`${t['card.loadMore']}${
+                            activeKey === 'uploaded'
+                              ? t['card.uploaded']
+                              : activeKey === 'liked'
+                              ? t['card.liked']
+                              : activeKey === 'favorite'
+                              ? t['card.favorite']
+                              : t['card.watched']
+                          }${t['card.video']}`}
+                        </Button>
+                      </ContentContainer>
+                    )
                   )
-                )
-              }
-            />
-          </Card>
-        </>
-      )}
-    </div>
+                }
+              />
+            </Card>
+          </>
+        )}
+      </div>
+    </>
   );
 }

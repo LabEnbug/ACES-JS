@@ -1,5 +1,6 @@
 const i18n = {
   'en-US': {
+    'title.global': 'ACES Short Video',
     'menu.welcome': 'Welcome',
     'menu.dashboard': 'Dashboard',
     'menu.list': 'List',
@@ -78,6 +79,9 @@ const i18n = {
     'menu.user': 'User Page',
     'menu.upload': 'Upload Short Video',
     'menu.edit': 'Edit Information of Short Video',
+    'menu.deposit': 'Deposit Account',
+    'menu.promote': 'Promote Video',
+    'menu.advertise': 'Advertisement',
     'menu.video.comprehensive': 'Comprehensive',
     'menu.video.knowledge': 'Knowledge',
     'menu.video.hotpot': 'Hot',
@@ -90,6 +94,7 @@ const i18n = {
     'menu.video.fashion': 'Fashion',
   },
   'zh-CN': {
+    'title.global': 'ACES 短视频',
     'menu.dashboard': '仪表盘',
     'menu.list': '列表页',
     'menu.result': '结果页',
@@ -167,6 +172,9 @@ const i18n = {
     'menu.user': '用户页',
     'menu.upload': '上传短视频',
     'menu.edit': '编辑短视频信息',
+    'menu.deposit': '账户充值',
+    'menu.promote': '短视频推广',
+    'menu.advertise': '广告投放',
     'menu.video.comprehensive': '综合',
     'menu.video.knowledge': '知识',
     'menu.video.hotpot': '热点',

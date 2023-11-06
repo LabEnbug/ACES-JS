@@ -7,6 +7,7 @@ import (
 	"backend/algorithm"
 	"fmt"
 	"github.com/google/uuid"
+	"github.com/gorilla/mux"
 	"io"
 	"log"
 	"net/http"
@@ -19,8 +20,7 @@ import (
 
 func GetVideoList(w http.ResponseWriter, r *http.Request) {
 	/*
-	 * @api {post} /v1/video/list Get video list
-	 *                            including normal, user-(uploaded, liked, favorite, watched, followed)
+	 * @api {get} /v1/videos Get video list including normal, user-(uploaded, liked, favorite, watched, followed)
 	 * @apiName GetVideoList
 	 *
 	 * @apiParam {Number} type Video type.
@@ -33,28 +33,13 @@ func GetVideoList(w http.ResponseWriter, r *http.Request) {
 	data := map[string]interface{}{}
 	errorMsg := ""
 
-	// check method, only accept POST
-	if r.Method != "POST" {
-		status = 0
-		errorMsg = "Invalid request method."
-		SendJSONResponse(w, status, data, errorMsg)
-		return
-	}
-
-	// parse form
-	err := r.ParseMultipartForm(config.MaxNormalPostSize64)
-	if err != nil {
-		status = 0
-		errorMsg = "Failed to parse form."
-		SendJSONResponse(w, status, data, errorMsg)
-		return
-	}
-	queryType, _ := strconv.Atoi(r.PostFormValue("type"))
-	queryUserIdTmp, _ := strconv.ParseUint(r.PostFormValue("user_id"), 10, 32)
+	queryParams := r.URL.Query()
+	queryType, _ := strconv.Atoi(queryParams.Get("type"))
+	queryUserIdTmp, _ := strconv.ParseUint(queryParams.Get("user_id"), 10, 32)
 	queryUserId := uint(queryUserIdTmp)
-	queryRelation := r.PostFormValue("relation")
-	queryLimit, _ := strconv.Atoi(r.PostFormValue("limit"))
-	queryStart, _ := strconv.Atoi(r.PostFormValue("start"))
+	queryRelation := queryParams.Get("relation")
+	queryLimit, _ := strconv.Atoi(queryParams.Get("limit"))
+	queryStart, _ := strconv.Atoi(queryParams.Get("start"))
 
 	// for some bad parameter, strict limit
 	if queryLimit > 24 {
@@ -111,32 +96,33 @@ func GetVideoList(w http.ResponseWriter, r *http.Request) {
 
 func GetVideoInfo(w http.ResponseWriter, r *http.Request) {
 	/*
-	 * @api {post} /v1/video/info Get video info
+	 * @api {post} /v1/video/{videoUid} Get video info
 	 * @apiName GetVideoInfo
 	 *
-	 * @apiParam {String} video_uid Video uid.
 	 */
 	status := 200
 	data := map[string]interface{}{}
 	errorMsg := ""
 
-	// check method, only accept POST
-	if r.Method != "POST" {
-		status = 0
-		errorMsg = "Invalid request method."
-		SendJSONResponse(w, status, data, errorMsg)
-		return
-	}
+	//// check method, only accept POST
+	//if r.Method != "POST" {
+	//	status = 0
+	//	errorMsg = "Invalid request method."
+	//	SendJSONResponse(w, status, data, errorMsg)
+	//	return
+	//}
 
-	// parse form
-	err := r.ParseMultipartForm(config.MaxNormalPostSize64)
-	if err != nil {
-		status = 0
-		errorMsg = "Failed to parse form."
-		SendJSONResponse(w, status, data, errorMsg)
-		return
-	}
-	queryVideoUid := r.PostFormValue("video_uid")
+	//// parse form
+	//err := r.ParseMultipartForm(config.MaxNormalPostSize64)
+	//if err != nil {
+	//	status = 0
+	//	errorMsg = "Failed to parse form."
+	//	SendJSONResponse(w, status, data, errorMsg)
+	//	return
+	//}
+	//queryVideoUid := r.PostFormValue("video_uid")
+	vars := mux.Vars(r)
+	queryVideoUid := vars["videoUid"]
 
 	// check user
 	tokenValid, userId, _, _ := FindAndCheckToken(r)
@@ -166,8 +152,17 @@ func GetVideoInfo(w http.ResponseWriter, r *http.Request) {
 			video.IsUserLastPlay = mysql.CheckUserVideoAllRelation(userId, video.Id)
 	}
 
-	data = map[string]interface{}{
-		"video": video,
+	if video.IsUserUploaded {
+		remainPromoteCount, remainAdvertiseCount := mysql.GetRemainPromoteAndAdvertiseCount(video.Id)
+		data = map[string]interface{}{
+			"video":                  video,
+			"remain_promote_count":   remainPromoteCount,
+			"remain_advertise_count": remainAdvertiseCount,
+		}
+	} else {
+		data = map[string]interface{}{
+			"video": video,
+		}
 	}
 
 	SendJSONResponse(w, status, data, errorMsg)
@@ -889,10 +884,9 @@ func ConfirmVideoUpload(w http.ResponseWriter, r *http.Request) {
 
 func SetVideoInfo(w http.ResponseWriter, r *http.Request) {
 	/*
-	 * @api {post} /v1/video/info/set Set video info
+	 * @api {put} /v1/video/{videoUid} Set video info
 	 * @apiName SetVideoInfo
 	 *
-	 * @apiParam {String} video_uid Video uid.
 	 * @apiParam {String} video_content Video content.
 	 * @apiParam {String} video_keyword Video keywords.
 	 * @apiParam {Number} video_type Video type.
@@ -901,13 +895,13 @@ func SetVideoInfo(w http.ResponseWriter, r *http.Request) {
 	data := map[string]interface{}{}
 	errorMsg := ""
 
-	// check method, only accept POST
-	if r.Method != "POST" {
-		status = 0
-		errorMsg = "Invalid request method."
-		SendJSONResponse(w, status, data, errorMsg)
-		return
-	}
+	//// check method, only accept POST
+	//if r.Method != "POST" {
+	//	status = 0
+	//	errorMsg = "Invalid request method."
+	//	SendJSONResponse(w, status, data, errorMsg)
+	//	return
+	//}
 
 	// check token
 	tokenValid, userId, _, _ := FindAndCheckToken(r)
@@ -918,6 +912,9 @@ func SetVideoInfo(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	vars := mux.Vars(r)
+	queryVideoUid := vars["videoUid"]
+
 	// parse form
 	err := r.ParseMultipartForm(config.MaxNormalPostSize64)
 	if err != nil {
@@ -926,10 +923,9 @@ func SetVideoInfo(w http.ResponseWriter, r *http.Request) {
 		SendJSONResponse(w, status, data, errorMsg)
 		return
 	}
-	queryVideoUid := r.PostFormValue("video_uid")
-	queryVideoContent := r.PostFormValue("video_content")
-	queryVideoKeyword := r.PostFormValue("video_keyword")
-	queryVideoTypeTmp, _ := strconv.Atoi(r.PostFormValue("video_type"))
+	queryVideoContent := r.FormValue("video_content")
+	queryVideoKeyword := r.FormValue("video_keyword")
+	queryVideoTypeTmp, _ := strconv.Atoi(r.FormValue("video_type"))
 	queryVideoType := int8(queryVideoTypeTmp)
 
 	// check video (lighter)
@@ -970,7 +966,7 @@ func SetVideoInfo(w http.ResponseWriter, r *http.Request) {
 
 func DeleteVideo(w http.ResponseWriter, r *http.Request) {
 	/*
-	 * @api {post} /v1/video/delete Delete video
+	 * @api {delete} /v1/video/{videoUid} Delete video
 	 * @apiName DeleteVideo
 	 *
 	 * @apiParam {String} video_uid Video uid.
@@ -978,14 +974,6 @@ func DeleteVideo(w http.ResponseWriter, r *http.Request) {
 	status := 200
 	data := map[string]interface{}{}
 	errorMsg := ""
-
-	// check method, only accept POST
-	if r.Method != "POST" {
-		status = 0
-		errorMsg = "Invalid request method."
-		SendJSONResponse(w, status, data, errorMsg)
-		return
-	}
 
 	// check token
 	tokenValid, userId, _, _ := FindAndCheckToken(r)
@@ -1275,5 +1263,176 @@ func GetRecommendVideoList(w http.ResponseWriter, r *http.Request) {
 	data = map[string]interface{}{
 		"video_list": videoList,
 	}
+	SendJSONResponse(w, status, data, errorMsg)
+}
+
+func PromoteVideo(w http.ResponseWriter, r *http.Request) {
+	/*
+	 * @api {post} /v1/video/promote Promote video
+	 * @apiName PromoteVideo
+	 *
+	 * @apiParam {String} video_uid Video uid.
+	 * @apiParam {Number} count Bandwidth count.
+	 */
+	status := 200
+	data := map[string]interface{}{}
+	errorMsg := ""
+
+	// check method, only accept POST
+	if r.Method != "POST" {
+		status = 0
+		errorMsg = "Invalid request method."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+	// check token
+	tokenValid, userId, _, _ := FindAndCheckToken(r)
+	if !tokenValid {
+		status = 0
+		errorMsg = "Not logged in."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+	// parse form
+	err := r.ParseMultipartForm(config.MaxNormalPostSize64)
+	if err != nil {
+		status = 0
+		errorMsg = "Failed to parse form."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+	queryVideoUid := r.PostFormValue("video_uid")
+	queryCountTmp := r.PostFormValue("count")
+	queryCount, _ := strconv.Atoi(queryCountTmp)
+	if queryCount < 1 || queryCount > 1000 {
+		status = 0
+		errorMsg = "Invalid count."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+
+	// check video
+	videoId := mysql.GetVideoIdByVideoUid(queryVideoUid)
+	if videoId == 0 {
+		status = 0
+		errorMsg = "Video not found."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+
+	// check if video is not uploaded by this user
+	// todo: promotion may be able to be created by not owner, like "help to promote"
+	if !mysql.CheckUserVideoRelation(userId, videoId, "uploaded") {
+		status = 0
+		errorMsg = "This video was not uploaded by this user."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+
+	// check if user have enough balance
+	userBalance := mysql.GetUserBalance(userId)
+	queryCountFloat := float64(queryCount)
+	if userBalance < queryCountFloat*config.PromotePrice {
+		status = 0
+		errorMsg = "Insufficient balance."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+
+	// promote
+	ok := mysql.PromoteVideo(videoId, userId, queryCount)
+	if !ok {
+		status = 0
+		errorMsg = "Unknown error."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+
+	SendJSONResponse(w, status, data, errorMsg)
+}
+
+func AdvertiseVideo(w http.ResponseWriter, r *http.Request) {
+	/*
+	 * @api {post} /v1/video/advertise Advertise video
+	 * @apiName AdvertiseVideo
+	 *
+	 * @apiParam {String} video_uid Video uid.
+	 * @apiParam {Number} count Bandwidth count.
+	 */
+	status := 200
+	data := map[string]interface{}{}
+	errorMsg := ""
+
+	// check method, only accept POST
+	if r.Method != "POST" {
+		status = 0
+		errorMsg = "Invalid request method."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+
+	// check token
+	tokenValid, userId, _, _ := FindAndCheckToken(r)
+	if !tokenValid {
+		status = 0
+		errorMsg = "Not logged in."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+
+	// parse form
+	err := r.ParseMultipartForm(config.MaxNormalPostSize64)
+	if err != nil {
+		status = 0
+		errorMsg = "Failed to parse form."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+	queryVideoUid := r.PostFormValue("video_uid")
+	queryCountTmp := r.PostFormValue("count")
+	queryCount, _ := strconv.Atoi(queryCountTmp)
+	if queryCount < 1 || queryCount > 1000 {
+		status = 0
+		errorMsg = "Invalid count."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+
+	// check video
+	videoId := mysql.GetVideoIdByVideoUid(queryVideoUid)
+	if videoId == 0 {
+		status = 0
+		errorMsg = "Video not found."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+
+	// check if video is not uploaded by this user
+	if !mysql.CheckUserVideoRelation(userId, videoId, "uploaded") {
+		status = 0
+		errorMsg = "This video was not uploaded by this user."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+
+	// check if user have enough balance
+	userBalance := mysql.GetUserBalance(userId)
+	queryCountFloat := float64(queryCount)
+	if userBalance < queryCountFloat*config.AdvertisePrice {
+		status = 0
+		errorMsg = "Insufficient balance."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+
+	// advertise
+	ok := mysql.AdvertiseVideo(videoId, userId, queryCount)
+	if !ok {
+		status = 0
+		errorMsg = "Unknown error."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+
 	SendJSONResponse(w, status, data, errorMsg)
 }
