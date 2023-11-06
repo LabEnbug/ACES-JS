@@ -108,7 +108,8 @@ function CommentDrawer(props) {
                                 comment_id={comment_info['id']} 
                                 video_uid={videoinfo['video_uid']} 
                                 addC={SetCommentS} 
-                                quote_comment={comment_info}  />}
+                                quote_comment={comment_info}
+                                setP={SetComment}  />}
                 author={comment_info['user']['nickname']}
                 avatar= {(    
                   <Avatar

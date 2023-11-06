@@ -350,7 +350,7 @@ function VideoPlayer({
         recordWatched();
       });
       playerRef.current.on('pause', () => {
-        // screen.current.pause();
+        screen.current.pause();
         setPlayState(true);
       });
       playerRef.current.on('timeupdate', function () {
@@ -536,7 +536,7 @@ function VideoPlayer({
       ).then(res=> {
         if (res.data.status == 200) {
           const data = res.data.data;
-          if (!data.bullet_comment_list || data.bullet_comment_list.length > 0) {
+          if (!data.bullet_comment_list || data.bullet_comment_list.length == 0) {
             clearTimeout(clickTimeout.current); // 清除定时器
             clickTimeout.current = null;
             return;

@@ -52,8 +52,6 @@ function VideoP() {
   const recordWatched = () => {
     const pre = window.sessionStorage.getItem('playvideo-pre-id');
     const uid = window.sessionStorage.getItem('playvideo-id');
-    console.log(pre);
-    console.log(pre);
     if (uid && pre != uid) {
       baxios
         .post('/v1-api/v1/videos/' + uid.toString() + '/actions' + 'watch')

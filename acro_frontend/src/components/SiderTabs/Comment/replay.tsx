@@ -63,7 +63,6 @@ const actions = (props)=> {
           });
           setP(pre=>{
             const new_array = [];
-            console.log(pre)
             pre.forEach(item=> {
               if (item.id === data.comment.quote_comment_id) {
                 item.child_comment_count_left +=1;
