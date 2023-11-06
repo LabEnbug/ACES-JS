@@ -40,10 +40,8 @@ function Promote() {
   const maxCount = 1000; // Max promotion count
 
   function GetVideoInfo() {
-    const param = new FormData();
-    param.append('video_uid', video_uid.toString());
     baxios
-      .post('/v1-api/v1/video/info', param)
+      .get('/v1-api/v1/video/' + video_uid.toString())
       .then((response) => {
         const data = response.data;
         if (data.status !== 200) {

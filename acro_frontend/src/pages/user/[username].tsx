@@ -3,8 +3,6 @@ import {
   Tabs,
   Card,
   Input,
-  Typography,
-  Grid,
   Button,
   List,
   Divider,
@@ -26,16 +24,21 @@ import {
 import UserAddonCountInfo from '@/pages/user/user-addon-count-info';
 import baxios from "@/utils/getaxios";
 import Head from "next/head";
+import active from "@antv/g2/src/interaction/action/element/active";
 
 const defaultVideoList = new Array(0).fill({});
-export default function ListSearchResult() {
+export default function UserPage() {
   const t = useLocale(locale);
   const tg = useLocale();
   const [loading, setLoading] = useState(true);
   const [followLoading, setFollowLoading] = useState(false);
   const [followHovering, setFollowHovering] = useState(false);
   const [videoData, setVideoData] = useState(defaultVideoList);
-  const [videoNum, setVideoNum] = useState({});
+  // const [videoNumList, setVideoNumList] = useState({});
+  const [uploadedNum, setUploadedNum] = useState(0);
+  const [likedNum, setLikedNum] = useState(0);
+  const [favoriteNum, setFavoriteNum] = useState(0);
+  const [watchedNum, setWatchedNum] = useState(0);
 
   const [userData, setUserData] = useState(null);
 
@@ -56,12 +59,33 @@ export default function ListSearchResult() {
 
   const [avatarFile, setAvatarFile] = useState();
 
+  const setNum = (relation: string, num: number) => {
+    if (relation === 'uploaded') {
+      setUploadedNum(num);
+    } else if (relation === 'liked') {
+      setLikedNum(num);
+    } else if (relation === 'favorite') {
+      setFavoriteNum(num);
+    } else if (relation === 'watched') {
+      setWatchedNum(num);
+    }
+  }
+
+  const getNum = (relation: string) => {
+    if (relation === 'uploaded') {
+      return uploadedNum;
+    } else if (relation === 'liked') {
+      return likedNum;
+    } else if (relation === 'favorite') {
+      return favoriteNum;
+    } else if (relation === 'watched') {
+      return watchedNum;
+    }
+  }
   const getUserInfoData = async (username) => {
     setLoading(true);
-    const params = new FormData();
-    params.append('username', username);
     baxios
-      .post('/v1-api/v1/user/query', params)
+      .get('/v1-api/v1/users/' + username)
       .then((response) => {
         const data = response.data;
         if (data.status !== 200) {
@@ -71,7 +95,7 @@ export default function ListSearchResult() {
         }
         setIsSelf(data.data.user.is_self);
         setUserData(data.data.user);
-        getVideoData(data.data.user.user_id, activeKey);
+        getVideoData(data.data.user.user_id, 'uploaded');
       })
       .catch((error) => {
         console.error(error);
@@ -82,7 +106,7 @@ export default function ListSearchResult() {
   const getSelfInfoData = async () => {
     setLoading(true);
     baxios
-      .post('/v1-api/v1/user/info')
+      .get('/v1-api/v1/user/info')
       .then((response) => {
         const data = response.data;
         if (data.status !== 200) {
@@ -91,7 +115,7 @@ export default function ListSearchResult() {
           return;
         }
         setUserData(data.data.user);
-        getVideoData(data.data.user.user_id, activeKey);
+        getVideoData(data.data.user.user_id, 'uploaded');
       })
       .catch((error) => {
         console.error(error);
@@ -112,32 +136,27 @@ export default function ListSearchResult() {
     return newObj;
   };
 
-  const getVideoData = async (userid, t) => {
+  const getVideoData = (userid, relation) => {
     setIsEndData(false);
     setLoading(true);
-    const param = new FormData();
-    param.append('user_id', isSelf ? (t === 'watched' ? 0 : userid) : userid);
-    param.append('relation', t);
-    param.append('limit', '12');
     // sleep
     // await new Promise(resolve => setTimeout(resolve, 3000));
     baxios
-      .post('/v1-api/v1/video/list', param)
+      .get('/v1-api/v1/videos?' +
+        'user_id=' + (isSelf ? (relation === 'watched' ? 0 : userid) : userid) + '&' +
+        'relation=' + relation + '&' +
+        'limit=12')
       .then((response) => {
         const data = response.data;
         if (data.status !== 200) {
           console.error(data.err_msg);
-          setVideoData(defaultVideoList);
-          const tmp = cloneDeep(videoNum);
-          tmp[activeKey] = 0;
-          setVideoNum(tmp);
+          // setVideoData(defaultVideoList);
+          setNum(relation, 0)
           return;
         }
         setVideoData(data.data.video_list);
         if (data.data.video_num) {
-          const tmp = cloneDeep(videoNum);
-          tmp[activeKey] = data.data.video_num;
-          setVideoNum(tmp);
+          setNum(relation, data.data.video_num)
         }
       })
       .catch((error) => {
@@ -146,16 +165,14 @@ export default function ListSearchResult() {
       .finally(() => setLoading(false));
   };
 
-  const getMoreData = async (userid, t) => {
+  const getMoreData = (userid, relation) => {
     setLoading(true);
-    const param = new FormData();
-    param.append('user_id', isSelf ? (t === 'watched' ? 0 : userid) : userid);
-    param.append('relation', t);
-    const s = videoData.length;
-    param.append('start', s.toString());
-    param.append('limit', '12');
     baxios
-      .post('/v1-api/v1/video/list', param)
+      .get('/v1-api/v1/videos?' +
+      'user_id=' + (isSelf ? (relation === 'watched' ? 0 : userid) : userid) + '&' +
+        'relation=' + relation + '&' +
+        'start=' + videoData.length.toString() + '&' +
+        'limit=12')
       .then((response) => {
         const data = response.data;
         if (data.status !== 200) {
@@ -165,9 +182,7 @@ export default function ListSearchResult() {
         }
         setVideoData(videoData.concat(data.data.video_list));
         if (data.data.video_num) {
-          const tmp = cloneDeep(videoNum);
-          tmp[activeKey] = data.data.video_num;
-          setVideoNum(tmp);
+          setNum(relation, data.data.video_num)
         }
       })
       .catch((error) => {
@@ -176,12 +191,18 @@ export default function ListSearchResult() {
       .finally(() => setLoading(false));
   };
 
-  // todo: need to fix first enter page will not update the videoNum bug
-
   useEffect(() => {
     if (router.isReady && username) {
+      // need to fix when user page to other user page, videoNum would not change
+      // 20231106 fixed
+      setNum('uploaded', 0);
+      setNum('liked', 0);
+      setNum('favorite', 0);
+      setNum('watched', 0);
+
       setUserData(null);
       setVideoData(defaultVideoList);
+      setActiveKey('uploaded');
       username === 'self' ? setIsSelf(true) : setIsSelf(false);
       username === 'self' ? getSelfInfoData() : getUserInfoData(username);
     }
@@ -194,19 +215,6 @@ export default function ListSearchResult() {
       getVideoData(userData.user_id, activeKey);
     }
   }, [activeKey]);
-
-  useEffect(() => {
-    if (!loading && listRef.current) {
-      const listElement = listRef.current;
-      // 检查内容高度是否小于等于容器高度
-      console.log(11);
-      if (listElement.clientHeight >= listElement.scrollHeight) {
-        // 触发到达底部的逻辑
-        console.log('Reached bottom');
-        // 在这里调用onReachBottom或相关逻辑
-      }
-    }
-  }, [loading]);
 
   const ContentContainer = ({ children }) => (
     <div style={{ textAlign: 'center', marginTop: 4 }}>
@@ -237,7 +245,7 @@ export default function ListSearchResult() {
       params.append('type', 'nickname');
       params.append('nickname', nicknameForChange);
       baxios
-        .post('/v1-api/v1/user/info/set', params)
+        .put('/v1-api/v1/user/info', params)
         .then((response) => {
           const data = response.data;
           if (data.status !== 200) {
@@ -258,31 +266,30 @@ export default function ListSearchResult() {
     });
   }
 
-  function handleChangeAvatar(originFile) {
-    return new Promise<void>((resolve, reject) => {
-      const params = new FormData();
-      params.append('type', 'avatar');
-      params.append('file', originFile);
-      baxios
-        .post('/v1-api/v1/user/info/set', params)
-        .then((response) => {
-          const data = response.data;
-          if (data.status !== 200) {
-            console.error(data.err_msg);
-            Message.error(data.err_msg);
-            resolve()
-            return;
-          }
-          setUserData(data.data.user);
-          Message.success("头像修改成功！");
-          resolve();
-        })
-        .catch((error) => {
-          console.error(error);
-          reject();
-        })
-        .finally(() => {});
-    });
+  const handleChangeAvatar = (currentFile) => {
+    const params = new FormData();
+    params.append('type', 'avatar');
+    params.append('file', currentFile.originFile);
+    baxios
+      .put('/v1-api/v1/user/info', params)
+      .then((response) => {
+        const data = response.data;
+        if (data.status !== 200) {
+          console.error(data.err_msg);
+          Message.error(data.err_msg);
+          return;
+        }
+        setUserData(data.data.user);
+        Message.success("头像修改成功！");
+        setAvatarFile({
+          ...currentFile,
+          url: URL.createObjectURL(currentFile.originFile),
+        });
+      })
+      .catch((error) => {
+        console.error(error);
+      })
+      .finally(() => {});
   }
 
   const followUser = (follow) => {
@@ -313,9 +320,7 @@ export default function ListSearchResult() {
 
   const handleDelete = (itemToDelete) => {
     setVideoData(videoData.filter((item) => item !== itemToDelete));
-    const tmp = cloneDeep(videoNum);
-    tmp[activeKey] = tmp[activeKey] - 1;
-    setVideoNum(tmp);
+    setNum(activeKey, getNum(activeKey) - 1);
   };
 
   return (
@@ -354,25 +359,22 @@ export default function ListSearchResult() {
                       Message.error("请选择小于2MB大小的头像图片进行上传");
                       return;
                     }
-                    setAvatarFile({
-                      ...currentFile,
-                      url: URL.createObjectURL(currentFile.originFile),
-                    });
-                    handleChangeAvatar(currentFile.originFile);
+                    handleChangeAvatar(currentFile);
                   }}
                 >
                   <Avatar
+                    className={styles['avatar']}
                     size={64}
                     triggerIcon={isSelf?<IconCamera />:null}
                     triggerType='mask'
                     onClick={() => {}}
                   >
                     {avatarFile && avatarFile.url ? (
-                      <img src={avatarFile.url} />
+                      <img src={avatarFile.url}  alt={null}/>
                     ) : (
                       userData ? (
                       userData.avatar_url ? (
-                        <img src={userData.avatar_url} />
+                        <img src={userData.avatar_url}  alt={null}/>
                       ) : (
                         userData.nickname
                       )
@@ -476,11 +478,7 @@ export default function ListSearchResult() {
                   key="uploaded"
                   title={
                     t['cardList.tab.title.uploaded'] +
-                    (videoNum &&
-                    videoNum['uploaded'] &&
-                    videoNum['uploaded'] !== 0
-                      ? ' (' + videoNum['uploaded'] + ')'
-                      : '')
+                    (getNum('uploaded') !== 0 ? ' (' + getNum('uploaded') + ')' : '')
                   }
                 />
                 {/*<Tabs.TabPane key="uploaded" title={t['cardList.tab.title.uploaded'] + (videoNumU!==0?" ("+videoNumU+")":"")} />*/}
@@ -488,18 +486,14 @@ export default function ListSearchResult() {
                   key="liked"
                   title={
                     t['cardList.tab.title.liked'] +
-                    (videoNum['liked'] && videoNum['liked'] !== 0
-                      ? ' (' + videoNum['liked'] + ')'
-                      : '')
+                    (getNum('liked') !== 0 ? ' (' + getNum('liked') + ')' : '')
                   }
                 />
                 <Tabs.TabPane
                   key="favorite"
                   title={
                     t['cardList.tab.title.favorite'] +
-                    (videoNum['favorite'] && videoNum['favorite'] !== 0
-                      ? ' (' + videoNum['favorite'] + ')'
-                      : '')
+                    (getNum('favorite') !== 0 ? ' (' + getNum('favorite') + ')' : '')
                   }
                 />
                 {/* watched is only for self */}
@@ -508,9 +502,7 @@ export default function ListSearchResult() {
                     key="watched"
                     title={
                       t['cardList.tab.title.watched'] +
-                      (videoNum['watched'] && videoNum['watched'] !== 0
-                        ? ' (' + videoNum['watched'] + ')'
-                        : '')
+                      (getNum('watched') !== 0 ? ' (' + getNum('watched') + ')' : '')
                     }
                   />
                 ) : null}
@@ -561,7 +553,7 @@ export default function ListSearchResult() {
                 onReachBottom={() => {
                   userData && getMoreData(userData.user_id, activeKey);
                 }}
-                render={(item, index) => (
+                render={(item, _) => (
                   <List.Item style={{ padding: '4px 4px' }}>
                     {
                       <CardBlock

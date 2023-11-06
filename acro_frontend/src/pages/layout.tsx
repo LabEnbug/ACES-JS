@@ -190,7 +190,6 @@ function PageLayout({ children }: { children: ReactNode }) {
     const routeConfig = routeMap.current.get(pathname);
     // setBreadCrumb(routeConfig || []);
     updateMenuStatus();
-    console.log("layout.tsx", pathname);
   }, [pathname]);
 
   return (
@@ -241,11 +240,7 @@ function PageLayout({ children }: { children: ReactNode }) {
             </Sider>
           )}
           <Layout className={styles['layout-content']} style={paddingStyle}>
-            <div
-              className={
-                pathname !== '/video' && styles['layout-content-wrapper']
-              }
-            >
+            <div>
               {!!breadcrumb.length && (
                 <div className={styles['layout-breadcrumb']}>
                   <Breadcrumb>

@@ -44,6 +44,7 @@ const i18n = {
     'user.cancel': '取消',
     'user.already': '已经',
     'user.followed': '关注',
+    'user.follow': '关注',
     'user.follower': '粉丝',
     'user.liked': '获赞',
     'user.view': '浏览量',

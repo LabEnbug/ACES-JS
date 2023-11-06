@@ -55,8 +55,6 @@ function VideoP() {
     console.log(pre);
     console.log(pre);
     if (uid && pre != uid) {
-      const param = new FormData();
-      param.append('video_uid', uid);
       baxios
         .post('/v1-api/v1/video/watch', param)
         .then((response) => {
@@ -75,12 +73,10 @@ function VideoP() {
       router.push('/video');
     }
     if (playlist.length == 0 || pre_type != type) {
-      const param = new FormData();
-      param.append('limit', limit);
       // param.append('page', page)
-      if (type != default_type) param.append('type', GetVideType(type));
       baxios
-        .post('/v1-api/v1/video/list', param)
+        .get('/v1-api/v1/videos?' + 'limit=' + limit + '&' +
+          (type != default_type ? 'type=' + GetVideType(type) : ''))
         .then((response) => {
           const data = response.data;
           window.localStorage.setItem('pretype', type);
@@ -90,10 +86,8 @@ function VideoP() {
               data.data.video_list.length > 0 &&
               video_uid != data.data.video_list[playIndex]['video_uid']
             ) {
-              const param1 = new FormData();
-              param1.append('video_uid', video_uid);
               baxios
-                .post('v1-api/v1/video/info', param1)
+                .get('/v1-api/v1/video/' + video_uid.toString())
                 .then((response1) => {
                   if (JudgeStatus(response1.data)) {
                     data.data.video_list.unshift(response1.data.data.video);
@@ -111,12 +105,10 @@ function VideoP() {
           console.error(error);
         });
     } else if (playIndex >= playlist.length - 3) {
-      const param = new FormData();
-      param.append('limit', limit);
-      if (type != default_type) param.append('type', GetVideType(type));
-      param.append('start', playlist.length);
       baxios
-        .post('/v1-api/v1/video/list', param)
+        .get('/v1-api/v1/videos?' + 'limit=' + limit + '&' +
+          (type != default_type ? 'type=' + GetVideType(type) + '&' : '') +
+          'start=' + playlist.length.toString())
         .then((res) => {
           const data = res.data;
           if (JudgeStatus(data)) {

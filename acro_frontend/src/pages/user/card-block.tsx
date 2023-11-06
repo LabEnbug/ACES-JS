@@ -346,7 +346,7 @@ function CardBlock(props: CardBlockType) {
                   投放广告
                 </Menu.Item>
                 <Menu.Item
-                  key="makeTop"
+                  key="makePrivate"
                   onClick={(event) => {
                     event.stopPropagation();
                     privateVideo();

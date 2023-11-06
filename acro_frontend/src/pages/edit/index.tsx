@@ -49,10 +49,8 @@ function EditShortVideo() {
     } else if (router.isReady && video_uid) {
       setVideoUid(video_uid.toString());
       // get video info
-      const param = new FormData();
-      param.append('video_uid', video_uid.toString());
       baxios
-        .post('/v1-api/v1/video/info', param)
+        .get('/v1-api/v1/video/' + video_uid.toString())
         .then((response) => {
           const data = response.data;
           if (data.status !== 200) {
@@ -87,12 +85,11 @@ function EditShortVideo() {
     setLoading(true);
 
     const param = new FormData();
-    param.append('video_uid', videoUid);
     param.append('video_type', form.getFieldValue('type'));
     param.append('video_content', form.getFieldValue('content'));
     param.append('video_keyword', form.getFieldValue('keyword').join(' '));
     baxios
-      .post('/v1-api/v1/video/info/set', param)
+      .put('/v1-api/v1/video/' + video_uid, param)
       .then((response) => {
         const data = response.data;
         if (data.status !== 200) {

@@ -7,6 +7,7 @@ import (
 	"backend/database"
 	"backend/database/mysql"
 	"fmt"
+	"github.com/gorilla/mux"
 	"log"
 	"net/http"
 	"runtime"
@@ -55,57 +56,59 @@ func main() {
 
 	auth.InitEcdsa()
 
-	http.HandleFunc("/", defaultPage)
+	r := mux.NewRouter()
 
 	// user
-	http.HandleFunc("/v1/user/login", cmd.Login)
-	http.HandleFunc("/v1/user/logout", cmd.Logout)
-	http.HandleFunc("/v1/user/signup", cmd.Signup)
-	http.HandleFunc("/v1/user/info", cmd.GetUserInfo)
-	http.HandleFunc("/v1/user/query", cmd.GetOtherUserInfo)
-	http.HandleFunc("/v1/user/follow", cmd.FollowUser)
-	http.HandleFunc("/v1/user/info/set", cmd.SetUserInfo)
-	http.HandleFunc("/v1/user/deposit", cmd.UserDeposit)
+	r.HandleFunc("/v1/user/login", cmd.Login).Methods("POST")
+	r.HandleFunc("/v1/user/logout", cmd.Logout).Methods("POST")
+	r.HandleFunc("/v1/user/signup", cmd.Signup).Methods("POST")
+	r.HandleFunc("/v1/user/info", cmd.GetUserInfo).Methods("GET")
+	r.HandleFunc("/v1/user/info", cmd.SetUserInfo).Methods("PUT")
+	r.HandleFunc("/v1/users/{username}", cmd.GetOtherUserInfo).Methods("GET")
+	r.HandleFunc("/v1/user/follow", cmd.FollowUser).Methods("POST")
+	r.HandleFunc("/v1/user/deposit", cmd.UserDeposit).Methods("POST")
 
 	// video
-	http.HandleFunc("/v1/video/list", cmd.GetVideoList)
-	http.HandleFunc("/v1/video/info", cmd.GetVideoInfo)
-	http.HandleFunc("/v1/video/action", cmd.DoVideoAction)
-	http.HandleFunc("/v1/video/watch", cmd.RecordWatchedVideo)
-	http.HandleFunc("/v1/video/forward", cmd.GuestForwardVideo)
+	r.HandleFunc("/v1/videos", cmd.GetVideoList).Methods("GET")
+	r.HandleFunc("/v1/video/{videoUid}", cmd.GetVideoInfo).Methods("GET")
+	r.HandleFunc("/v1/video/{videoUid}", cmd.SetVideoInfo).Methods("PUT")
+	r.HandleFunc("/v1/video/{videoUid}", cmd.DeleteVideo).Methods("DELETE")
+	r.HandleFunc("/v1/video/action", cmd.DoVideoAction).Methods("POST")
+	r.HandleFunc("/v1/video/watch", cmd.RecordWatchedVideo).Methods("POST")
+	r.HandleFunc("/v1/video/forward", cmd.GuestForwardVideo).Methods("POST")
 
-	http.HandleFunc("/v1/video/upload", cmd.UploadVideo)                // [deprecated] file and info add together
-	http.HandleFunc("/v1/video/uploadRemote", cmd.UploadVideoRemote)    // add info first, upload to qiniu directly from source, admin usage
-	http.HandleFunc("/v1/video/upload/file", cmd.UploadVideoFile)       // upload file first, save in server, user usage step 1
-	http.HandleFunc("/v1/video/upload/confirm", cmd.ConfirmVideoUpload) // confirm publish, upload from server to qiniu, user usage step 2
-	http.HandleFunc("/v1/video/info/set", cmd.SetVideoInfo)
-	http.HandleFunc("/v1/video/delete", cmd.DeleteVideo)
-	http.HandleFunc("/v1/video/top", cmd.TopVideo)
-	http.HandleFunc("/v1/video/private", cmd.PrivateVideo)
-	http.HandleFunc("/v1/video/types", cmd.GetVideoTypes)
+	r.HandleFunc("/v1/video/upload", cmd.UploadVideo).Methods("POST")                // [deprecated] file and info add together
+	r.HandleFunc("/v1/video/uploadRemote", cmd.UploadVideoRemote).Methods("POST")    // add info first, upload to qiniu directly from source, admin usage
+	r.HandleFunc("/v1/video/upload/file", cmd.UploadVideoFile).Methods("POST")       // upload file first, save in server, user usage step 1
+	r.HandleFunc("/v1/video/upload/confirm", cmd.ConfirmVideoUpload).Methods("POST") // confirm publish, upload from server to qiniu, user usage step 2
+	r.HandleFunc("/v1/video/top", cmd.TopVideo).Methods("POST")
+	r.HandleFunc("/v1/video/private", cmd.PrivateVideo).Methods("POST")
+	r.HandleFunc("/v1/video/types", cmd.GetVideoTypes).Methods("POST")
 
-	http.HandleFunc("/v1/video/promote", cmd.PromoteVideo)
-	http.HandleFunc("/v1/video/advertise", cmd.AdvertiseVideo)
+	r.HandleFunc("/v1/video/promote", cmd.PromoteVideo).Methods("POST")
+	r.HandleFunc("/v1/video/advertise", cmd.AdvertiseVideo).Methods("POST")
 
 	// video comment
-	http.HandleFunc("/v1/video/comment/list", cmd.GetVideoCommentList)
-	http.HandleFunc("/v1/video/comment/make", cmd.MakeVideoComment)
-	http.HandleFunc("/v1/video/comment/delete", cmd.DeleteVideoComment)
+	r.HandleFunc("/v1/video/comment/list", cmd.GetVideoCommentList).Methods("POST")
+	r.HandleFunc("/v1/video/comment/make", cmd.MakeVideoComment).Methods("POST")
+	r.HandleFunc("/v1/video/comment/delete", cmd.DeleteVideoComment).Methods("POST")
 
 	// video bullet comment
-	http.HandleFunc("/v1/video/bullet_comment/list", cmd.GetVideoBulletCommentList)
-	http.HandleFunc("/v1/video/bullet_comment/make", cmd.MakeVideoBulletComment)
-	http.HandleFunc("/v1/video/bullet_comment/delete", cmd.DeleteVideoBulletComment)
+	r.HandleFunc("/v1/video/bullet_comment/list", cmd.GetVideoBulletCommentList).Methods("POST")
+	r.HandleFunc("/v1/video/bullet_comment/make", cmd.MakeVideoBulletComment).Methods("POST")
+	r.HandleFunc("/v1/video/bullet_comment/delete", cmd.DeleteVideoBulletComment).Methods("POST")
 
 	// search
-	http.HandleFunc("/v1/video/search", cmd.SearchVideo)
-	http.HandleFunc("/v1/video/search/hotkeys", cmd.GetSearchVideoHotkeys)
-	http.HandleFunc("/v1/user/search", cmd.SearchUser)
-	http.HandleFunc("/v1/user/search/hotkeys", cmd.GetSearchUserHotkeys)
+	r.HandleFunc("/v1/search/video", cmd.SearchVideo).Methods("GET")
+	r.HandleFunc("/v1/search/video/hotkeys", cmd.GetSearchVideoHotkeys).Methods("GET")
+	r.HandleFunc("/v1/search/user", cmd.SearchUser).Methods("GET")
+	r.HandleFunc("/v1/search/user/hotkeys", cmd.GetSearchUserHotkeys).Methods("GET")
 
 	// callback
-	http.HandleFunc("/callback/qiniu/hls", cmd.QiniuHlsCallback)
-	http.HandleFunc("/callback/qiniu/screenshot", cmd.QiniuScreenshotCallback)
+	r.HandleFunc("/callback/qiniu/hls", cmd.QiniuHlsCallback).Methods("POST")
+	r.HandleFunc("/callback/qiniu/screenshot", cmd.QiniuScreenshotCallback).Methods("POST")
+
+	http.Handle("/", r)
 
 	err := http.ListenAndServe(":8051", nil)
 	if err != nil {

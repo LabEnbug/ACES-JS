@@ -8,6 +8,7 @@ import (
 	"backend/tool"
 	"fmt"
 	"github.com/google/uuid"
+	"github.com/gorilla/mux"
 	"golang.org/x/image/draw"
 	"image"
 	"image/png"
@@ -195,20 +196,20 @@ func Signup(w http.ResponseWriter, r *http.Request) {
 
 func GetUserInfo(w http.ResponseWriter, r *http.Request) {
 	/*
-	 * @api {get|post} /v1/user/info Get user info
+	 * @api {get} /v1/user/info Get user info
 	 * @apiName GetUserInfo
 	 */
 	status := 200
 	data := map[string]interface{}{}
 	errorMsg := ""
 
-	// check method
-	if r.Method != "GET" && r.Method != "POST" {
-		status = 0
-		errorMsg = "Invalid request method."
-		SendJSONResponse(w, status, data, errorMsg)
-		return
-	}
+	//// check method
+	//if r.Method != "GET" && r.Method != "POST" {
+	//	status = 0
+	//	errorMsg = "Invalid request method."
+	//	SendJSONResponse(w, status, data, errorMsg)
+	//	return
+	//}
 
 	// check token
 	tokenValid, userId, exp, token := FindAndCheckToken(r)
@@ -247,30 +248,32 @@ func GetUserInfo(w http.ResponseWriter, r *http.Request) {
 
 func GetOtherUserInfo(w http.ResponseWriter, r *http.Request) {
 	/*
-	 * @api {post} /v1/user/query Get other user info
+	 * @api {get} /v1/users/{username} Get other user info
 	 * @apiName GetOtherUserInfo
 	 */
 	status := 200
 	data := map[string]interface{}{}
 	errorMsg := ""
 
-	// check method, only accept POST
-	if r.Method != "POST" {
-		status = 0
-		errorMsg = "Invalid request method."
-		SendJSONResponse(w, status, data, errorMsg)
-		return
-	}
+	//// check method, only accept POST
+	//if r.Method != "POST" {
+	//	status = 0
+	//	errorMsg = "Invalid request method."
+	//	SendJSONResponse(w, status, data, errorMsg)
+	//	return
+	//}
 
-	// parse form
-	err := r.ParseMultipartForm(config.MaxNormalPostSize64)
-	if err != nil {
-		status = 0
-		errorMsg = "Failed to parse form."
-		SendJSONResponse(w, status, data, errorMsg)
-		return
-	}
-	queryUsername := r.PostFormValue("username")
+	//// parse form
+	//err := r.ParseMultipartForm(config.MaxNormalPostSize64)
+	//if err != nil {
+	//	status = 0
+	//	errorMsg = "Failed to parse form."
+	//	SendJSONResponse(w, status, data, errorMsg)
+	//	return
+	//}
+	//queryUsername := r.PostFormValue("username")
+	vars := mux.Vars(r)
+	queryUsername := vars["username"]
 	if queryUsername == "" {
 		status = 0
 		errorMsg = "Username cannot be empty."
@@ -381,7 +384,7 @@ func FollowUser(w http.ResponseWriter, r *http.Request) {
 
 func SetUserInfo(w http.ResponseWriter, r *http.Request) {
 	/*
-	 * @api {post} /v1/user/info/set Set user info
+	 * @api {put} /v1/user/info/set Set user info
 	 * @apiName SetUserInfoNickname
 	 *
 	 * @apiParam {String} type Type. (nickname || avatar)
@@ -392,13 +395,13 @@ func SetUserInfo(w http.ResponseWriter, r *http.Request) {
 	data := map[string]interface{}{}
 	errorMsg := ""
 
-	// check method, only accept POST
-	if r.Method != "POST" {
-		status = 0
-		errorMsg = "Invalid request method."
-		SendJSONResponse(w, status, data, errorMsg)
-		return
-	}
+	//// check method, only accept POST
+	//if r.Method != "POST" {
+	//	status = 0
+	//	errorMsg = "Invalid request method."
+	//	SendJSONResponse(w, status, data, errorMsg)
+	//	return
+	//}
 
 	// check token
 	tokenValid, userId, _, _ := FindAndCheckToken(r)
@@ -422,9 +425,9 @@ func SetUserInfo(w http.ResponseWriter, r *http.Request) {
 		SendJSONResponse(w, status, data, errorMsg)
 		return
 	}
-	queryType := r.PostFormValue("type")
+	queryType := r.FormValue("type")
 	if queryType == "nickname" {
-		queryNickname := r.PostFormValue("content")
+		queryNickname := r.FormValue("nickname")
 		// set Nickname by userId
 		ok := mysql.SetUserInfoNickname(userId, queryNickname)
 		if !ok {

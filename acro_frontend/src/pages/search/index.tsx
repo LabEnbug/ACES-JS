@@ -40,15 +40,13 @@ export default function ListSearchResult() {
       : setUserData(defaultUserList);
     setIsEndData(false);
     setLoading(true);
-    const param = new FormData();
-    param.append('keyword', q);
-    param.append('limit', '12');
     // sleep
     // await new Promise(resolve => setTimeout(resolve, 3000));
     baxios
-      .post(
-        t === 'video' ? '/v1-api/v1/video/search' : '/v1-api/v1/user/search',
-        param
+      .get(
+        '/v1-api/v1/search/' + t + '?' +
+        'keyword=' + q + '&' +
+        'limit=' + '12'
       )
       .then((response) => {
         const data = response.data;
@@ -71,15 +69,12 @@ export default function ListSearchResult() {
 
   const getMoreData = async (q, t) => {
     setLoading(true);
-    const param = new FormData();
-    param.append('keyword', q);
-    const s = t === 'video' ? videoData.length : userData.length;
-    param.append('start', s.toString());
-    param.append('limit', '12');
     baxios
-      .post(
-        t === 'video' ? '/v1-api/v1/video/search' : '/v1-api/v1/user/search',
-        param
+      .get(
+        '/v1-api/v1/search/' + t + '?' +
+        'keyword=' + q + '&' +
+        'start=' + (t === 'video' ? videoData.length : userData.length).toString() + '&' +
+        'limit=' + '12'
       )
       .then((response) => {
         const data = response.data;
