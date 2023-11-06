@@ -25,6 +25,8 @@ import UserAddonCountInfo from '@/pages/user/user-addon-count-info';
 import baxios from "@/utils/getaxios";
 import Head from "next/head";
 import active from "@antv/g2/src/interaction/action/element/active";
+import {UpdateUserInfoOnly} from "@/utils/getuserinfo";
+import {useDispatch} from "react-redux";
 
 const defaultVideoList = new Array(0).fill({});
 export default function UserPage() {
@@ -58,6 +60,8 @@ export default function UserPage() {
   const [noSuchUser, setNoSuchUser] = useState(false);
 
   const [avatarFile, setAvatarFile] = useState();
+
+  const dispatch = useDispatch();
 
   const setNum = (relation: string, num: number) => {
     if (relation === 'uploaded') {
@@ -256,6 +260,7 @@ export default function UserPage() {
           }
           setUserData(data.data.user);
           Message.success("昵称修改成功！");
+          UpdateUserInfoOnly(dispatch);
           resolve();
         })
         .catch((error) => {
@@ -281,6 +286,7 @@ export default function UserPage() {
         }
         setUserData(data.data.user);
         Message.success("头像修改成功！");
+        UpdateUserInfoOnly(dispatch);
         setAvatarFile({
           ...currentFile,
           url: URL.createObjectURL(currentFile.originFile),

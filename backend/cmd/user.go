@@ -414,7 +414,7 @@ func SetUserInfo(w http.ResponseWriter, r *http.Request) {
 		// check from filename, lower filename must include (.mp4 or .mov or .avi or .wmv or .flv or .mkv or .webm
 		// or .ts or .rm or .rmvb or .3gp or .mpeg or .mpg or .m4v or .f4v)
 		fileName := strings.ToLower(fileHeader.Filename)
-		extensionList := []string{".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp", ".svg", ".ico"}
+		extensionList := []string{".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp"}
 		// check if filename contains any extension name
 		extensionNameExist := false
 		for _, extensionName := range extensionList {

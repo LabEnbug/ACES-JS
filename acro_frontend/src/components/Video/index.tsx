@@ -59,6 +59,7 @@ function VideoPlayer({
   const [videoinfo, setVideoInfo] = useState({
     nickname: 'default',
     username: 'default',
+    avatar_url: null,
     content: 'default',
     be_watched_count: 0,
     time: '2023-10-31T18:43:57.000Z',
@@ -121,6 +122,7 @@ function VideoPlayer({
           setVideoInfo({
             nickname: video['user']['nickname'],
             username: video['user']['username'],
+            avatar_url: video['user']['avatar_url'],
             content: video['content'],
             be_watched_count: video['be_watched_count'],
             video_uid: video['video_uid'],

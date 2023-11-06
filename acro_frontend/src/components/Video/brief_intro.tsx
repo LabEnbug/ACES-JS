@@ -4,6 +4,7 @@ import styles from './style/intro.module.less';
 import locale from './locale';
 import useLocale from '@/utils/useLocale';
 import { useRouter } from 'next/router';
+import {parseKeywordOnVideo} from "@/utils/keywordUtils";
 
 function BriefIntro(props, ref) {
   const { videoinfo, ...rest } = props;
@@ -24,32 +25,6 @@ function BriefIntro(props, ref) {
     });
   }
 
-  const parseKeyword = (keyword: string) => {
-    // if keyword does not have space, return it directly
-    if (keyword === undefined) {
-      return null;
-    }
-    if (keyword.indexOf(' ') === -1) {
-      return null;
-    }
-    const keywords = keyword.split(' ');
-    // do not split them to multiple div element
-    return (
-      keywords.map((keyword, index) => (
-        <Tag
-          key={index.toString()}
-          onClick={() => makeNewSearch(keyword)}
-          style={{
-            cursor: 'pointer',
-            marginRight: '4px',
-            marginBottom: '4px',
-          }}
-        >
-          {keyword}
-        </Tag>
-      ))
-    );
-  };
 
   const goToUserPage = () => {
     router.push({
@@ -66,7 +41,7 @@ function BriefIntro(props, ref) {
         ・<span className={styles['title-time']}>{videoinfo['time'].split('T')[0].replace(/-/g, '/')}</span>
       </div>
       <div className={styles['brief-container']}><span className={styles['brief-text']}> {videoinfo['content']} </span></div>
-      <div className={styles.keyword}>{parseKeyword(videoinfo['keyword'])}</div>
+      <div className={styles.keyword}>{parseKeywordOnVideo(videoinfo['keyword'], router)}</div>
     </div>
  );
 }

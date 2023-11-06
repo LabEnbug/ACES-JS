@@ -62,7 +62,6 @@ function Promote() {
         if (!video.is_user_uploaded) {
           Message.error('暂未开放投放其他用户的视频广告');
         }
-        UpdateUserInfoOnly();
       })
       .catch((error) => {
         console.error(error);

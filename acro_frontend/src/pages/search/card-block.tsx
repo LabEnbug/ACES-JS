@@ -14,29 +14,18 @@ import {
 import baxios from "@/utils/getaxios";
 import useLocale from '@/utils/useLocale';
 import locale from './locale';
+import {parseTime} from "@/utils/timeUtils";
+import {parseKeyword} from "@/utils/keywordUtils";
 
 function CardBlock(props) {
   const t = useLocale(locale);
+  const tg = useLocale();
   const { type, card = {} } = props;
   const [followLoading, setFollowLoading] = useState(false);
   const [followHovering, setFollowHovering] = useState(false);
   const [isFollowed, setIsFollowed] = useState(false);
 
   const router = useRouter();
-
-  function makeNewSearch(keyword: string) {
-    // change search input in navbar
-    const searchInput = document.getElementById('search-input');
-    if (searchInput) {
-      searchInput.setAttribute('value', keyword);
-    }
-    router.push({
-      pathname: '/search',
-      query: {
-        q: keyword,
-      },
-    });
-  }
 
   function goToVideoPage(video_uid: string) {
     router.push({
@@ -53,55 +42,6 @@ function CardBlock(props) {
     }
   }, [props.loading]);
 
-  // parse time "2023-10-27T16:43:57+08:00" string to some like "3 days ago"
-  const parseTime = (time: string) => {
-    const date = new Date(time);
-    const now = new Date();
-    const diff = now.getTime() - date.getTime();
-    const days = Math.floor(diff / (24 * 3600 * 1000));
-    const hours = Math.floor((diff % (24 * 3600 * 1000)) / (3600 * 1000));
-    const minutes = Math.floor((diff % (3600 * 1000)) / (60 * 1000));
-    const seconds = Math.floor((diff % (60 * 1000)) / 1000);
-    if (days > 0) {
-      return `${days} ${t['cardBlock.time.ago.day']}`;
-    } else if (hours > 0) {
-      return `${hours} ${t['cardBlock.time.ago.hour']}`;
-    } else if (minutes > 0) {
-      return `${minutes} ${t['cardBlock.time.ago.minute']}`;
-    } else {
-      return `${seconds} ${t['cardBlock.time.ago.second']}`;
-    }
-  };
-
-  // make keyword such as "#k1 #k2" to link to search query
-  const parseKeyword = (keyword: string) => {
-    // if keyword does not have space, return it directly
-    if (keyword === undefined) {
-      return null;
-    }
-    if (keyword.indexOf(' ') === -1) {
-      return null;
-    }
-    const keywords = keyword.split(' ');
-    // do not split them to multiple div element
-    return keywords.map((keyword, index) => (
-      <Tag
-        key={index.toString()}
-        onClick={(event) => {
-          makeNewSearch(keyword);
-          event.stopPropagation();
-        }}
-        style={{
-          cursor: 'pointer',
-          marginRight: '4px',
-          marginBottom: '4px',
-          backgroundColor: 'rgba(var(--gray-6), 0.4)',
-        }}
-      >
-        {keyword}
-      </Tag>
-    ));
-  };
 
   const followUser = (follow) => {
     setFollowLoading(true);
@@ -255,8 +195,8 @@ function CardBlock(props) {
             </div>
           </div>
           <div className={styles.content}>{card.content}</div>
-          <div className={styles.keyword}>{parseKeyword(card.keyword)}</div>
-          <div className={styles.time}>{parseTime(card.upload_time)}</div>
+          <div className={styles.keyword}>{parseKeyword(card.keyword, router)}</div>
+          <div className={styles.time}>{parseTime(card.upload_time, tg)}</div>
         </div>
       </div>
     </Card>

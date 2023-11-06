@@ -32,7 +32,7 @@ func GetVideoBulletCommentList(videoId uint, limit int, start int, currentUserId
 	var err error
 	var bulletCommentCount int
 
-	rows, err = DB.Query("SELECT id, user_id, content, comment_at, comment_time FROM video_bullet_comment WHERE video_id=? AND delete_time IS NULL ORDER BY id DESC LIMIT ?, ?", videoId, start, limit)
+	rows, err = DB.Query("SELECT id, user_id, content, comment_at, comment_time FROM video_bullet_comment WHERE video_id=? AND delete_time IS NULL ORDER BY id DESC, comment_at ASC LIMIT ?, ?", videoId, start, limit)
 
 	if err != nil {
 		if config.ShowLog {

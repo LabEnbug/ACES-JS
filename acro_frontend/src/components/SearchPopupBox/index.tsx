@@ -12,11 +12,13 @@ import useLocale from '../../utils/useLocale';
 import styles from './style/index.module.less';
 import {useRouter} from "next/router";
 import {IconRefresh} from "@arco-design/web-react/icon";
+import {makeNewSearch} from "@/utils/keywordUtils";
 
 function DropContent({setSearchPopupBoxVisible}) {
   const t = useLocale();
   const [loading, setLoading] = useState(false);
   const [hotkeysData, setHotkeysData] = useState([]);
+  const [searchHistory, setSearchHistory] = useState([]);
 
   const router = useRouter();
 
@@ -49,10 +51,40 @@ function DropContent({setSearchPopupBoxVisible}) {
   }
 
   useEffect(() => {
-    getSearchHistory();
+    setSearchHistory(getSearchHistory());
     getHotkeys();
   }, []);
 
+
+  const showTag = () => {
+    return searchHistory.map((item, index) => (
+      <Tag key={index} closable color={'gray'}
+           style={{ margin: '8px 16px 0 0 ', cursor: "pointer" }}
+           onClick={() => {
+             router.push({
+               pathname: '/search',
+               query: {
+                 q: item,
+               },
+             });
+             // close popup box
+             setSearchPopupBoxVisible(false);
+           }}
+           onClose={(e) => {
+             const searchHistory = getSearchHistory();
+             const index = searchHistory.indexOf(item);
+             console.log(searchHistory)
+             console.log(index)
+             if (index > -1) {
+               searchHistory.splice(index, 1);
+             }
+             localStorage.setItem('searchHistory', JSON.stringify(searchHistory));
+             e.stopPropagation();
+           }}>
+        {item}
+      </Tag>
+    ));
+  };
 
   return (
     <div className={styles['message-box']}>
@@ -61,30 +93,7 @@ function DropContent({setSearchPopupBoxVisible}) {
           <div className={styles['search-popup-title']}>搜索历史</div>
           <div>
             { /* getSearchHistory to tag */}
-            {getSearchHistory().map((item, index) => (
-              <Tag key={index} closable color={'gray'}
-                   style={{ margin: '8px 16px 0 0 ', cursor: "pointer" }}
-                   onClick={() => {
-                     router.push({
-                       pathname: '/search',
-                       query: {
-                         q: item,
-                       },
-                     });
-                     // close popup box
-                     setSearchPopupBoxVisible(false);
-                   }}
-                   onClose={() => {
-                      const searchHistory = getSearchHistory();
-                      const index = searchHistory.indexOf(item);
-                      if (index > -1) {
-                        searchHistory.splice(index, 1);
-                      }
-                      localStorage.setItem('searchHistory', JSON.stringify(searchHistory));
-                   }}>
-                {item}
-              </Tag>
-            ))}
+            {showTag()}
           </div>
         </div>
         <Divider style={{ margin: '4px' }}></Divider>
@@ -122,7 +131,7 @@ function SearchPopupBox({children, searchPopupBoxVisible, setSearchPopupBoxVisib
       onClickOutside={() => setSearchPopupBoxVisible(false)}
       popup={() => <DropContent setSearchPopupBoxVisible={setSearchPopupBoxVisible}/>}
       position="bottom"
-      unmountOnExit={false}
+      unmountOnExit={true}
       popupAlign={{bottom: 4}}
       popupVisible={searchPopupBoxVisible}
     >

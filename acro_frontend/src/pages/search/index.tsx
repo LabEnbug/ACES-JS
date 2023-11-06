@@ -34,7 +34,7 @@ export default function ListSearchResult() {
 
   const [isEndData, setIsEndData] = useState(false);
 
-  const getData = async (q, t) => {
+  const getData = (q, t) => {
     t === 'video'
       ? setVideoData(defaultVideoList)
       : setUserData(defaultUserList);
@@ -45,7 +45,7 @@ export default function ListSearchResult() {
     baxios
       .get(
         '/v1-api/v1/search/' + t + '?' +
-        'keyword=' + q + '&' +
+        'keyword=' + encodeURIComponent(q) + '&' +
         'limit=' + '12'
       )
       .then((response) => {
@@ -67,12 +67,12 @@ export default function ListSearchResult() {
       .finally(() => setLoading(false));
   };
 
-  const getMoreData = async (q, t) => {
+  const getMoreData = (q, t) => {
     setLoading(true);
     baxios
       .get(
         '/v1-api/v1/search/' + t + '?' +
-        'keyword=' + q + '&' +
+        'keyword=' + encodeURIComponent(q) + '&' +
         'start=' + (t === 'video' ? videoData.length : userData.length).toString() + '&' +
         'limit=' + '12'
       )
@@ -106,8 +106,11 @@ export default function ListSearchResult() {
       // add search history to local storage
       const searchHistory = localStorage.getItem('searchHistory');
       const maxHistoryNum = 10;
+      q = q.trim();
       if (searchHistory) {
         const historyList = JSON.parse(searchHistory);
+        // todo: what if query q contains two # like "#k1 #k2"? or contains such as "#k1 value1", "value1 #k1", should we split it?
+
         if (historyList.indexOf(q) === -1) {
           // put to the first
           historyList.unshift(q);

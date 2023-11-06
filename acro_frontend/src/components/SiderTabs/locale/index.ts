@@ -1,12 +1,13 @@
 const i18n = {
   'en-US': {
-    'comment': 'comment',
+    'comment': 'Comments',
     'comment.input.enter': 'Enter to post.',
     'comment.input.placeholder': 'Express your feeling',
     'comment.input.enter.empty': 'Comment is empty.',
     'comment.input.post.success': 'Post your comment success.',
     'comment.input.post.failed': 'Fail to pose.',
-    'comment.fetch.failed': 'Fail to fetch comments.'
+    'comment.fetch.failed': 'Fail to fetch comments.',
+    'related.video': 'Related Videos',
   },
   'zh-CN': {
     'comment': '评论',
@@ -15,7 +16,9 @@ const i18n = {
     'comment.input.enter.empty': '评论为空',
     'comment.input.post.success': '评论发布成功',
     'comment.input.post.failed': '评论发布失败',
-    'comment.fetch.failed': '获取评论失败'
+    'comment.fetch.failed': '获取评论失败',
+    'related.video': '相关短视频',
+
   },
 };
 

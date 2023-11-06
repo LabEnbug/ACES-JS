@@ -25,6 +25,8 @@ import {
   IconToTop, IconUnlock,
 } from '@arco-design/web-react/icon';
 import baxios from "@/utils/getaxios";
+import {parseKeyword} from "@/utils/keywordUtils";
+import {parseTime} from "@/utils/timeUtils";
 
 interface CardBlockType {
   type: string;
@@ -40,6 +42,7 @@ function CardBlock(props: CardBlockType) {
   const [deleteLoading, setDeleteLoading] = useState(false);
 
   const t = useLocale(locale);
+  const tg = useLocale();
 
   const router = useRouter();
 
@@ -123,56 +126,6 @@ function CardBlock(props: CardBlockType) {
         }
       });
   }
-
-  // parse time "2023-10-27T16:43:57+08:00" string to some like "3 days ago"
-  const parseTime = (time: string) => {
-    const date = new Date(time);
-    const now = new Date();
-    const diff = now.getTime() - date.getTime();
-    const days = Math.floor(diff / (24 * 3600 * 1000));
-    const hours = Math.floor((diff % (24 * 3600 * 1000)) / (3600 * 1000));
-    const minutes = Math.floor((diff % (3600 * 1000)) / (60 * 1000));
-    const seconds = Math.floor((diff % (60 * 1000)) / 1000);
-    if (days > 0) {
-      return `${days} 天前`;
-    } else if (hours > 0) {
-      return `${hours} 小时前`;
-    } else if (minutes > 0) {
-      return `${minutes} 分钟前`;
-    } else {
-      return `${seconds} 秒前`;
-    }
-  };
-
-  // make keyword such as "#k1 #k2" to link to search query
-  const parseKeyword = (keyword: string) => {
-    // if keyword does not have space, return it directly
-    if (keyword === undefined) {
-      return null;
-    }
-    if (keyword.indexOf(' ') === -1) {
-      return null;
-    }
-    const keywords = keyword.split(' ');
-    // do not split them to multiple div element
-    return keywords.map((keyword, index) => (
-      <Tag
-        key={index.toString()}
-        onClick={(event) => {
-          makeNewSearch(keyword);
-          event.stopPropagation();
-        }}
-        style={{
-          cursor: 'pointer',
-          marginRight: '4px',
-          marginBottom: '4px',
-          backgroundColor: 'rgba(var(--gray-6), 0.4)',
-        }}
-      >
-        {keyword}
-      </Tag>
-    ));
-  };
 
   return (
     <Card
@@ -449,8 +402,8 @@ function CardBlock(props: CardBlockType) {
             </div>
           </div>
           <div className={styles.content}>{card.content}</div>
-          <div className={styles.keyword}>{parseKeyword(card.keyword)}</div>
-          <div className={styles.time}>{parseTime(card.upload_time)}</div>
+          <div className={styles.keyword}>{parseKeyword(card.keyword, router)}</div>
+          <div className={styles.time}>{parseTime(card.upload_time, tg)}</div>
         </div>
       </div>
     </Card>

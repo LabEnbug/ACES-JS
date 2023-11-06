@@ -92,6 +92,10 @@ const i18n = {
     'menu.video.food': 'Food',
     'menu.video.sport': 'Sport',
     'menu.video.fashion': 'Fashion',
+    'time.daysAgo': 'days ago',
+    'time.hoursAgo': 'hours ago',
+    'time.minutesAgo': 'minutes ago',
+    'time.secondsAgo': 'seconds ago',
   },
   'zh-CN': {
     'title.global': 'ACES 短视频',
@@ -185,6 +189,10 @@ const i18n = {
     'menu.video.food': '美食',
     'menu.video.sport': '体育',
     'menu.video.fashion': '时尚',
+    'time.daysAgo': '天前',
+    'time.hoursAgo': '小时前',
+    'time.minutesAgo': '分钟前',
+    'time.secondsAgo': '秒前',
   },
 };
 

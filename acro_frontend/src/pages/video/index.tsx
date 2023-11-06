@@ -54,7 +54,7 @@ function VideoP() {
     const uid = window.sessionStorage.getItem('playvideo-id');
     if (uid && pre != uid) {
       baxios
-        .post('/v1-api/v1/videos/' + uid.toString() + '/actions' + 'watch')
+        .post('/v1-api/v1/videos/' + uid.toString() + '/actions/' + 'watch')
         .then((response) => {
           window.sessionStorage.setItem('playvideo-pre-id', uid);
         })

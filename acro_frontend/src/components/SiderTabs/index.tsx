@@ -16,6 +16,9 @@ function SideBar(props) {
             <TabPane key='1' title={t['comment']} style={{'color': '#ffffff'}} >
                 <CommentTab videoinfo={videoinfo} />
             </TabPane>
+            <TabPane key='2' title={t['related.video']} style={{'color': '#ffffff'}} >
+              <CommentTab videoinfo={videoinfo} />
+            </TabPane>
         </Tabs>
       );
   }

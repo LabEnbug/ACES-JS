@@ -63,7 +63,6 @@ function Promote() {
         if (!video.is_user_uploaded) {
           Message.error('暂未开放推广其他用户的视频');
         }
-        UpdateUserInfoOnly();
       })
       .catch((error) => {
         console.error(error);

@@ -42,7 +42,12 @@ function SideBar(props, ref) {
             backgroundColor: '#000000',
           }}
         >
-          {videoinfo.nickname}
+          {videoinfo.avatar_url ? (
+            <img src={videoinfo.avatar_url} />
+          ) : (
+            videoinfo.nickname
+          )}
+          {/*{videoinfo.nickname}*/}
         </Avatar>
       </Tooltip>
       <IconButton 

@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {  Tabs, Typography, Comment, Avatar, Input, Tooltip, Message, Button } from '@arco-design/web-react';
 import useLocale from '@/utils/useLocale';
 import locale from './locale';
@@ -111,14 +111,18 @@ function CommentDrawer(props) {
                                 quote_comment={comment_info}
                                 setP={SetComment}  />}
                 author={comment_info['user']['nickname']}
-                avatar= {(    
+                avatar= {(
                   <Avatar
                     autoFixFontSize={true}
                     style={{
-                      backgroundColor: '#000000',
+                      // backgroundColor: '#000000',
                     }}
-                  > 
-                    {comment_info['user']['nickname']}
+                  >
+                    {comment_info['user']['avatar_url'] ? (
+                      <img src={comment_info['user']['avatar_url']} />
+                    ) : (
+                      comment_info['user']['nickname']
+                    )}
                   </Avatar>)}
                 content={<div>{comment_info['content']}</div>}
                 // datetime={comment_info['comment_time'].split('T')[0]}
@@ -129,9 +133,11 @@ function CommentDrawer(props) {
                 generateSonC(item)
               ))
             }
+            {fetchmore&&
             <Button type='text' status='success' onClick={ fetchmore  ? (e)=> {fetchMoreComment(comment_info.id, commentS[comment_info.id].length)} : ()=>{}}>
               <div className = {styles['comment-div']} /> <span className={styles['comment-div-text']}> {fetchmore ? `展开更多(${comment_info['child_comment_count_left'] + 1 - commentS[comment_info.id].length})` : '无更多评论'}</span>
             </Button>
+            }
           </Comment>
       )
     }
