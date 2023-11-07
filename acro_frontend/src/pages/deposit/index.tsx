@@ -125,7 +125,7 @@ function Deposit() {
                   </Title>
                   <Form.Item label={'账户余额'}>
                     <Typography.Text>
-                      {isLogin&&userInfo?userInfo.balance + ' 元':''}
+                      {isLogin&&userInfo?(userInfo.balance?userInfo.balance:0.00).toFixed(2) + ' 元':''}
                     </Typography.Text>
                   </Form.Item>
                   <Form.Item

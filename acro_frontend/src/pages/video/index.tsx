@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useRef} from 'react';
 import { Message } from '@arco-design/web-react';
 import locale from './locale';
 import useLocale from '@/utils/useLocale';
@@ -10,13 +10,18 @@ import GetVideType from '@/utils/getvideotype';
 import baxios from "@/utils/getaxios";
 import Head from "next/head";
 
+interface VideoPlayerMethods {
+  handleKeyDown: (event: KeyboardEvent) => void;
+}
 function VideoP() {
   const default_type = 'comprehensive';
   const t = useLocale(locale);
   const tg = useLocale();
   const router = useRouter();
+  const videoPlayerRef = useRef<VideoPlayerMethods>(null);
   const type = router.query['type'] || default_type;
   const video_uid = router.query['video_uid'];
+  const rel = router.query['rel'] || '';
   const pathname = router.pathname;
   const [playlist, SetPlayList] = useState<any>([]);
   const [playIndex, SetPlayIndex] = useState(0);
@@ -68,11 +73,39 @@ function VideoP() {
 
   useEffect(() => {
     const pre_type = window.sessionStorage.getItem('pretype');
-    console.log(type, video_uid, playIndex)
+    // console.log(type, video_uid, playIndex);
     if (type != default_type && GetVideType(type) >= 999) {
       router.push('/video');
     }
-    if (playlist.length == 0 || pre_type != type) {
+
+    if (rel && rel === '1') {
+      baxios
+        .get('/videos/' + video_uid.toString())
+        .then((response1) => {
+          if (JudgeStatus(response1.data)) {
+            // add this video to next play in playlist
+            const tmp_list = [...playlist];
+            tmp_list.splice(playIndex + 1, 0, response1.data.data.video);
+            SetPlayList(tmp_list);
+            // SetPlayIndex(playIndex + 1);
+            console.log(tmp_list);
+            // press keydown to play next video
+            if (videoPlayerRef.current) {
+              const fakeEvent = new KeyboardEvent("keydown", {
+                key: "ArrowDown",
+                code: "ArrowDown",
+                keyCode: 40,
+                charCode: 0,
+                view: window
+              });
+              videoPlayerRef.current.handleKeyDown(fakeEvent);
+            }
+          }
+        })
+        .catch((error) => {
+          console.error(error);
+        });
+    } else if (playlist.length == 0 || pre_type != type) {
       // param.append('page', page)
       baxios
         .get('/videos?' + 'limit=' + limit +
@@ -84,7 +117,7 @@ function VideoP() {
             if (
               video_uid &&
               data.data.video_list.length > 0 &&
-              video_uid != data.data.video_list[playIndex]['video_uid']
+              video_uid != data.data.video_list[0]['video_uid']
             ) {
               baxios
                 .get('/videos/' + video_uid.toString())
@@ -93,12 +126,35 @@ function VideoP() {
                     data.data.video_list.unshift(response1.data.data.video);
                   }
                   SetPlayList(data.data.video_list);
+                  if (videoPlayerRef.current) {
+                    const fakeEvent = new KeyboardEvent("keydown", {
+                      key: "ArrowDown",
+                      code: "ArrowDown",
+                      keyCode: 40,
+                      charCode: 0,
+                      view: window
+                    });
+                    videoPlayerRef.current.handleKeyDown(fakeEvent);
+                  }
                 })
                 .catch((error) => {
                   console.error(error);
                 });
               //
-            } else SetPlayList(data.data.video_list);
+            } else {
+              SetPlayIndex(0);
+              SetPlayList(data.data.video_list);
+              if (videoPlayerRef.current) {
+                const fakeEvent = new KeyboardEvent("keydown", {
+                  key: "ArrowDown",
+                  code: "ArrowDown",
+                  keyCode: 40,
+                  charCode: 0,
+                  view: window
+                });
+                videoPlayerRef.current.handleKeyDown(fakeEvent);
+              }
+            }
           }
         })
         .catch((error) => {
@@ -148,11 +204,12 @@ function VideoP() {
       <div className={styles.container}>
         <div className={styles.wrapper}>
           <VideoPlayer
+            ref={videoPlayerRef}
             hlsPlayList={playlist}
             playIndex={playIndex}
             reflectPlayIndex={reflectPlayIndex}
             recordWatched={recordWatched}
-            options={undefined}
+            // options={undefined}
           />
         </div>
       </div>

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useEffect} from 'react';
 import cs from 'classnames';
 import {
   Tag,
@@ -14,6 +14,7 @@ import {
   IconEye,
   IconHeartFill,
 } from '@arco-design/web-react/icon';
+
 interface CardBlockType {
   card: VideoCard;
   loading?: boolean;
@@ -31,9 +32,13 @@ function CardBlock(props: CardBlockType) {
     router.push({
       pathname: `/video`,
       query: {
+        type: "comprehensive",
         video_uid: video_uid,
+        rel: 1,
       },
-    });
+    }, undefined, {shallow:true});
+    // window.location.reload();
+    return;
   }
 
   return (
@@ -53,51 +58,38 @@ function CardBlock(props: CardBlockType) {
         borderRadius: '8px',
       }}
     >
-      {/*<div className={styles['video-card-extra-like']}>*/}
-      {/*  <Like*/}
-      {/*    theme="filled"*/}
-      {/*    size="24"*/}
-      {/*    fill={card.is_user_liked ? 'red' : '#ffffff'}*/}
-      {/*    onClick={(event) => {*/}
-      {/*      console.log(card);*/}
-      {/*      event.stopPropagation();*/}
-      {/*    }}*/}
-      {/*  />*/}
-      {/*  <div*/}
-      {/*    className={styles['video-card-extra-like-count']}*/}
-      {/*    style={{ color: card.is_user_liked ? 'red' : '#ffffff' }}*/}
-      {/*  >*/}
-      {/*    {card.be_liked_count}*/}
-      {/*  </div>*/}
-      {/*</div>*/}
-      {/* if saw before, show tag */}
-      <div style={{ marginTop: 0 }}>
-        {(card.is_user_liked || card.is_user_watched) && (
+      <div style={{ marginTop: 4, marginLeft: 4 }}>
+        {(card.is_user_watched) && (
           <div style={{ display: 'flex', marginBottom: '8px' }}>
-            {card.is_user_liked && (
-              <div className={styles['video-card-extra-seen']}>
-                <Tag
-                  icon={<IconHeartFill />}
-                  style={{
-                    backgroundColor: 'rgba(var(--gray-8), 0.5)',
-                  }}
-                >
-
-                </Tag>
-              </div>
-            )}
             {card.is_user_watched && (
               <div className={styles['video-card-extra-seen']}>
                 <Tag
                   icon={<IconEye />}
                   style={{
-                    backgroundColor: 'rgba(var(--gray-8), 0.5)',
+                    backgroundColor: 'rgba(var(--gray-8), 0.2)',
                   }}
                 />
               </div>
             )}
           </div>
         )}
+      </div>
+      <div className={styles['video-card-bottom-like']}>
+        <Like
+          theme="filled"
+          size="16"
+          fill={card.is_user_liked ? 'red' : '#ffffff'}
+          onClick={(event) => {
+            console.log(card);
+            event.stopPropagation();
+          }}
+        />
+        <div
+          className={styles['video-card-bottom-like-count']}
+          style={{ color: card.is_user_liked ? 'red' : '#ffffff' }}
+        >
+          {card.be_liked_count}
+        </div>
       </div>
     </Card>
   );

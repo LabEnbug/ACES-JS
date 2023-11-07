@@ -218,7 +218,7 @@ function Promote() {
                   </Form.Item>
                   <Form.Item label={'账户余额'}>
                     <Typography.Text>
-                      {isLogin&&userInfo?(userInfo.balance).toFixed(2) + ' 元':''}
+                      {isLogin&&userInfo?(userInfo.balance?userInfo.balance:0.00).toFixed(2) + ' 元':''}
                     </Typography.Text>
                   </Form.Item>
                   <Form.Item
@@ -247,7 +247,7 @@ function Promote() {
                   <Form.Item label={'需扣除余额'}>
                     <Typography.Text>
                       {price.toFixed(2)} 元
-                      {(!isBalanceEnough() && <div style={{color: 'orange'}}>(余额不足, 仍需充值 {(price-userInfo.balance).toFixed(2)} 元)</div>)}
+                      {(!isBalanceEnough() && <div style={{color: 'orange'}}>(余额不足, 仍需充值 {(price-(userInfo.balance?userInfo.balance:0)).toFixed(2)} 元)</div>)}
                     </Typography.Text>
                   </Form.Item>
                 </Form.Item>

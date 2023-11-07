@@ -26,6 +26,7 @@ var Test bool // set to false to disable test api
 var ShowLog bool
 
 var TokenExpireTime time.Duration // token expire time
+var TokenMaxDevice int64          // max logged in devices
 
 var DefaultDatabase DatabaseConfig
 
@@ -55,6 +56,7 @@ func InitConfig() {
 	ShowLog = true
 
 	TokenExpireTime = time.Hour * 24 * 3 // 3 days
+	TokenMaxDevice = 2                   // 2 devices
 
 	VideoProcessType = 1
 

@@ -69,8 +69,14 @@ func Login(w http.ResponseWriter, r *http.Request) {
 		SendJSONResponse(w, status, data, errorMsg)
 		return
 	}
-	err = database.StoreToken(token)
+
+	// Redis store token
+	err = database.StoreToken(token, user.Id)
 	if err != nil {
+		if config.ShowLog {
+			funcName, _, _, _ := runtime.Caller(0)
+			log.Println(runtime.FuncForPC(funcName).Name(), err)
+		}
 		status = 0
 		errorMsg = "Failed to store token."
 		SendJSONResponse(w, status, data, errorMsg)
@@ -107,15 +113,17 @@ func Logout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// test token of user1 will never be revoked
-	if !config.Test && token != "eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2OTg0Njk0MzUsInVzZXJJZCI6MX0.oWpg0PRAgTWApqZ8AObPPlPrmbgBSTWF2zcMWJxoxcxASsyLLOM-ehfpg_A6D7ksRCSG_UQ0mtTp4ongY-gtwA" {
-		err := database.RevokeToken(token)
-		if err != nil {
-			status = 0
-			errorMsg = "Failed to revoke token."
-			SendJSONResponse(w, status, data, errorMsg)
-			return
+	// revoke token
+	err := database.RevokeToken(token)
+	if err != nil {
+		if config.ShowLog {
+			funcName, _, _, _ := runtime.Caller(0)
+			log.Println(runtime.FuncForPC(funcName).Name(), err)
 		}
+		status = 0
+		errorMsg = "Failed to revoke token."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
 	}
 
 	SendJSONResponse(w, status, data, errorMsg)
@@ -177,14 +185,6 @@ func GetUserInfo(w http.ResponseWriter, r *http.Request) {
 	status := 200
 	data := map[string]interface{}{}
 	errorMsg := ""
-
-	//// check method
-	//if r.Method != "GET" && r.Method != "POST" {
-	//	status = 0
-	//	errorMsg = "Invalid request method."
-	//	SendJSONResponse(w, status, data, errorMsg)
-	//	return
-	//}
 
 	// check token
 	tokenValid, userId, exp, token := FindAndCheckToken(r)

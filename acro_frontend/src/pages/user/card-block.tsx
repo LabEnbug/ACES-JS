@@ -106,13 +106,13 @@ function CardBlock(props: CardBlockType) {
         if (data.status !== 200) {
           console.error(data.err_msg);
           Message.error({
-            content: '短视频' + (card.is_private ? '取消' : '') + '置顶失败！',
+            content: '短视频' + (card.is_private ? '取消' : '') + '设为私密失败！',
             duration: 5000,
           });
           return;
         }
         Message.success({
-          content: '短视频' + (card.is_private ? '取消' : '') + '置顶成功！',
+          content: '短视频' + (card.is_private ? '取消' : '') + '设为私密成功！',
           duration: 5000,
         });
         card.is_private = !card.is_private;

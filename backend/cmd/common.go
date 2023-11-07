@@ -8,6 +8,7 @@ import (
 )
 
 func FindAndCheckToken(r *http.Request) (bool, uint, int64, string) {
+	/* return isExist, userId, expTime, token */
 	// find token
 	// Authorization: Bearer xxx
 	token, err := request.BearerExtractor{}.ExtractToken(r)

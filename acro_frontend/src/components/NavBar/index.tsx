@@ -232,7 +232,7 @@ function Navbar({ show }: { show: boolean }) {
             });
         }, 1000);
       })
-      .catch();
+      .catch(() => {null});
   }
   function onSignUpOk() {
     form
@@ -276,7 +276,7 @@ function Navbar({ show }: { show: boolean }) {
             .finally(() => {setConfirmLoading(false)});
         }, 1000);
       })
-      .catch();
+      .catch(() => {null});
   }
 
   const handleSearchSubmit = () => {

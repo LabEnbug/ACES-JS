@@ -58,6 +58,7 @@
     vertical-align: top !important; /* 确保整个容器垂直居中 */
     font-size:  15px; 
     font-weight: bold;
+    //line-height: 0;
 
   :global(.arco-btn-size-default) {
     width: 36px;
@@ -72,6 +73,12 @@
     background-color: transparent !important;
     border: 0px transparent  !important;
     // border: 10px solid var(--color-border-2);
+  :global(.arco-btn) {
+    line-height: 0;
+  }
+  p {
+    margin-block-start: 0.3em;
+  }
 }
 
 .icon-foot-button {

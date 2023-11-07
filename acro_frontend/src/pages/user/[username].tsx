@@ -308,6 +308,7 @@ export default function UserPage() {
           const data = response.data;
           if (data.status !== 200) {
             console.error(data.err_msg);
+            Message.error("请先登录");
             return;
           }
           isSelf ? getSelfInfoData() : getUserInfoData(username);
@@ -318,7 +319,7 @@ export default function UserPage() {
         .finally(() => {
           setFollowLoading(false);
         });
-    }, 1000);
+    }, 200);
   };
 
   const handleDelete = (itemToDelete) => {

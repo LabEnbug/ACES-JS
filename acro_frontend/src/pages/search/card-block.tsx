@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import cs from 'classnames';
-import { Button, Tag, Card, Avatar, Divider } from '@arco-design/web-react';
+import {Button, Tag, Card, Avatar, Divider, Message} from '@arco-design/web-react';
 import styles from './style/index.module.less';
 import { useRouter } from 'next/router';
 import { Like } from '@icon-park/react';
@@ -53,6 +53,7 @@ function CardBlock(props) {
           const data = response.data;
           if (data.status !== 200) {
             console.error(data.err_msg);
+            Message.error("请先登录");
             return;
           }
           setIsFollowed(!follow);
@@ -64,7 +65,7 @@ function CardBlock(props) {
         .finally(() => {
           setFollowLoading(false);
         });
-    }, 1000);
+    }, 200);
   };
 
   function parseData(data: number) {
