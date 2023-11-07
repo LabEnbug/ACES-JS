@@ -53,7 +53,7 @@ function SideBar(props, ref) {
       <IconButton 
         icon={
           <>
-          <Like theme="filled" size="36" fill={ userlike ? 'rgba(255, 0, 0, 0.8)' : "#ffffff"} onClick={()=>{clicklike['func'](...clicklike['params'])}}/>
+          <Like theme={userlike ? "filled" : "outline"} size="36" fill={ userlike ? 'rgba(255, 0, 0, 0.8)' : "#ffffff"} onClick={()=>{clicklike['func'](...clicklike['params'])}}/>
           <p> {ikecount} </p>
           </>
         }
@@ -71,7 +71,7 @@ function SideBar(props, ref) {
       <IconButton 
         icon={
           <>
-            <Star theme="outline" size="36" fill={ userfavorite ? 'rgba(218, 165, 32, 0.8)' : "#ffffff"} onClick={()=>{clickfavorite['func'](...clickfavorite['params'])}} />
+            <Star theme={userfavorite ? "filled" : "outline"} size="36" fill={ userfavorite ? 'rgba(218, 165, 32, 0.8)' : "#ffffff"} onClick={()=>{clickfavorite['func'](...clickfavorite['params'])}} />
             <p >{favoritecount}</p>
           </>
         }

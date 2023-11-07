@@ -5,6 +5,7 @@
     "analyze": "ANALYZE=true next build",
     "dev": "next dev",
     "build": "next build",
+    "pub": "next build && next export && zip out.zip out/* -r",
     "start": "next start",
     "export": "next export && zip out.zip out/* -r",
     "eslint": "eslint src/ --ext .ts,.tsx,.js,.jsx --fix --cache",

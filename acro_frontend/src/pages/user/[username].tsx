@@ -520,6 +520,7 @@ export default function UserPage() {
               <Divider />
               <List
                 ref={listRef}
+                className={styles['card-list']}
                 grid={{
                   xs: 12,
                   sm: 12,

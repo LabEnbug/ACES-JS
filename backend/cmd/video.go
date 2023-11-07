@@ -94,6 +94,65 @@ func GetVideoList(w http.ResponseWriter, r *http.Request) {
 	SendJSONResponse(w, status, data, errorMsg)
 }
 
+func GetRelatedVideoList(w http.ResponseWriter, r *http.Request) {
+	status := 200
+	data := map[string]interface{}{}
+	errorMsg := ""
+
+	vars := mux.Vars(r)
+	queryVideoUid := vars["videoUid"]
+
+	queryParams := r.URL.Query()
+	queryLimit, _ := strconv.Atoi(queryParams.Get("limit"))
+	queryStart, _ := strconv.Atoi(queryParams.Get("start"))
+
+	// for some bad parameter, strict limit
+	if queryLimit > 24 {
+		queryLimit = 24
+	} else if queryLimit < 1 {
+		queryLimit = 1
+	}
+	if queryStart < 0 {
+		queryStart = 0
+	}
+
+	// check video
+	videoId := mysql.GetVideoIdByVideoUid(queryVideoUid)
+	if videoId == 0 {
+		status = 0
+		errorMsg = "Video not found."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+
+	// check user
+	tokenValid, userId, _, _ := FindAndCheckToken(r)
+
+	// get related video list
+	videoList := mysql.GetRecommendVideoBySimilarity(videoId, queryLimit, queryStart, userId)
+	if len(videoList) == 0 {
+		status = 0
+		errorMsg = "No more video found."
+		SendJSONResponse(w, status, data, errorMsg)
+		return
+	}
+
+	// check relation between user and video
+	// only need to check when user logged in
+	if tokenValid { // user logged in
+		for i := 0; i < len(videoList); i++ {
+			videoList[i].IsUserLiked, videoList[i].IsUserFavorite, videoList[i].IsUserUploaded,
+				videoList[i].IsUserWatched, videoList[i].IsUserLastPlay = mysql.CheckUserVideoAllRelation(userId, videoList[i].Id)
+		}
+	}
+
+	data = map[string]interface{}{
+		"video_list": videoList,
+	}
+
+	SendJSONResponse(w, status, data, errorMsg)
+}
+
 func GetVideoInfo(w http.ResponseWriter, r *http.Request) {
 	/*
 	 * @api {post} /v1/video/{videoUid} Get video info
@@ -1091,82 +1150,6 @@ func GetRecommendVideoList(w http.ResponseWriter, r *http.Request) {
 
 	// get video list
 	videoList := algorithm.GetRecommendVideoList(queryUserId, queryLimit, queryStart)
-	if len(videoList) == 0 {
-		status = 0
-		errorMsg = "No more video found."
-		SendJSONResponse(w, status, data, errorMsg)
-		return
-	}
-
-	// check relation between user and video
-	// only need to check when user logged in
-	if tokenValid { // user logged in
-		for i := 0; i < len(videoList); i++ {
-			videoList[i].IsUserLiked, videoList[i].IsUserFavorite, videoList[i].IsUserUploaded,
-				videoList[i].IsUserWatched, videoList[i].IsUserLastPlay = mysql.CheckUserVideoAllRelation(userId, videoList[i].Id)
-		}
-	}
-
-	data = map[string]interface{}{
-		"video_list": videoList,
-	}
-	SendJSONResponse(w, status, data, errorMsg)
-}
-
-func GetRelatedVideoList(w http.ResponseWriter, r *http.Request) {
-	/*
-	 * @api {post} /v1/video/videoRecomList Get recommend video list by specific video
-	 *
-	 * @apiName GetRelatedVideoList
-	 *
-	 * @apiParam {Number} video_id videoId. uint
-	 * @apiParam {Number} limit the number of video needed. int
-	 * @apiParam {Number} start Start at. int
-	 */
-	status := 200
-	data := map[string]interface{}{}
-	errorMsg := ""
-
-	// check method, only accept POST
-	if r.Method != "POST" {
-		status = 0
-		errorMsg = "Invalid request method."
-		SendJSONResponse(w, status, data, errorMsg)
-		return
-	}
-
-	// parse form
-	err := r.ParseMultipartForm(config.MaxNormalPostSize64)
-	if err != nil {
-		status = 0
-		errorMsg = "Failed to parse form."
-		SendJSONResponse(w, status, data, errorMsg)
-		return
-	}
-	queryVideoIdTmp, _ := strconv.ParseUint(r.PostFormValue("video_id"), 10, 32)
-	queryVideoId := uint(queryVideoIdTmp)
-	queryLimit, _ := strconv.Atoi(r.PostFormValue("limit"))
-	queryStart, _ := strconv.Atoi(r.PostFormValue("start"))
-
-	queryVideoId = 9981
-	queryLimit = 1
-	queryStart = 0
-
-	// for some bad parameter, strict limit
-	if queryLimit > 24 {
-		queryLimit = 24
-	} else if queryLimit < 1 {
-		queryLimit = 1
-	}
-	if queryStart < 0 {
-		queryStart = 0
-	}
-
-	// check user
-	tokenValid, userId, _, _ := FindAndCheckToken(r)
-
-	// get video list
-	videoList := mysql.GetRecommendVideoBySimilarity(queryVideoId, queryLimit, queryStart)
 	if len(videoList) == 0 {
 		status = 0
 		errorMsg = "No more video found."

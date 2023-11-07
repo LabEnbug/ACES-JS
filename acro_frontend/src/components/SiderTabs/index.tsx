@@ -1,6 +1,7 @@
 import React from "react";
 import {  Tabs, Typography, Comment, Avatar, Input, Tooltip, Message, Button } from '@arco-design/web-react';
 import CommentTab from './Comment';
+import RelatedVideosTab from './RelatedVideos';
 import locale from './locale';
 import useLocale from '@/utils/useLocale';
 
@@ -17,7 +18,7 @@ function SideBar(props) {
                 <CommentTab videoinfo={videoinfo} />
             </TabPane>
             <TabPane key='2' title={t['related.video']} style={{'color': '#ffffff'}} >
-              <CommentTab videoinfo={videoinfo} />
+              <RelatedVideosTab videoInfo={videoinfo} />
             </TabPane>
         </Tabs>
       );

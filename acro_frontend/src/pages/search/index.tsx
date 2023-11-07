@@ -260,7 +260,7 @@ export default function ListSearchResult() {
                     getData(q, activeKey);
                   }}
                 >
-                  {t['search.reTrySearch']} &quot;{q}&quot;
+                  {t['search.searchAgain.before']}&quot;{q}&quot;{t['search.searchAgain.after']}
                 </Button>
               </ContentContainer>
             ) : (

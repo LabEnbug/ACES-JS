@@ -1,0 +1,32 @@
+.card-list {
+  padding: 6px;
+
+  :global(.arco-list-footer) {
+    border: none;
+  }
+}
+
+.card-block {
+  cursor: pointer;
+  margin: 4px;
+  height: 200px;
+  border: 1px solid var(--color-neutral-6);
+
+  :global(.arco-card-body) {
+    padding: 0;
+  }
+}
+
+.zoom {
+  transition: transform 0.3s ease;
+}
+
+.zoom:hover {
+  transform: scale(1.02);
+}
+
+.video-card-extra-seen {
+  :global(.arco-tag-icon) {
+    margin-right: 0;
+  }
+}

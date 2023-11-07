@@ -72,12 +72,13 @@ func main() {
 	r.HandleFunc("/v1/user/deposit", cmd.UserDeposit).Methods("POST")
 
 	// video
-	http.HandleFunc("/v1/video/videoRecomList", cmd.GetRelatedVideoList)
-	http.HandleFunc("/v1/video/userRecomList", cmd.GetRecommendVideoList)
+	//http.HandleFunc("/v1/video/videoRecomList", cmd.GetRelatedVideoList)
+	//http.HandleFunc("/v1/video/userRecomList", cmd.GetRecommendVideoList)
 	r.HandleFunc("/v1/videos", cmd.GetVideoList).Methods("GET")
 	r.HandleFunc("/v1/videos/{videoUid}", cmd.GetVideoInfo).Methods("GET")
 	r.HandleFunc("/v1/videos/{videoUid}", cmd.SetVideoInfo).Methods("PUT")
 	r.HandleFunc("/v1/videos/{videoUid}", cmd.DeleteVideo).Methods("DELETE")
+	r.HandleFunc("/v1/videos/{videoUid}/related", cmd.GetRelatedVideoList).Methods("GET")
 	r.HandleFunc("/v1/videos/{videoUid}/actions/{action}", cmd.HandleVideoAction).Methods("POST", "DELETE")
 
 	//r.HandleFunc("/v1/video/upload", cmd.UploadVideo).Methods("POST")                // [deprecated] file and info add together

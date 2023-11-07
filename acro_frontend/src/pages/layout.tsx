@@ -240,7 +240,11 @@ function PageLayout({ children }: { children: ReactNode }) {
             </Sider>
           )}
           <Layout className={styles['layout-content']} style={paddingStyle}>
-            <div>
+            <div
+              className={
+                pathname !== '/video' ? styles['layout-content-wrapper'] : null
+              }
+            >
               {!!breadcrumb.length && (
                 <div className={styles['layout-breadcrumb']}>
                   <Breadcrumb>

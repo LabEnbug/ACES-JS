@@ -7,9 +7,9 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"runtime"
-	"fmt"
 	"strings"
 )
 
@@ -49,7 +49,7 @@ func GetRecommendMatrixByUserId(userId uint) (model.User, bool, int) {
 }
 
 func GetOneRecommendVideoByProbabilityMatrix(recomType int, choice int, limit int, start int) []model.Video {
-	// get one recommend video, but as list return 
+	// get one recommend video, but as list return
 	var videoList []model.Video
 	var rows *sql.Rows
 	var err error
@@ -65,7 +65,7 @@ func GetOneRecommendVideoByProbabilityMatrix(recomType int, choice int, limit in
 		switch choice {
 		// watched + liked + favorite + comment + forwarded
 		case 1:
-			watchedThreshold := uint(20)  // assume 20 watched is a popular video, cause the num of user is small. same as follows
+			watchedThreshold := uint(20) // assume 20 watched is a popular video, cause the num of user is small. same as follows
 			rows, err = DB.Query("SELECT id, user_id, video_uid, type, content, keyword, upload_time, be_liked_count, be_favorite_count, be_commented_count, be_forwarded_count, be_watched_count, top, private, screenshot, hls FROM video WHERE deleted=0 AND private=0 AND hls=1 AND be_watched_count>? ORDER BY RAND() DESC LIMIT ?, ?", watchedThreshold, start, limit)
 		case 2:
 			likedThreshold := uint(10)
@@ -86,7 +86,10 @@ func GetOneRecommendVideoByProbabilityMatrix(recomType int, choice int, limit in
 		var videoId uint
 		err = row.Scan(&videoId)
 		if err != nil {
-			log.Fatal(err)
+			if config.ShowLog {
+				funcName, _, _, _ := runtime.Caller(0)
+				log.Println(runtime.FuncForPC(funcName).Name(), "err: ", err)
+			}
 		}
 		rows, err = DB.Query("SELECT id, user_id, video_uid, type, content, keyword, upload_time, be_liked_count, be_favorite_count, be_commented_count, be_forwarded_count, be_watched_count, top, private, screenshot, hls FROM video WHERE deleted=0 AND private=0 AND hls=1 AND id=? ORDER BY RAND() DESC LIMIT ?, 1", videoId, start)
 	case 5:
@@ -95,11 +98,13 @@ func GetOneRecommendVideoByProbabilityMatrix(recomType int, choice int, limit in
 		var videoId uint
 		err = row.Scan(&videoId)
 		if err != nil {
-			log.Fatal(err)
+			if config.ShowLog {
+				funcName, _, _, _ := runtime.Caller(0)
+				log.Println(runtime.FuncForPC(funcName).Name(), "err: ", err)
+			}
 		}
 		rows, err = DB.Query("SELECT id, user_id, video_uid, type, content, keyword, upload_time, be_liked_count, be_favorite_count, be_commented_count, be_forwarded_count, be_watched_count, top, private, screenshot, hls FROM video WHERE deleted=0 AND private=0 AND hls=1 AND id=? ORDER BY RAND() DESC LIMIT ?, 1", videoId, start)
 	}
-
 
 	if err != nil {
 		if config.ShowLog {
@@ -140,7 +145,7 @@ func generatePlaceholders(count int) string {
 	return strings.Join(placeholders, ", ")
 }
 
-func GetRecommendVideoBySimilarity(videoId uint, requiredVideo int, start int) []model.Video {
+func GetRecommendVideoBySimilarity(videoId uint, limit int, start int, currentUserId uint) []model.Video {
 	var videoList []model.Video
 	var rows *sql.Rows
 	var err error
@@ -150,31 +155,53 @@ func GetRecommendVideoBySimilarity(videoId uint, requiredVideo int, start int) [
 	var jsonData string
 	err = row.Scan(&jsonData)
 	if err != nil {
-		log.Fatal(err)
+		if config.ShowLog {
+			funcName, _, _, _ := runtime.Caller(0)
+			log.Println(runtime.FuncForPC(funcName).Name(), "err: ", err)
+		}
 	}
 	// 解析JSON数据
-	var data map[string][]uint
+	var data []int
 	err = json.Unmarshal([]byte(jsonData), &data)
 	if err != nil {
-		fmt.Println("解析JSON失败：", err)
+		if config.ShowLog {
+			funcName, _, _, _ := runtime.Caller(0)
+			log.Println(runtime.FuncForPC(funcName).Name(), "err: ", err)
+		}
 		return videoList
 	}
-	var relatedVis []uint
-	relatedVis = data["relatedVis"][start: start + requiredVideo]  // get required related videos num
-	// fmt.Println(relatedVis)
 
-	query := "SELECT id, user_id, video_uid, type, content, keyword, upload_time, be_liked_count, be_favorite_count, be_commented_count, be_forwarded_count, be_watched_count, top, private, screenshot, hls FROM video WHERE deleted=0 AND private=0 AND hls=1 AND id IN (" + generatePlaceholders(len(relatedVis)) + ")"
+	//var relatedVis []int
+	relatedVis := data[start : start+limit] // get required related videos num
+	//fmt.Println(relatedVis)
 
-	// 构建查询参数
-	args := make([]interface{}, len(relatedVis))
-	for i, id := range relatedVis {
-		args[i] = id
+	if len(relatedVis) == 0 {
+		return videoList
 	}
 
+	inParams := make([]string, len(relatedVis))
+	for i, id := range relatedVis {
+		inParams[i] = fmt.Sprintf("%d", id)
+	}
+	inClause := strings.Join(inParams, ",")
+
+	//query := "SELECT id, user_id, video_uid, type, content, keyword, upload_time, be_liked_count, be_favorite_count, be_commented_count, be_forwarded_count, be_watched_count, top, private, screenshot, hls FROM video WHERE deleted=0 AND private=0 AND hls=1 AND id IN (" + generatePlaceholders(len(relatedVis)) + ")"
+	query := fmt.Sprintf("SELECT id, user_id, video_uid, type, content, keyword, upload_time, be_liked_count, be_favorite_count, be_commented_count, be_forwarded_count, be_watched_count, top, private, screenshot, hls FROM video WHERE deleted=0 AND private=0 AND hls=1 AND id IN (%s) ORDER BY FIELD(id, %s)", inClause, inClause)
+
+	// 构建查询参数
+	//args := make([]interface{}, len(relatedVis))
+	//for i, id := range relatedVis {
+	//	args[i] = id
+	//}
+
 	// 执行查询
-	rows, err = DB.Query(query, args...)
+	//rows, err = DB.Query(query, args...)
+	rows, err = DB.Query(query)
 	if err != nil {
-		fmt.Println("执行查询失败：", err)
+		if config.ShowLog {
+			funcName, _, _, _ := runtime.Caller(0)
+			log.Println(runtime.FuncForPC(funcName).Name(), "err: ", err)
+		}
 		return videoList
 	}
 	defer rows.Close()
@@ -192,11 +219,10 @@ func GetRecommendVideoBySimilarity(videoId uint, requiredVideo int, start int) [
 			}
 			return videoList
 		}
-		currentUserId := uint(0)
 		user, _, _ := GetUserInfoById(video.UserId, currentUserId)
 		video = common.MakeVideoSupInfo(video, screenshotOk, hlsOk, user)
 		videoList = append(videoList, video)
 	}
-	// fmt.Println(videoList)
+	//fmt.Println(videoList)
 	return videoList
 }
