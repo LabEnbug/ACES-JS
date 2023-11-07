@@ -14,6 +14,7 @@ export const parseTime = (time, t) => {
 	} else if (minutes > 0) {
 		return `${minutes} ${t['time.minutesAgo']}`;
 	} else {
-		return `${seconds} ${t['time.secondsAgo']}`;
+		// return `${seconds} ${t['time.secondsAgo']}`;
+		return `${t['time.justNow']}`;
 	}
 };

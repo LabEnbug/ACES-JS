@@ -96,6 +96,7 @@ const i18n = {
     'time.hoursAgo': 'hours ago',
     'time.minutesAgo': 'minutes ago',
     'time.secondsAgo': 'seconds ago',
+    'time.justNow': 'Just now',
   },
   'zh-CN': {
     'title.global': 'ACES 短视频',
@@ -193,6 +194,7 @@ const i18n = {
     'time.hoursAgo': '小时前',
     'time.minutesAgo': '分钟前',
     'time.secondsAgo': '秒前',
+    'time.justNow': '刚刚发布',
   },
 };
 

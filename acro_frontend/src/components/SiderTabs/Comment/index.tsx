@@ -8,6 +8,7 @@ import baxios from "@/utils/getaxios";
 import { useSelector, useDispatch } from 'react-redux';
 import store, { GlobalState } from '@/store';
 import {parseTime} from "@/utils/timeUtils";
+import {useRouter} from "next/router";
 
 const TextArea = Input.TextArea;
 
@@ -20,6 +21,7 @@ function CommentDrawer(props) {
     const [ comment, SetComment ] = useState([]);
     const [ commentS, SetCommentS ] = useState({});  
     const { isLogin } = useSelector((state: GlobalState) => state);
+    const router = useRouter();
     // const [  ]
 
     const handleScroll = (e) => {
@@ -94,6 +96,12 @@ function CommentDrawer(props) {
               style={{
                 // backgroundColor: '#000000',
               }}
+              onClick={(event) => {
+                router.push({
+                  pathname: '/user/' + comment_info['user']['username'],
+                });
+                event.stopPropagation();
+              }}
             >
               {comment_info['user']['avatar_url'] ? (
                 <img src={comment_info['user']['avatar_url']} alt={null}/>
@@ -124,6 +132,12 @@ function CommentDrawer(props) {
                     autoFixFontSize={true}
                     style={{
                       // backgroundColor: '#000000',
+                    }}
+                    onClick={(event) => {
+                      router.push({
+                        pathname: '/user/' + comment_info['user']['username'],
+                      });
+                      event.stopPropagation();
                     }}
                   >
                     {comment_info['user']['avatar_url'] ? (
