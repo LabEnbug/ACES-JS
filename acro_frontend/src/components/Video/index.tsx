@@ -24,12 +24,20 @@ function VideoPlayer({
   ...props
 }) {
   const t = useLocale(locale);
-  const videoRef = useRef(null);
-  const playerRef = useRef(null);
   const [currentVideoIndex, setCurrentVideoIndex] = useState(playIndex);
+  const [UseAni, SetUseAni] = useState(false);
+  const [isUP, setIsUp] = useState(false);
   const canvas = createCanvas(400, 400);
   const ctx = canvas.getContext('2d');
   const [footBarVis, setFootBarVis] = useState(false);
+  const divVideoOneRef = useRef(null);
+  const divVideoTwoRef = useRef(null);
+  const videoOneRef = useRef(null);
+  const videoTwoRef = useRef(null);
+  const playList = useRef(null);
+  const playerRef = useRef(null);
+  const playerOneRef = useRef(null);
+  const playerTwoRef = useRef(null);
   const [playstate, setPlayState] = useState(false);
   const [timestate, setTimeState] = useState({
     now: 0,
@@ -71,7 +79,6 @@ function VideoPlayer({
   const clickTimeout = useRef(null);
   const clickTimeoutBullet = useRef(null);
   const closeBullet = ()=>{
-    console.log(screen.current)
     if (!screen.current) {
       return;
     } 
@@ -83,7 +90,6 @@ function VideoPlayer({
     }
     setShowBullet(screen.current.allHide);
   };
-
   const JudgeStatus = (data: any) => {
     if (data.status != 200) {
       // Message.error(t['message.notfind'])
@@ -263,11 +269,12 @@ function VideoPlayer({
   };
 
   const changeFullScreen = () => {
-    setFullScreen(!playerRef.current.isFullscreen());
-    if (playerRef.current.isFullscreen()) {
-      playerRef.current.exitFullscreen();
+    const element = document.getElementById('video-player-container');
+    setFullScreen(document.fullscreenElement ? false : true);
+    if (document.fullscreenElement) {
+      document.exitFullscreen();
     } else {
-      playerRef.current.requestFullscreen();
+      element.requestFullscreen();
     }
   };
 
@@ -307,7 +314,6 @@ function VideoPlayer({
   const sendBullet = (e) => {
     return new Promise((resolve, reject) => {
       const bullet = e.target.value;
-
       const param = new FormData();
       param.append('content', bullet);
       param.append('comment_at', playerRef.current.currentTime().toString());
@@ -330,57 +336,113 @@ function VideoPlayer({
     });
   }
 
-  useEffect(()=> {
-    const registerScreen = ()=> {
-      const area = document.getElementById('video-player-container');
-      if (area) {
-        const s = new BulletScreen(area, {duration:10, top: '10px', loopCount: 1});
-        screen.current = s;
-        setShowBullet(screen.current.allHide);
+  const bind_func = (playeref)=> {
+    playeref.current.on('ended', () => {
+      console.log('asjkdashdjahdkahdk ');
+      console.log(playeref.current);
+      const autoNext = window.localStorage.getItem('autonext')
+        ? JSON.parse(window.localStorage.getItem('autonext'))
+        : false;
+      if (autoNext) {
+        playeref.current.currentTime(0);
+        setCurrentVideoIndex((prevIndex) => prevIndex + 1);
       } else {
-        setTimeout(registerScreen, 50);
+        playeref.current.currentTime(0);
+        playeref.current.play();
       }
-    };
-    registerScreen();
-  }, []);
+      screen.current.clear();
+      bullets.current.index = 0;
+    });
+    playeref.current.on('ready', () => {
+      setFullScreen(playeref.current.isFullscreen());
+      setVolume(Math.floor(playeref.current.volume() * 100));
+    });
+    playeref.current.on('volumechange', function () {
+      setVolume(Math.floor(playeref.current.volume() * 100));
+    });
+
+    playeref.current.on('ratechange', function () {
+      setPlayRate(playeref.current.playbackRate());
+    });
+
+    playeref.current.on('fullscreenchange', function () {
+      setFullScreen(playeref.current.isFullscreen());
+    });
+    playeref.current.on('play', () => {
+      screen.current.resume();
+      setFootBarVis(true);
+      setPlayState(false);
+      recordWatched();
+    });
+    playeref.current.on('pause', () => {
+      screen.current.pause();
+      setPlayState(true);
+    });
+    playeref.current.on('timeupdate', function () {
+      const currentPlayTime = playeref.current.currentTime();
+      const totalDuration = playeref.current.duration();
+      setTimeState({
+        now: currentPlayTime,
+        whole: totalDuration,
+      });
+      if (bullets.current.all.length <= bullets.current.index || bullets.current.sort) 
+        return;
+      const bull = bullets.current.all[bullets.current.index];
+      if (bull.comment_at < currentPlayTime) {
+        // console.log(bull);
+        // console.log(bullets.current);
+        // console.log(screen.current.bullets);
+        // console.log(screen.current.bullets.length);
+        // console.log(currentPlayTime);
+        bullets.current.index += 1;
+        screen.current.push(generateBullet(bull['content'], bull['user']['is_self'], bull['user']['nickname']));
+        screen.current.bullets[screen.current.bullets.length-1].style['z-index']=100;
+      }
+    });
+  }
+
+  const handleAnimationEnd = ()=>{
+    if (playerOneRef.current && playerTwoRef.current && playList.current) {
+      bind_func(playerRef);
+      const preindex = parseInt(window.sessionStorage.getItem('preVideoIndex'));
+      const hide = playerRef.current == playerOneRef.current ? playerTwoRef : playerOneRef;
+      const playlist = playList.current;
+      hide.current.src({
+        src: preindex + 1 < playlist.length ? playlist[preindex + 1]['play_url'] : '',
+        type: 'application/x-mpegURL',
+      });
+      hide.current.poster(preindex + 1 < playlist.length ? playlist[preindex + 1]['cover_url'] : '');
+      playerRef.current.play().then().catch(e=>{console.log(e)});
+    }
+  }
+
+  // const sendbu = ()=>{
+  //   setTimeout(()=>{
+  //     if (screen.current) {
+  //       screen.current.push(generateBullet('content', false, 'nickname'));
+  //     }
+  //     sendbu();
+  //   }, 500);
+  // };
+
+  const GenerateAni = (isShow, isUp) => {
+    if (isShow && isUp) {
+      return styles['video-show-up'];
+    }
+    if (isShow && !isUp) {
+      return styles['video-show-down'];
+    }
+    if (!isShow && isUp) {
+      return styles['video-hidden-up'];
+    }
+    if (!isShow && !isUp) {
+      return styles['video-hidden-down'];
+    }
+  }
 
   useEffect(()=>{
-    if (playerRef.current && screen.current) {
-      playerRef.current.on('play', () => {
-        screen.current.resume();
-        setFootBarVis(true);
-        setPlayState(false);
-        recordWatched();
-      });
-      playerRef.current.on('pause', () => {
-        screen.current.pause();
-        setPlayState(true);
-      });
-      playerRef.current.on('timeupdate', function () {
-        const currentPlayTime = playerRef.current.currentTime();
-        const totalDuration = playerRef.current.duration();
-        setTimeState({
-          now: currentPlayTime,
-          whole: totalDuration,
-        });
-        if (bullets.current.all.length <= bullets.current.index || bullets.current.sort) 
-          return;
-        const bull = bullets.current.all[bullets.current.index];
-        if (bull.comment_at < currentPlayTime) {
-          // console.log(bull);
-          // console.log(bullets.current);
-          // console.log(screen.current.bullets);
-          // console.log(screen.current.bullets.length);
-          // console.log(currentPlayTime);
-          bullets.current.index += 1;
-          screen.current.push(generateBullet(bull['content'], bull['user']['is_self'], bull['user']['nickname']));
-        }
-      });
-    }
-  }, [screen.current, playerRef.current])
-
-  useEffect(() => {
     const upDateBackGround = (playerRef, url) => {
+      console.log(playerRef)
       // 创建一个 Image 对象
       const img = new Image();
       // 设置图像的加载完成回调
@@ -408,14 +470,18 @@ function VideoPlayer({
       // 开始加载图像
       img.src = url;
     };
-    console.log(hlsPlayList);
+    if (!screen.current) {
+      const area = document.getElementById('video-player-container');
+      if (area)
+        screen.current = new BulletScreen(area, {duration:10, top: '10px', loopCount: 1, zIndex: 100});
+    }
     const realindex =
-      currentVideoIndex >= 0
-        ? currentVideoIndex % hlsPlayList.length
-        : (currentVideoIndex % hlsPlayList.length) + hlsPlayList.length;
+    currentVideoIndex >= 0
+      ? currentVideoIndex % hlsPlayList.length
+      : (currentVideoIndex % hlsPlayList.length) + hlsPlayList.length;
     reflectPlayIndex(Number.isNaN(realindex) ? 0 : realindex);
-    if (!playerRef.current && videoRef.current && hlsPlayList.length > 0) {
-      playerRef.current = videojs(videoRef.current, {
+    if (!playerRef.current && videoOneRef.current && videoTwoRef.current && hlsPlayList.length > 0) {
+      playerOneRef.current = videojs(videoOneRef.current, {
         crossOrigin: 'Anonymous',
         controls: true,
         sources: [
@@ -426,83 +492,76 @@ function VideoPlayer({
         ],
         poster: hlsPlayList[realindex]['cover_url'],
         preload: 'auto',
-        autoplay: true,
+        autoplay: false,
         userActions: {
           doubleClick: false, // 值也可以是一个函数
           click: false,
         },
       });
-      playerRef.current.on('ended', () => {
-        const autoNext = window.localStorage.getItem('autonext')
-          ? JSON.parse(window.localStorage.getItem('autonext'))
-          : false;
-        if (autoNext) {
-          setCurrentVideoIndex((prevIndex) => prevIndex + 1);
-        } else {
-          playerRef.current.currentTime(0);
-          playerRef.current.play();
-        }
-        screen.current.clear();
-        bullets.current.index = 0;
+      playerTwoRef.current = videojs(videoTwoRef.current, {
+        crossOrigin: 'Anonymous',
+        controls: true,
+        sources: [
+          {
+            src: realindex + 1 < hlsPlayList.length ? hlsPlayList[realindex+1]['play_url'] : '',
+            type: 'application/x-mpegURL',
+          },
+        ],
+        poster: realindex + 1 < hlsPlayList.length ? hlsPlayList[realindex+1]['cover_url'] : '',
+        preload: 'auto',
+        autoplay: false,
+        userActions: {
+          doubleClick: false, // 值也可以是一个函数
+          click: false,
+        },
       });
-      playerRef.current.on('ready', () => {
-        setFullScreen(playerRef.current.isFullscreen());
-        setVolume(Math.floor(playerRef.current.volume() * 100));
+      
+      const array_ref = [playerOneRef, playerTwoRef]
+      array_ref.forEach((item)=>{
+        item.current.el().classList.add(styles['video-background']);
+        item.current.controlBar.getChild('playToggle').hide();
+        item.current.controlBar.getChild('VolumePanel').hide();
+        item.current.controlBar.getChild('FullscreenToggle').hide();
+        item.current.controlBar.getChild('RemainingTimeDisplay').hide();
+        item.current.controlBar.removeChild('pictureInPictureToggle');
+        upDateBackGround(item, hlsPlayList[realindex]['cover_url']);
       });
-      playerRef.current.on('volumechange', function () {
-        setVolume(Math.floor(playerRef.current.volume() * 100));
-      });
-
-      playerRef.current.on('ratechange', function () {
-        setPlayRate(playerRef.current.playbackRate());
-      });
-
-      playerRef.current.on('fullscreenchange', function () {
-        setFullScreen(playerRef.current.isFullscreen());
-      });
-
-      // playerRef.current.on('click', handlePlayerClick);
-
-      playerRef.current.el().classList.add(styles['video-background']);
-      playerRef.current.controlBar.getChild('playToggle').hide();
-      playerRef.current.controlBar.getChild('VolumePanel').hide();
-      playerRef.current.controlBar.getChild('FullscreenToggle').hide();
-      playerRef.current.controlBar.getChild('RemainingTimeDisplay').hide();
-      playerRef.current.controlBar.removeChild('pictureInPictureToggle');
-      upDateBackGround(playerRef, hlsPlayList[realindex]['cover_url']);
+      playerRef.current = playerOneRef.current;
+      bind_func(playerRef)
+      window.sessionStorage.setItem('preVideoIndex', realindex);
     } else if (
       playerRef.current &&
-      videoRef.current &&
       hlsPlayList.length != 0
     ) {
-      playerRef.current.src({
+      const preindex = parseInt(window.sessionStorage.getItem('preVideoIndex'));
+      if (preindex == realindex) {
+        return;
+      }
+      SetUseAni(true);
+      playerOneRef.current.pause();
+      playerTwoRef.current.pause();
+      const hide = playerRef.current == playerOneRef.current ? playerTwoRef : playerOneRef;
+      hide.current.src({
         src: hlsPlayList[realindex]['play_url'],
         type: 'application/x-mpegURL',
       });
-
-      playerRef.current.poster(hlsPlayList[realindex]['cover_url']);
+      hide.current.poster(hlsPlayList[realindex]['cover_url']);
+      playerRef.current = hide.current;
       upDateBackGround(playerRef, hlsPlayList[realindex]['cover_url']);
+      setIsUp(realindex > preindex);
+      window.sessionStorage.setItem('preVideoIndex', realindex);
     }
+    playList.current = hlsPlayList;
     if (hlsPlayList.length > 0) {
       getVideoInfo(hlsPlayList[realindex]['video_uid']);
     }
-  }, [hlsPlayList, currentVideoIndex]);
-
-  useEffect(() => {
-    const player = playerRef.current;
-
-    return () => {
-      if (player && !player.isDisposed()) {
-        player.dispose();
-        playerRef.current = null;
-      }
-    };
-  }, [playerRef]);
+  }, [currentVideoIndex, hlsPlayList, videoOneRef.current,  videoTwoRef.current]);
 
   useEffect(() => {
     const handleMouseWheel = (event) => {
-      const specifiedArea = document.getElementById('specified-area');
-      if (specifiedArea && specifiedArea.contains(event.target)) {
+      const specifiedArea1 = document.getElementById('specified-area1');
+      const specifiedArea2 = document.getElementById('specified-area2');
+      if (specifiedArea1 && specifiedArea2 && (specifiedArea1.contains(event.target) || specifiedArea2.contains(event.target))) {
         if (event.deltaY > 5) {
           setCurrentVideoIndex((prevIndex) => prevIndex + 1);
         } else if (event.deltaY < -5) {
@@ -564,7 +623,7 @@ function VideoPlayer({
 
   useEffect(() => {
     const handleKeyDown = (event) => {
-      const specifiedArea = document.getElementById('specified-area');
+      const specifiedArea = document.getElementById('specified-area1');
       if (specifiedArea && specifiedArea.contains(event.target)) {
         if (event.keyCode == 32) {
           const state = playerRef.current.paused();
@@ -589,6 +648,28 @@ function VideoPlayer({
     };
   }, [ playerRef ]);
 
+  useEffect(() => {
+    const player = playerOneRef.current;
+
+    return () => {
+      if (player && !player.isDisposed()) {
+        player.dispose();
+        playerOneRef.current = null;
+      }
+    };
+  }, [playerOneRef]);
+
+  useEffect(() => {
+    const player = playerTwoRef.current;
+
+    return () => {
+      if (player && !player.isDisposed()) {
+        player.dispose();
+        playerTwoRef.current = null;
+      }
+    };
+  }, [playerTwoRef]);
+  
   return (
     <div
       style={{
@@ -599,21 +680,25 @@ function VideoPlayer({
       }}
     >
       <div data-vjs-player id='video-player-container' className={styles['video-container']}>
-        <video
-          ref={videoRef}
-          onClick={handlePlayerClick}
-          onDoubleClick={videoDoubleClick}
-          id="specified-area"
-          className={`vjs-default-skin video-js ${styles['video-pos-js-9-16']}`}
-          controls
+        <div ref={divVideoOneRef}
+             className={`${styles['video-pos-js-9-16']} ${ UseAni ? GenerateAni(playerRef.current != playerOneRef.current, isUP) : ''}`} 
+             style={{zIndex: playerRef.current == playerOneRef.current ? 3 : 2}}
+             onAnimationEnd={handleAnimationEnd}
         >
-        </video>
-        {hearts.map((heart) => (
+          <video
+            ref={videoOneRef}
+            onClick={handlePlayerClick}
+            onDoubleClick={videoDoubleClick}
+            id="specified-area1"
+            className={`vjs-default-skin video-js ${styles['video-pos-js-9-16']}`}
+            controls
+          />
+          {hearts.map((heart) => (
             <div key={heart.id} className={styles['heart-animate']} style={heart.style}>
               {heart.ele}
             </div>
           ))}
-        <SideBar
+          <SideBar
           videoinfo={videoinfo}
           userfavorite={userfavorite}
           userlike={userlike}
@@ -655,6 +740,64 @@ function VideoPlayer({
           bulletState={showbullet}
         />
         <BriefIntri videoinfo={videoinfo} />
+        </div>
+        <div ref={divVideoTwoRef} className={`${styles['video-pos-js-9-16']} ${ UseAni ? GenerateAni(playerRef.current != playerTwoRef.current, isUP): ''}`} style={{zIndex: playerRef.current == playerTwoRef.current ? 3 : 2}}>
+          <video
+            ref={videoTwoRef}
+            onClick={handlePlayerClick}
+            onDoubleClick={videoDoubleClick}
+            id="specified-area2"
+            className={`vjs-default-skin video-js ${styles['video-pos-js-9-16']}`}
+            controls
+          />
+          {hearts.map((heart) => (
+            <div key={heart.id} className={styles['heart-animate']} style={heart.style}>
+              {heart.ele}
+            </div>
+          ))}
+          <SideBar
+            videoinfo={videoinfo}
+            userfavorite={userfavorite}
+            userlike={userlike}
+            ikecount={likecount}
+            favoritecount={favoritecount}
+            forwardedcount={forwardedcount}
+            commentedcount={commentedcount}
+            clickfavorite={{
+              func: clickCount,
+              params: ['favorite', SetUserfavorite, SetFavoriteCount],
+            }}
+            clicklike={{
+              func: clickCount,
+              params: ['like', SetUserLike, SetLikeCount],
+            }}
+            clickfoward={clickfoward}
+            followed={follow}
+            changefollow={changefollow}
+            cilckcomment={OpenComments}
+          />
+          <FootBar
+            id="footbar"
+            ref={playerRef}
+            visible={footBarVis}
+            playstate={playstate}
+            timestate={timestate}
+            playclick={clickPlay}
+            volume={volume}
+            volumechange={changeVolume}
+            setauto={setAuto}
+            autostate={autoNext}
+            playbackrate={playrate}
+            setplaybackrate={setPlayBackRate}
+            fullscreen={fullscreen}
+            fullscreenchange={changeFullScreen}
+            video_place='specified-area'
+            sendBullet={sendBullet}
+            closeBullet={closeBullet}
+            bulletState={showbullet}
+          />
+          <BriefIntri videoinfo={videoinfo} />
+        </div>
       </div>
       <div
         className={
@@ -668,6 +811,7 @@ function VideoPlayer({
       </div>
     </div>
   );
+  
 }
 
 export default VideoPlayer;

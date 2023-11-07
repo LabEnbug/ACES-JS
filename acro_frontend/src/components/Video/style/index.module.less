@@ -356,3 +356,74 @@
     display: inline-block; 
     animation: twistAndFadeOutUp 1s ease forwards;
 }
+
+
+.video-hidden-up {
+  animation: hidden-up 1s;
+}
+
+.video-show-up {
+  animation: show-up 1s;
+}
+
+.video-hidden-down {
+  animation: hidden-down 1s;
+}
+
+.video-show-down {
+  animation: show-down 1s;
+} 
+
+// .video2-enter {
+//   animation: slideUp 0.5s forwards;
+// }
+
+// .video2-exit {
+//   animation: slideDown 0.5s forwards;
+// }
+
+
+@keyframes hidden-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes show-up {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-100%);
+  }
+}
+
+@keyframes hidden-down {
+  from {
+    transform: translateY(-100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes show-down {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(100%);
+  }
+}
+
+// @keyframes slideDown {
+//   from {
+//     transform: translateY(0);
+//   }
+//   to {
+//     transform: translateY(100%);
+//   }
+// }
