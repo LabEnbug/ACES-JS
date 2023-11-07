@@ -4,6 +4,7 @@ import (
 	"backend/algorithm"
 	"backend/config"
 	"backend/database/mysql"
+	"backend/model"
 	"backend/tool"
 	"fmt"
 	"github.com/google/uuid"
@@ -55,7 +56,13 @@ func GetVideoList(w http.ResponseWriter, r *http.Request) {
 	tokenValid, userId, _, _ := FindAndCheckToken(r)
 
 	// get video list
-	videoList := mysql.GetVideoList(queryType, queryUserId, queryRelation, queryLimit, queryStart, userId)
+	var videoList []model.Video
+	if queryType == 0 && queryUserId == 0 && queryRelation == "" {
+		log.Println(1111111)
+		videoList = algorithm.GetRecommendVideoList(queryLimit, queryStart, userId)
+	} else {
+		videoList = mysql.GetVideoList(queryType, queryUserId, queryRelation, queryLimit, queryStart, userId)
+	}
 	if len(videoList) == 0 {
 		status = 0
 		errorMsg = "No more video found."
@@ -1097,77 +1104,5 @@ func GetVideoTypes(w http.ResponseWriter, r *http.Request) {
 		"video_types": videoTypes,
 	}
 
-	SendJSONResponse(w, status, data, errorMsg)
-}
-
-func GetRecommendVideoList(w http.ResponseWriter, r *http.Request) {
-	/*
-	 * @api {post} /v1/video/userRecomList Get recommend video list by userId
-	 *
-	 * @apiName GetRecommendVideoList
-	 *
-	 * @apiParam {Number} user_id User id. uint
-	 * @apiParam {Number} limit the number of video needed. int
-	 * @apiParam {Number} start Start at. int
-	 */
-	status := 200
-	data := map[string]interface{}{}
-	errorMsg := ""
-
-	// check method, only accept POST
-	if r.Method != "POST" {
-		status = 0
-		errorMsg = "Invalid request method."
-		SendJSONResponse(w, status, data, errorMsg)
-		return
-	}
-
-	// parse form
-	err := r.ParseMultipartForm(config.MaxNormalPostSize64)
-	if err != nil {
-		status = 0
-		errorMsg = "Failed to parse form."
-		SendJSONResponse(w, status, data, errorMsg)
-		return
-	}
-	queryUserIdTmp, _ := strconv.ParseUint(r.PostFormValue("user_id"), 10, 32)
-	queryUserId := uint(queryUserIdTmp)
-	queryLimit, _ := strconv.Atoi(r.PostFormValue("limit"))
-	queryStart, _ := strconv.Atoi(r.PostFormValue("start"))
-
-	// for some bad parameter, strict limit
-	if queryLimit > 24 {
-		queryLimit = 24
-	} else if queryLimit < 1 {
-		queryLimit = 1
-	}
-	if queryStart < 0 {
-		queryStart = 0
-	}
-
-	// check user
-	tokenValid, userId, _, _ := FindAndCheckToken(r)
-
-	// get video list
-	videoList := algorithm.GetRecommendVideoList(queryUserId, queryLimit, queryStart)
-	if len(videoList) == 0 {
-		status = 0
-		errorMsg = "No more video found."
-		SendJSONResponse(w, status, data, errorMsg)
-		return
-	}
-
-	// check relation between user and video
-	// only need to check when user logged in
-	if tokenValid { // user logged in
-		for i := 0; i < len(videoList); i++ {
-			videoList[i].IsUserLiked, videoList[i].IsUserFavorite, videoList[i].IsUserUploaded,
-				videoList[i].IsUserWatched, videoList[i].IsUserLastPlay = mysql.CheckUserVideoAllRelation(userId, videoList[i].Id)
-		}
-	}
-
-	data = map[string]interface{}{
-		"video_list": videoList,
-	}
 	SendJSONResponse(w, status, data, errorMsg)
 }

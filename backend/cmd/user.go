@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"backend/algorithm"
 	"backend/auth"
 	"backend/config"
 	"backend/database"
@@ -167,6 +168,8 @@ func Signup(w http.ResponseWriter, r *http.Request) {
 		SendJSONResponse(w, status, data, errorMsg)
 		return
 	}
+
+	algorithm.InitRecommendationModel(user.Id)
 
 	// get user info
 	user, _, _ = mysql.GetUserInfoById(user.Id, 0)

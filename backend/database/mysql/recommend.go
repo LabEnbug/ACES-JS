@@ -48,7 +48,7 @@ func GetRecommendMatrixByUserId(userId uint) (model.User, bool, int) {
 	return user, ok, errNo
 }
 
-func GetOneRecommendVideoByProbabilityMatrix(recomType int, choice int, limit int, start int) []model.Video {
+func GetOneRecommendVideoByProbabilityMatrix(recomType int, choice int, limit int, start int, currentUserId uint) []model.Video {
 	// get one recommend video, but as list return
 	var videoList []model.Video
 	var rows *sql.Rows
@@ -128,7 +128,6 @@ func GetOneRecommendVideoByProbabilityMatrix(recomType int, choice int, limit in
 			}
 			return videoList
 		}
-		currentUserId := uint(0)
 		user, _, _ := GetUserInfoById(video.UserId, currentUserId)
 		video = common.MakeVideoSupInfo(video, screenshotOk, hlsOk, user)
 		videoList = append(videoList, video)

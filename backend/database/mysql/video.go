@@ -24,7 +24,7 @@ func GetVideoList(videoType int, userId uint, relation string, limit int, start 
 				// get user's watched video list, fix wrong order on 20231104
 				rows, err = DB.Query("SELECT v.id, v.user_id, v.video_uid, v.type, v.content, v.keyword, v.upload_time, v.be_liked_count, v.be_favorite_count, v.be_commented_count, v.be_forwarded_count, v.be_watched_count, v.top, v.private, v.screenshot, v.hls FROM (SELECT video_id FROM (SELECT video_id, MAX(id) AS max_id FROM video_watch WHERE user_id=? GROUP BY video_id ) vw ORDER BY max_id DESC LIMIT ?, ?) AS subquery JOIN video v ON v.id = subquery.video_id WHERE v.deleted=0 AND v.private=0 AND v.hls=1", currentUserId, start, limit)
 			} else {
-				// comprehensive video list
+				// comprehensive video list, [deprecated on 202311107]
 				rows, err = DB.Query("SELECT id, user_id, video_uid, type, content, keyword, upload_time, be_liked_count, be_favorite_count, be_commented_count, be_forwarded_count, be_watched_count, top, private, screenshot, hls FROM video WHERE deleted=0 AND private=0 AND hls=1 ORDER BY RAND() DESC LIMIT ?, ?", start, limit)
 			}
 		} else {
