@@ -23,14 +23,22 @@ go run main.go
 #### 启动前端
 
 ```shell
-# make sure node installed
-node -v
-# make sure npm installed
+# 安装 npm 
+参考：https://www.npmjs.com/
+# 用以下命令查看npm版本，保证输出版本大于等于 10.2.1
 npm -v
-
+# 安装 yarn
+npm install -g yarn
+# 进入前端目录
 cd ./ACES-JS/acro_frontend
-npm install
-npm run dev
+# 安装依赖
+yarn install
+# 编译前端
+yarn build
+# 导出前端文件
+yarn export
+# 运行
+yarn start -p XXXX(port)
 ```
 
 #### 打开Web应用
@@ -38,6 +46,7 @@ npm run dev
 浏览器即可打开应用
 
 ```
-http://localhost/
+http://localhost:XXXX(port)/
 ```
 
+#### Demo演示视频
