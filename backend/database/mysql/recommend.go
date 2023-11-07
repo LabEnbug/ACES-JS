@@ -5,9 +5,12 @@ import (
 	"backend/config"
 	"backend/model"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"log"
 	"runtime"
+	"fmt"
+	"strings"
 )
 
 func SetUserRecommendMatrix(userId uint, recommendMatrix []byte) bool {
@@ -125,5 +128,75 @@ func GetOneRecommendVideoByProbabilityMatrix(recomType int, choice int, limit in
 		video = common.MakeVideoSupInfo(video, screenshotOk, hlsOk, user)
 		videoList = append(videoList, video)
 	}
+	return videoList
+}
+
+// 生成指定数量的占位符字符串，用于构建查询语句
+func generatePlaceholders(count int) string {
+	placeholders := make([]string, count)
+	for i := range placeholders {
+		placeholders[i] = "?"
+	}
+	return strings.Join(placeholders, ", ")
+}
+
+func GetRecommendVideoBySimilarity(videoId uint, requiredVideo int, start int) []model.Video {
+	var videoList []model.Video
+	var rows *sql.Rows
+	var err error
+
+	// Top 200 videos with the highest similarity
+	row := DB.QueryRow("SELECT related_videos FROM video WHERE id=? limit 1", videoId)
+	var jsonData string
+	err = row.Scan(&jsonData)
+	if err != nil {
+		log.Fatal(err)
+	}
+	// 解析JSON数据
+	var data map[string][]uint
+	err = json.Unmarshal([]byte(jsonData), &data)
+	if err != nil {
+		fmt.Println("解析JSON失败：", err)
+		return videoList
+	}
+	var relatedVis []uint
+	relatedVis = data["relatedVis"][start: start + requiredVideo]  // get required related videos num
+	// fmt.Println(relatedVis)
+
+	query := "SELECT id, user_id, video_uid, type, content, keyword, upload_time, be_liked_count, be_favorite_count, be_commented_count, be_forwarded_count, be_watched_count, top, private, screenshot, hls FROM video WHERE deleted=0 AND private=0 AND hls=1 AND id IN (" + generatePlaceholders(len(relatedVis)) + ")"
+
+	// 构建查询参数
+	args := make([]interface{}, len(relatedVis))
+	for i, id := range relatedVis {
+		args[i] = id
+	}
+
+	// 执行查询
+	rows, err = DB.Query(query, args...)
+	if err != nil {
+		fmt.Println("执行查询失败：", err)
+		return videoList
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var video model.Video
+		var screenshotOk uint8
+		var hlsOk uint8
+
+		err := rows.Scan(&video.Id, &video.UserId, &video.VideoUid, &video.Type, &video.Content, &video.Keyword, &video.UploadTime, &video.BeLikedCount, &video.BeFavoriteCount, &video.BeCommentedCount, &video.BeForwardedCount, &video.BeWatchedCount, &video.Top, &video.Private, &screenshotOk, &hlsOk)
+		if err != nil {
+			if config.ShowLog {
+				funcName, _, _, _ := runtime.Caller(0)
+				log.Println(runtime.FuncForPC(funcName).Name(), "ERR: ", err)
+			}
+			return videoList
+		}
+		currentUserId := uint(0)
+		user, _, _ := GetUserInfoById(video.UserId, currentUserId)
+		video = common.MakeVideoSupInfo(video, screenshotOk, hlsOk, user)
+		videoList = append(videoList, video)
+	}
+	// fmt.Println(videoList)
 	return videoList
 }
